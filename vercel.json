@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/sla-check",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/overlap-scan",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

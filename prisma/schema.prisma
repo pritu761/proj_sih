@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Institution {
+  id                 String         @id @default(cuid())
+  aicte_permanent_id String         @unique
+  name               String
+  normalized_name    String
+  address            String
+  city               String
+  state              String
+  pincode            String
+  region             String         // Regional Office e.g. Northern, Western, Southern, Eastern, Central
+  institution_type   String         // Engineering & Technology, Management, Pharmacy, Polytechnic, etc.
+  contact_email      String?
+  contact_phone      String?
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
+
+  cases              Case[]
+  overlap_alerts     OverlapAlert[]
+
+  @@index([normalized_name])
+  @@index([region])
+  @@index([city])
+  @@index([state])
+}
+
+model Case {
+  id                     String          @id @default(cuid())
+  case_id                String          @unique // e.g. AICTE/PGRC/2026/00123
+  institution_id         String
+  institution            Institution     @relation(fields: [institution_id], references: [id], onDelete: Cascade)
+  date_received          DateTime
+  source                 String          // student, faculty, stakeholder, public, other
+  category               String          // e.g. Capitation Fee, Faculty Non-Payment, Infrastructure
+  description            String          @db.Text
+  status                 String          // PENDING, UNDER_PROCESS, DISPOSED, TRANSFERRED, ESCALATED
+  assigned_bureau        String          // REGULATION_BUREAU, PGRC, APPROVAL_BUREAU, SKILL_CELL
+  assigned_officer       String
+  last_action            String
+  last_action_date       DateTime
+  next_action_required   String?
+  expected_disposal_date DateTime
+  priority               String          // LOW, MEDIUM, HIGH, CRITICAL
+  created_at             DateTime        @default(now())
+  updated_at             DateTime        @updatedAt
+
+  actions                ActionHistory[]
+  links_as_a             CaseLink[]      @relation("CaseLinksA")
+  links_as_b             CaseLink[]      @relation("CaseLinksB")
+  notifications          Notification[]
+
+  @@index([institution_id])
+  @@index([status])
+  @@index([assigned_bureau])
+  @@index([date_received])
+  @@index([priority])
+}
+
+model ActionHistory {
+  id          String   @id @default(cuid())
+  case_id     String
+  case        Case     @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  timestamp   DateTime @default(now())
+  actor_user  String
+  actor_bureau String
+  action_type String   // RECEIVED, ASSIGNED, TRANSFERRED, ESCALATED, REMARK, DISPOSED, LINKED, STATUS_CHANGED
+  remarks     String   @db.Text
+  attachments String[]
+  from_bureau String?
+  to_bureau   String?
+
+  @@index([case_id])
+  @@index([timestamp])
+}
+
+model CaseLink {
+  id         String   @id @default(cuid())
+  case_a_id  String
+  case_a     Case     @relation("CaseLinksA", fields: [case_a_id], references: [id], onDelete: Cascade)
+  case_b_id  String
+  case_b     Case     @relation("CaseLinksB", fields: [case_b_id], references: [id], onDelete: Cascade)
+  link_type  String   // OVERLAP, DUPLICATE, RELATED
+  created_by String
+  created_at DateTime @default(now())
+  note       String?  @db.Text
+
+  @@unique([case_a_id, case_b_id])
+  @@index([case_a_id])
+  @@index([case_b_id])
+}
+
+model OverlapAlert {
+  id               String      @id @default(cuid())
+  institution_id   String
+  institution      Institution @relation(fields: [institution_id], references: [id], onDelete: Cascade)
+  case_ids         String[]
+  bureaus_involved String[]
+  confidence       String      // HIGH, MEDIUM, LOW
+  match_reasons    Json
+  detected_at      DateTime    @default(now())
+  status           String      @default("OPEN") // OPEN, ACKNOWLEDGED, COORDINATED, DISMISSED
+  coordination_note String?    @db.Text
+  dismissed_reason String?     @db.Text
+  updated_at       DateTime    @updatedAt
+
+  @@index([institution_id])
+  @@index([status])
+}
+
+model Notification {
+  id            String   @id @default(cuid())
+  type          String   // OVERLAP, PENDING_REMINDER, ESCALATION, SLA_APPROACHING, SLA_BREACHED
+  case_id       String?
+  case          Case?    @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  target_bureau String?
+  target_user   String?
+  title         String
+  message       String   @db.Text
+  read          Boolean  @default(false)
+  created_at    DateTime @default(now())
+
+  @@index([target_bureau])
+  @@index([target_user])
+  @@index([read])
+}
+
+model SlaConfig {
+  id                        String   @id @default(cuid())
+  category                  String   @unique
+  timeline_days             Int
+  warning_threshold_percent Int      @default(80)
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  user      String
+  action    String
+  entity    String
+  entity_id String
+  before    Json?
+  after     Json?
+  ip        String?
+  timestamp DateTime @default(now())
+
+  @@index([user])
+  @@index([entity])
+  @@index([timestamp])
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  role          String   // ADMIN, COMPETENT_AUTHORITY, REGULATION_OFFICER, PGRC_OFFICER, BUREAU_OFFICER, REGIONAL_OFFICER
+  bureau        String   // REGULATION_BUREAU, PGRC, APPROVAL_BUREAU, SKILL_CELL, ALL
+  region        String?  // Northern, Western, Southern, Eastern, Central
+  designation   String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
