@@ -13,6 +13,7 @@ export default async function DashboardPage() {
       initialMetrics={metrics}
       userRole={user.role}
       userBureau={user.bureau}
+      userName={user.name}
     />
   );
 }

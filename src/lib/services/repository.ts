@@ -93,6 +93,35 @@ function getInMemoryStore() {
         },
       ],
     };
+
+    // Seed an initial tamper-evident audit ledger from the generated case actions
+    if (inMemoryAuditLogs.length === 0) {
+      const seededLogs = seed.cases
+        .flatMap((c) =>
+          c.actions.map((a) => ({
+            user: a.actor_user,
+            action: a.action_type,
+            entity: "CASE",
+            entity_id: c.case_id,
+            before: null,
+            after: {
+              status: c.status,
+              bureau: c.assigned_bureau,
+              priority: c.priority,
+              remarks: a.remarks,
+              attachments: a.attachments,
+            },
+            ip: "10.24.8.1",
+            timestamp: a.timestamp,
+          }))
+        )
+        .sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )
+        .slice(0, 80);
+
+      inMemoryAuditLogs.push(...seededLogs);
+    }
   }
   return globalRepo.inMemoryData;
 }
@@ -201,6 +230,72 @@ export class ComplaintRepository {
       { month: "Oct 2026", received: 65, disposed: 49 },
     ];
 
+    // Cases that need officer attention right now
+    const urgentCases = allCases
+      .filter((c) => c.status !== "DISPOSED")
+      .map((c) => {
+        const sla = calculateCaseSla(c.category, c.date_received, c.status);
+        const inst = instLookup.get(c.institution_id);
+        return {
+          id: c.id,
+          case_id: c.case_id,
+          category: c.category,
+          status: c.status,
+          priority: c.priority,
+          assigned_bureau: c.assigned_bureau,
+          institution_name: inst?.name ?? "Unknown institution",
+          institution_city: inst?.city ?? "",
+          region: inst?.region ?? "",
+          last_action: c.last_action,
+          last_action_date: c.last_action_date,
+          remainingDays: sla.remainingDays,
+          percentElapsed: sla.percentElapsed,
+          isBreached: sla.isBreached,
+          isApproaching: sla.isApproaching,
+          statusText: sla.statusText,
+        };
+      })
+      .filter((c) => c.isBreached || c.isApproaching || c.priority === "CRITICAL")
+      .sort((a, b) => {
+        if (a.isBreached !== b.isBreached) return a.isBreached ? -1 : 1;
+        return a.remainingDays - b.remainingDays;
+      })
+      .slice(0, 6);
+
+    // Open overlap alerts enriched for the command center
+    const openOverlapList = store.overlapAlerts
+      .filter((o) => o.status === "OPEN")
+      .map((o) => {
+        const inst = instLookup.get(o.institution_id);
+        return {
+          id: o.id,
+          institution_id: o.institution_id,
+          institution_name: inst?.name ?? "Unknown institution",
+          city: inst?.city ?? "",
+          state: inst?.state ?? "",
+          case_ids: o.case_ids,
+          bureaus_involved: o.bureaus_involved,
+          confidence: o.confidence,
+          detected_at: o.detected_at,
+          match_reasons: o.match_reasons,
+        };
+      })
+      .sort((a, b) => new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime())
+      .slice(0, 4);
+
+    const disposedCases = allCases.filter((c) => c.status === "DISPOSED");
+    const avgResolutionDays =
+      disposedCases.length > 0
+        ? Math.round(
+            disposedCases.reduce((sum, c) => {
+              const days =
+                (new Date(c.last_action_date).getTime() - new Date(c.date_received).getTime()) /
+                (1000 * 60 * 60 * 24);
+              return sum + Math.max(0, days);
+            }, 0) / disposedCases.length
+          )
+        : 0;
+
     return {
       kpi: {
         totalReceived,
@@ -212,11 +307,15 @@ export class ComplaintRepository {
         pendingBeyondTimeline,
         openOverlapAlerts,
       },
+      disposalRate: totalReceived > 0 ? Math.round((disposed / totalReceived) * 100) : 0,
+      avgResolutionDays,
       bureauWorkload,
       statusDistribution,
       regionCases,
       ageingBuckets,
       monthlyTrends,
+      urgentCases,
+      openOverlapList,
     };
   }
 

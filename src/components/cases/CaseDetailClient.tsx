@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Clock,
-  Building,
+  Building2,
   User,
   ArrowRightLeft,
   Flame,
@@ -13,18 +13,22 @@ import {
   Link2,
   ShieldAlert,
   CheckCircle2,
-  X,
   Paperclip,
   Eye,
+  FileText,
+  CalendarDays,
+  Target,
+  Gavel,
+  UploadCloud,
+  Sparkles,
+  Lock,
+  Layers,
+  MapPin,
+  Inbox,
+  RefreshCw,
+  ChevronRight,
 } from "lucide-react";
-import {
-  formatDate,
-  formatDateTime,
-  getBureauBadgeColor,
-  getBureauLabel,
-  getStatusBadgeColor,
-  getPriorityBadgeColor,
-} from "@/lib/utils";
+import { formatDate, formatDateTime } from "@/lib/utils";
 import {
   updateCaseStatusAction,
   transferCaseAction,
@@ -34,6 +38,11 @@ import {
 } from "@/actions/case-actions";
 import { coordinateOverlapAction } from "@/actions/overlap-actions";
 import { canActOnCase, SessionUser } from "@/lib/rbac";
+import { Breadcrumbs } from "@/components/ui/page-header";
+import { BureauPill, ConfidencePill, PriorityPill, StatusPill } from "@/components/ui/badges";
+import { SlaRing } from "@/components/ui/sla-ring";
+import { Modal } from "@/components/ui/modal";
+import { cn } from "@/lib/utils";
 
 interface CaseDetailClientProps {
   caseItem: any;
@@ -42,6 +51,35 @@ interface CaseDetailClientProps {
   collidingCase?: any;
   currentUser: SessionUser;
 }
+
+const actionIcon: Record<string, typeof Inbox> = {
+  RECEIVED: Inbox,
+  ASSIGNED: User,
+  TRANSFERRED: ArrowRightLeft,
+  ESCALATED: Flame,
+  REMARK: MessageSquare,
+  DISPOSED: CheckCircle2,
+  LINKED: Link2,
+  STATUS_CHANGED: RefreshCw,
+};
+
+const actionTone: Record<string, string> = {
+  RECEIVED: "bg-brand-50 text-brand-600 border-brand-100",
+  ASSIGNED: "bg-sky-50 text-sky-600 border-sky-100",
+  TRANSFERRED: "bg-violet-50 text-violet-600 border-violet-100",
+  ESCALATED: "bg-rose-50 text-rose-600 border-rose-100",
+  REMARK: "bg-slate-50 text-slate-500 border-slate-200",
+  DISPOSED: "bg-emerald-50 text-emerald-600 border-emerald-100",
+  LINKED: "bg-amber-50 text-amber-600 border-amber-100",
+  STATUS_CHANGED: "bg-indigo-50 text-indigo-600 border-indigo-100",
+};
+
+const bureauOptions = [
+  { value: "REGULATION_BUREAU", label: "Regulation Bureau (RB)" },
+  { value: "PGRC", label: "Public Grievance Redressal Cell (PGRC)" },
+  { value: "APPROVAL_BUREAU", label: "Approval Bureau (AB)" },
+  { value: "SKILL_CELL", label: "Skill Development Cell (SDC)" },
+];
 
 export function CaseDetailClient({
   caseItem,
@@ -52,7 +90,6 @@ export function CaseDetailClient({
 }: CaseDetailClientProps) {
   const router = useRouter();
 
-  // Modals
   const [activeModal, setActiveModal] = useState<
     "STATUS" | "TRANSFER" | "ESCALATE" | "REMARK" | "LINK" | "OVERLAP_COMPARE" | null
   >(null);
@@ -60,7 +97,6 @@ export function CaseDetailClient({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Form states
   const [newStatus, setNewStatus] = useState<any>(caseItem.status);
   const [remarks, setRemarks] = useState("");
   const [toBureau, setToBureau] = useState<any>("REGULATION_BUREAU");
@@ -72,6 +108,7 @@ export function CaseDetailClient({
   const [isUploading, setIsUploading] = useState(false);
 
   const isAuthorizedToAct = canActOnCase(currentUser, caseItem);
+  const closed = caseItem.status === "DISPOSED";
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -106,9 +143,9 @@ export function CaseDetailClient({
     setRemarks("");
     setErrorMsg("");
     setUploadedUrl("");
+    setCoordinationNote("");
   };
 
-  // Action Handlers
   const handleUpdateStatus = async () => {
     setIsLoading(true);
     setErrorMsg("");
@@ -214,772 +251,998 @@ export function CaseDetailClient({
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Breadcrumb Navigation */}
-      <nav className="flex items-center gap-2 text-xs text-slate-500">
-        <Link href="/cases" className="hover:text-blue-900 font-medium">
-          Case Explorer
-        </Link>
-        <span>/</span>
-        <span className="font-mono font-bold text-slate-900">{caseItem.case_id}</span>
-      </nav>
+  const slaPercent = Math.min(100, Math.max(0, caseItem.sla?.percentElapsed ?? 0));
+  const actions = caseItem.actions ?? [];
+  const latestAction = actions[actions.length - 1];
 
-      {/* Prominent Overlap Banner if active for this case */}
+  const slaTone = caseItem.sla?.isBreached
+    ? "border-rose-200 bg-gradient-to-br from-rose-50/80 via-white to-white"
+    : caseItem.sla?.isApproaching
+      ? "border-amber-200 bg-gradient-to-br from-amber-50/80 via-white to-white"
+      : "border-emerald-200 bg-gradient-to-br from-emerald-50/70 via-white to-white";
+
+  const uploadField = (
+    <div>
+      <label className="field-label">Supporting document</label>
+      <label
+        className={cn(
+          "flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed px-3 py-2.5 transition-colors",
+          uploadedUrl
+            ? "border-emerald-300 bg-emerald-50/60"
+            : "border-slate-300 bg-slate-50/60 hover:border-brand-300 hover:bg-brand-50/40"
+        )}
+      >
+        <span className="flex min-w-0 items-center gap-2.5">
+          <UploadCloud
+            className={cn(
+              "h-4 w-4 shrink-0",
+              uploadedUrl ? "text-emerald-600" : "text-slate-400"
+            )}
+          />
+          <span className="min-w-0">
+            <span className="block truncate text-[11.5px] font-semibold text-slate-700">
+              {uploadedUrl ? "Document uploaded" : "Attach PDF or DOCX"}
+            </span>
+            <span className="block text-[10px] text-slate-400">
+              {isUploading ? "Uploading securely…" : uploadedUrl ? "Stored on secure blob" : "Max 10 MB · optional"}
+            </span>
+          </span>
+        </span>
+        {uploadedUrl ? (
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+        ) : (
+          <span className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600">
+            Browse
+          </span>
+        )}
+        <input type="file" onChange={handleFileUpload} className="hidden" />
+      </label>
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      <Breadcrumbs
+        items={[
+          { label: "Case Explorer", href: "/cases" },
+          { label: caseItem.case_id },
+        ]}
+      />
+
+      {/* Overlap banner */}
       {overlapAlert && (
-        <div className="rounded-xl border border-rose-300 bg-rose-50/90 p-5 shadow-sm animate-warning-glow">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-600 text-white shadow-xs">
-                <ShieldAlert className="h-5 w-5 animate-pulse" />
+        <div className="relative overflow-hidden rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 via-white to-amber-50/70 p-4 shadow-sm animate-warning-glow sm:p-5">
+          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-rose-500 to-amber-400" />
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-[0_10px_24px_-8px_rgba(225,29,72,0.6)]">
+                <ShieldAlert className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-rose-950 flex items-center gap-2">
-                  <span>Potential Overlapping Cases – Coordination Required</span>
-                  <span className="rounded-full bg-rose-200 px-2 py-0.5 text-[10px] font-black text-rose-800">
-                    ACTION NEEDED
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-display text-[14px] font-bold tracking-tight text-rose-950">
+                    Potential Overlapping Cases – Coordination Required
+                  </h2>
+                  <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                    Action needed
                   </span>
-                </h3>
-                <p className="text-xs text-rose-800 mt-1 max-w-2xl">
-                  {overlapAlert.match_reasons?.map((r: any) => r.description).join(" ") ||
+                  <ConfidencePill confidence={overlapAlert.confidence} />
+                </div>
+                <p className="mt-1 max-w-2xl text-[11.5px] leading-relaxed text-rose-800/85">
+                  {overlapAlert.match_reasons?.map((r: any) => r.description).join(" · ") ||
                     "This case collides with an open case in another Bureau for the same institution."}
                 </p>
-                <div className="mt-2 flex items-center gap-3 text-xs font-semibold text-rose-900">
-                  <span>Collision with: {overlapAlert.case_ids?.filter((id: string) => id !== caseItem.case_id).join(", ")}</span>
-                  <span>•</span>
-                  <span>Confidence: {overlapAlert.confidence}</span>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-rose-700">
+                    Colliding cases
+                  </span>
+                  <span className="font-mono text-[10px] font-bold text-slate-600">
+                    {overlapAlert.case_ids
+                      ?.filter((id: string) => id !== caseItem.case_id)
+                      .join("  ·  ")}
+                  </span>
                 </div>
               </div>
             </div>
 
             <button
               onClick={() => setActiveModal("OVERLAP_COMPARE")}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 transition-colors shadow-xs shrink-0 cursor-pointer"
+              className="btn btn-danger btn-sm shrink-0 self-start lg:self-auto"
             >
-              <Eye className="h-4 w-4" />
-              <span>Compare Side-by-Side</span>
+              <Eye className="h-3.5 w-3.5" />
+              Compare side-by-side
             </button>
           </div>
         </div>
       )}
 
-      {/* Case Header & Primary Details */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-100 pb-5">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <span className="font-mono text-sm font-bold text-blue-900 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
+      {/* Case header */}
+      <div className="panel overflow-hidden">
+        <div className="rail-top" />
+        <div className="flex flex-col gap-5 p-5 lg:flex-row lg:items-start lg:justify-between lg:p-6">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="rounded-lg border border-brand-200 bg-brand-50 px-2 py-1 font-mono text-[10.5px] font-bold text-brand-700">
                 {caseItem.case_id}
               </span>
-              <span className={`text-xs font-bold px-2.5 py-1 rounded border ${getStatusBadgeColor(caseItem.status)}`}>
-                {caseItem.status.replace("_", " ")}
-              </span>
-              <span className={`text-xs font-bold px-2.5 py-1 rounded border ${getPriorityBadgeColor(caseItem.priority)}`}>
-                {caseItem.priority} PRIORITY
-              </span>
-              <span className={`text-xs font-bold px-2.5 py-1 rounded border ${getBureauBadgeColor(caseItem.assigned_bureau)}`}>
-                {getBureauLabel(caseItem.assigned_bureau)}
+              <StatusPill status={caseItem.status} />
+              <PriorityPill priority={caseItem.priority} />
+              <BureauPill bureau={caseItem.assigned_bureau} full />
+              {closed && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9.5px] font-bold text-emerald-700">
+                  <CheckCircle2 className="h-2.5 w-2.5" /> Closed
+                </span>
+              )}
+            </div>
+
+            <h1 className="mt-3 font-display text-[22px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 sm:text-[26px]">
+              {caseItem.category}
+            </h1>
+
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11.5px] text-slate-500">
+              <Link
+                href={`/institutions/${caseItem.institution_id}`}
+                className="inline-flex items-center gap-1.5 font-bold text-brand-700 hover:underline"
+              >
+                <Building2 className="h-3.5 w-3.5" />
+                {caseItem.institution?.name}
+              </Link>
+              {caseItem.institution?.city && (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="h-3 w-3 text-slate-300" />
+                  {caseItem.institution.city}, {caseItem.institution.state}
+                </span>
+              )}
+              <span className="font-mono text-[10.5px] font-semibold text-slate-400">
+                {caseItem.institution?.aicte_permanent_id}
               </span>
             </div>
 
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 mt-1">
-              Category: {caseItem.category}
-            </h1>
-
-            <div className="mt-2 flex items-center gap-2 text-xs text-slate-600">
-              <Building className="h-4 w-4 text-slate-400 shrink-0" />
-              <Link
-                href={`/institutions/${caseItem.institution_id}`}
-                className="font-bold text-blue-900 hover:underline"
-              >
-                {caseItem.institution?.name}
-              </Link>
-              <span>•</span>
-              <span>AICTE ID: {caseItem.institution?.aicte_permanent_id}</span>
-              <span>•</span>
-              <span>{caseItem.institution?.city}, {caseItem.institution?.state}</span>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5 text-[10.5px]">
+              <span className="inline-flex items-center gap-1.5 text-slate-500">
+                <User className="h-3.5 w-3.5 text-slate-400" />
+                Officer
+                <strong className="font-bold text-slate-800">{caseItem.assigned_officer}</strong>
+              </span>
+              <span className="hidden h-3 w-px bg-slate-200 sm:block" />
+              <span className="inline-flex items-center gap-1.5 text-slate-500">
+                <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
+                Received
+                <strong className="font-bold text-slate-800">{formatDate(caseItem.date_received)}</strong>
+              </span>
+              <span className="hidden h-3 w-px bg-slate-200 sm:block" />
+              <span className="inline-flex items-center gap-1.5 text-slate-500">
+                <Layers className="h-3.5 w-3.5 text-slate-400" />
+                Source
+                <strong className="uppercase font-bold text-slate-800">{caseItem.source}</strong>
+              </span>
             </div>
           </div>
 
-          {/* SLA Countdown Card */}
-          <div
-            className={`rounded-xl border p-4 shrink-0 lg:w-72 ${
-              caseItem.sla.isBreached
-                ? "border-rose-300 bg-rose-50"
-                : caseItem.sla.isApproaching
-                ? "border-amber-300 bg-amber-50"
-                : "border-emerald-300 bg-emerald-50"
-            }`}
-          >
+          {/* SLA gauge */}
+          <div className={cn("shrink-0 rounded-2xl border p-4 lg:w-[268px]", slaTone)}>
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
-                SLA Compliance Status
+              <span className="eyebrow text-slate-500">
+                <Clock className="h-3 w-3" /> SLA countdown
               </span>
-              <Clock
-                className={`h-4 w-4 ${
-                  caseItem.sla.isBreached
-                    ? "text-rose-600"
-                    : caseItem.sla.isApproaching
-                    ? "text-amber-600"
-                    : "text-emerald-600"
-                }`}
-              />
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide",
+                  caseItem.sla?.isBreached
+                    ? "bg-rose-100 text-rose-700"
+                    : caseItem.sla?.isApproaching
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-emerald-100 text-emerald-700"
+                )}
+              >
+                {caseItem.sla?.isBreached
+                  ? "Breached"
+                  : caseItem.sla?.isApproaching
+                    ? "Approaching"
+                    : "Within SLA"}
+              </span>
             </div>
 
-            <p
-              className={`mt-1.5 text-base font-black ${
-                caseItem.sla.isBreached
-                  ? "text-rose-700"
-                  : caseItem.sla.isApproaching
-                  ? "text-amber-700"
-                  : "text-emerald-700"
-              }`}
-            >
-              {caseItem.sla.statusText}
-            </p>
-
-            <div className="mt-2 w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-              <div
-                className={`h-full ${
-                  caseItem.sla.isBreached
-                    ? "bg-rose-600"
-                    : caseItem.sla.isApproaching
-                    ? "bg-amber-500"
-                    : "bg-emerald-500"
-                }`}
-                style={{ width: `${Math.min(100, caseItem.sla.percentElapsed)}%` }}
+            <div className="mt-3 flex items-center gap-4">
+              <SlaRing
+                percent={slaPercent}
+                days={caseItem.sla?.remainingDays ?? 0}
+                breached={caseItem.sla?.isBreached}
+                approaching={caseItem.sla?.isApproaching}
+                size={104}
               />
-            </div>
-
-            <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
-              <span>Elapsed: {caseItem.sla.elapsedDays}d</span>
-              <span>Limit: {caseItem.sla.timelineDays}d</span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold leading-snug text-slate-700">
+                  {caseItem.sla?.statusText}
+                </p>
+                <div className="mt-2 space-y-1 text-[10px] text-slate-500">
+                  <div className="flex items-center justify-between">
+                    <span>Elapsed</span>
+                    <span className="font-bold tabular-nums text-slate-800">
+                      {caseItem.sla?.elapsedDays}d
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Timeline</span>
+                    <span className="font-bold tabular-nums text-slate-800">
+                      {caseItem.sla?.timelineDays}d
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Disposal by</span>
+                    <span className="font-bold text-slate-800">
+                      {formatDate(caseItem.expected_disposal_date)}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Action Toolbar */}
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <User className="h-4 w-4 text-slate-400" />
-            <span>Assigned Officer: <strong className="text-slate-800">{caseItem.assigned_officer}</strong></span>
-            <span>•</span>
-            <span>Source: <strong className="text-slate-800 uppercase">{caseItem.source}</strong></span>
-          </div>
+        {/* Action toolbar */}
+        <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/50 px-5 py-3.5 lg:flex-row lg:items-center lg:justify-between lg:px-6">
+          <p className="text-[10.5px] font-medium text-slate-500">
+            <span className="font-bold text-slate-700">Last action:</span>{" "}
+            {caseItem.last_action}
+            <span className="mx-1.5 text-slate-300">·</span>
+            {latestAction ? formatDateTime(latestAction.timestamp) : formatDate(caseItem.last_action_date)}
+          </p>
 
-          {/* Workflow Action Buttons (Role Guarded) */}
           <div className="flex flex-wrap items-center gap-2">
             {isAuthorizedToAct ? (
               <>
-                <button
-                  onClick={() => setActiveModal("STATUS")}
-                  className="rounded-lg bg-blue-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-800 transition-colors shadow-2xs cursor-pointer"
-                >
-                  Change Status
+                <button onClick={() => setActiveModal("STATUS")} className="btn btn-primary btn-sm">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Change status
                 </button>
-                <button
-                  onClick={() => setActiveModal("TRANSFER")}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
-                >
+                <button onClick={() => setActiveModal("TRANSFER")} className="btn btn-secondary btn-sm">
                   <ArrowRightLeft className="h-3.5 w-3.5" />
-                  <span>Transfer Bureau</span>
+                  Transfer
                 </button>
                 <button
                   onClick={() => setActiveModal("ESCALATE")}
-                  className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
+                  className="btn btn-sm border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
                 >
                   <Flame className="h-3.5 w-3.5" />
-                  <span>Escalate</span>
+                  Escalate
                 </button>
-                <button
-                  onClick={() => setActiveModal("REMARK")}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
-                >
+                <button onClick={() => setActiveModal("REMARK")} className="btn btn-secondary btn-sm">
                   <MessageSquare className="h-3.5 w-3.5" />
-                  <span>Add Remark / Doc</span>
+                  Add remark
                 </button>
-                <button
-                  onClick={() => setActiveModal("LINK")}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer flex items-center gap-1.5"
-                >
+                <button onClick={() => setActiveModal("LINK")} className="btn btn-secondary btn-sm">
                   <Link2 className="h-3.5 w-3.5" />
-                  <span>Link Case</span>
+                  Link case
                 </button>
               </>
             ) : (
-              <span className="rounded-lg bg-slate-100 px-3 py-1 text-xs text-slate-500 font-medium italic">
-                Read-Only Access ({currentUser.role === "REGIONAL_OFFICER" ? "Regional Observer" : `Assigned to ${caseItem.assigned_bureau}`})
+              <span className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[10.5px] font-semibold italic text-slate-500">
+                <Lock className="h-3 w-3" />
+                Read-only access
+                {currentUser.role === "REGIONAL_OFFICER"
+                  ? " · Regional observer"
+                  : ` · Assigned to ${caseItem.assigned_bureau.replaceAll("_", " ")}`}
               </span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Description & Chronological Vertical Action Timeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Description & Metadata */}
-        <div className="space-y-6">
-          {/* Complaint Description */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
-            <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2 mb-3">
-              Grievance Representation
-            </h2>
-            <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
-              {caseItem.description}
-            </p>
-          </div>
-
-          {/* Action Status Summary */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs space-y-3">
-            <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
-              Next Action & Milestones
-            </h2>
-            <div>
-              <span className="text-[10px] font-bold uppercase text-slate-400 block">Last Action</span>
-              <p className="text-xs font-semibold text-slate-800 mt-0.5">{caseItem.last_action}</p>
-              <span className="text-[10px] text-slate-400">{formatDateTime(caseItem.last_action_date)}</span>
+      {/* Main grid */}
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <div className="space-y-4">
+          {/* Representation */}
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <h2 className="panel-title flex items-center gap-2">
+                  <FileText className="h-3.5 w-3.5 text-brand-600" />
+                  Grievance representation
+                </h2>
+                <p className="panel-sub">Original submission as received</p>
+              </div>
             </div>
-            <div className="pt-2 border-t border-slate-100">
-              <span className="text-[10px] font-bold uppercase text-slate-400 block">Next Action Required</span>
-              <p className="text-xs font-semibold text-slate-800 mt-0.5">
-                {caseItem.next_action_required || "Awaiting verification / compliance response"}
-              </p>
-            </div>
-            <div className="pt-2 border-t border-slate-100">
-              <span className="text-[10px] font-bold uppercase text-slate-400 block">Expected Disposal Date</span>
-              <p className="text-xs font-semibold text-slate-800 mt-0.5">
-                {formatDate(caseItem.expected_disposal_date)}
+            <div className="px-5 py-4">
+              <p className="whitespace-pre-wrap text-[12px] leading-relaxed text-slate-700">
+                {caseItem.description}
               </p>
             </div>
           </div>
 
-          {/* Linked Cases Card */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                <Link2 className="h-4 w-4 text-blue-900" />
-                <span>Linked & Related Cases</span>
-              </h2>
-              <span className="text-[10px] text-slate-400 font-bold">{linkedCases.length}</span>
+          {/* Milestones */}
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <h2 className="panel-title flex items-center gap-2">
+                  <Target className="h-3.5 w-3.5 text-brand-600" />
+                  Next action & milestones
+                </h2>
+                <p className="panel-sub">Statutory workflow checkpoints</p>
+              </div>
+            </div>
+            <div className="divide-y divide-slate-100">
+              {[
+                {
+                  icon: Gavel,
+                  label: "Last action",
+                  value: caseItem.last_action,
+                  note: formatDateTime(caseItem.last_action_date),
+                },
+                {
+                  icon: Target,
+                  label: "Next action required",
+                  value:
+                    caseItem.next_action_required ||
+                    "Awaiting verification / compliance response",
+                  note: "Owner: " + caseItem.assigned_officer,
+                },
+                {
+                  icon: CalendarDays,
+                  label: "Expected disposal date",
+                  value: formatDate(caseItem.expected_disposal_date),
+                  note: caseItem.sla?.isBreached
+                    ? `${Math.abs(caseItem.sla.remainingDays)} days past statutory timeline`
+                    : `${caseItem.sla?.remainingDays} days remaining`,
+                },
+              ].map((m) => {
+                const Icon = m.icon;
+                return (
+                  <div key={m.label} className="flex items-start gap-3 px-5 py-3">
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500">
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                        {m.label}
+                      </p>
+                      <p className="mt-0.5 text-[11.5px] font-semibold leading-snug text-slate-800">
+                        {m.value}
+                      </p>
+                      <p className="mt-0.5 text-[10px] text-slate-400">{m.note}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Linked cases */}
+          <div className="panel">
+            <div className="panel-head">
+              <div>
+                <h2 className="panel-title flex items-center gap-2">
+                  <Link2 className="h-3.5 w-3.5 text-brand-600" />
+                  Linked & related cases
+                </h2>
+                <p className="panel-sub">Cross-reference map</p>
+              </div>
+              <span className="badge border-slate-200 bg-slate-50 text-slate-600">
+                {linkedCases.length}
+              </span>
             </div>
 
             {linkedCases.length === 0 ? (
-              <p className="text-xs text-slate-400 italic">No cross-referenced cases linked yet.</p>
+              <div className="px-5 py-8 text-center">
+                <Link2 className="mx-auto h-6 w-6 text-slate-200" />
+                <p className="mt-2 text-[11px] font-medium italic text-slate-400">
+                  No cross-referenced cases linked yet.
+                </p>
+              </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 p-4">
                 {linkedCases.map((lc) => (
-                  <div key={lc.id} className="rounded-lg border border-slate-200 p-2.5 text-xs hover:bg-slate-50">
-                    <div className="flex items-center justify-between">
-                      <Link href={`/cases/${lc.id}`} className="font-mono font-bold text-blue-900 hover:underline">
+                  <Link
+                    key={lc.id}
+                    href={`/cases/${lc.id}`}
+                    className="group block rounded-xl border border-slate-200 p-3 transition-colors hover:border-brand-300 hover:bg-brand-50/30"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-[10.5px] font-bold text-brand-700 group-hover:underline">
                         {lc.case_id}
-                      </Link>
-                      <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                      </span>
+                      <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-slate-600">
                         {lc.linkType || "RELATED"}
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-600 mt-1 line-clamp-1">{lc.category}</p>
-                    {lc.linkNote && <p className="text-[10px] text-slate-400 italic mt-0.5">{lc.linkNote}</p>}
-                  </div>
+                    <p className="mt-1 line-clamp-1 text-[11px] font-medium text-slate-600">
+                      {lc.category}
+                    </p>
+                    {lc.linkNote && (
+                      <p className="mt-0.5 line-clamp-1 text-[10px] italic text-slate-400">
+                        {lc.linkNote}
+                      </p>
+                    )}
+                  </Link>
                 ))}
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Column: Append-Only Chronological Vertical Timeline */}
-        <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-6">
+        {/* Timeline */}
+        <div className="panel xl:col-span-2">
+          <div className="panel-head">
             <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Action History & Verification Trail
-              </h2>
-              <p className="text-xs text-slate-500">
-                Immutable, append-only chronological log of all bureau movements, remarks, and speaking orders.
+              <h2 className="panel-title">Action history & verification trail</h2>
+              <p className="panel-sub">
+                Immutable, append-only log of bureau movements, remarks and speaking orders
               </p>
             </div>
-            <span className="rounded bg-slate-100 text-slate-700 px-2.5 py-1 text-xs font-bold">
-              {caseItem.actions?.length || 0} Actions
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="badge border-slate-200 bg-slate-50 text-slate-600">
+                {actions.length} actions
+              </span>
+              <span className="hidden items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700 sm:inline-flex">
+                <Lock className="h-2.5 w-2.5" /> Immutable
+              </span>
+            </div>
           </div>
 
-          <div className="relative pl-6 space-y-6 before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-            {caseItem.actions?.map((act: any, idx: number) => (
-              <div key={idx} className="relative group">
-                {/* Node icon indicator */}
-                <div className="absolute -left-6 top-1.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-blue-900 shadow-xs" />
-
-                <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-4 transition-all group-hover:border-slate-300 group-hover:bg-white shadow-2xs">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-900">
-                        {act.action_type.replace("_", " ")}
-                      </span>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getBureauBadgeColor(act.actor_bureau)}`}>
-                        {act.actor_bureau.replace("_", " ")}
-                      </span>
+          <div className="max-h-[820px] overflow-y-auto p-5">
+            <div className="timeline space-y-4">
+              {actions.map((act: any, idx: number) => {
+                const Icon = actionIcon[act.action_type] ?? RefreshCw;
+                const isLatest = idx === actions.length - 1;
+                return (
+                  <div key={idx} className="relative">
+                    <div
+                      className={cn(
+                        "timeline-node",
+                        actionTone[act.action_type] ?? "bg-slate-50 text-slate-500 border-slate-200"
+                      )}
+                    >
+                      <Icon className="h-2.5 w-2.5" />
                     </div>
-                    <span className="text-[11px] text-slate-500">
-                      {formatDateTime(act.timestamp)}
-                    </span>
-                  </div>
 
-                  <p className="text-xs text-slate-700 mt-2 whitespace-pre-wrap leading-relaxed">
-                    {act.remarks}
-                  </p>
+                    <div
+                      className={cn(
+                        "rounded-xl border p-3.5 transition-colors",
+                        isLatest
+                          ? "border-brand-200 bg-brand-50/40 shadow-sm"
+                          : "border-slate-100 bg-slate-50/60 hover:border-slate-200 hover:bg-white"
+                      )}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[11.5px] font-bold capitalize text-slate-900">
+                            {act.action_type.replaceAll("_", " ").toLowerCase()}
+                          </span>
+                          <BureauPill bureau={act.actor_bureau} />
+                          {isLatest && (
+                            <span className="rounded-full bg-brand-600 px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white">
+                              Latest
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-medium text-slate-400">
+                          {formatDateTime(act.timestamp)}
+                        </span>
+                      </div>
 
-                  {/* Supporting Attachments if present */}
-                  {act.attachments && act.attachments.length > 0 && (
-                    <div className="mt-3 pt-2 border-t border-slate-200/60 flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-semibold text-slate-400">Supporting Documents:</span>
-                      {act.attachments.map((url: string, aIdx: number) => (
-                        <a
-                          key={aIdx}
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-1 text-[11px] font-bold text-blue-800 hover:bg-blue-100 border border-blue-200"
-                        >
-                          <Paperclip className="h-3 w-3" />
-                          <span>Attachment {aIdx + 1}</span>
-                        </a>
-                      ))}
+                      <p className="mt-2 whitespace-pre-wrap text-[11.5px] leading-relaxed text-slate-700">
+                        {act.remarks}
+                      </p>
+
+                      {act.attachments && act.attachments.length > 0 && (
+                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-slate-200/70 pt-2">
+                          <span className="text-[9.5px] font-semibold text-slate-400">
+                            Documents
+                          </span>
+                          {act.attachments.map((url: string, aIdx: number) => (
+                            <a
+                              key={aIdx}
+                              href={url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 rounded-md border border-brand-200 bg-white px-2 py-0.5 text-[10px] font-bold text-brand-700 transition-colors hover:bg-brand-50"
+                            >
+                              <Paperclip className="h-2.5 w-2.5" />
+                              Attachment {aIdx + 1}
+                            </a>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5 text-[9.5px] text-slate-400">
+                        <span className="inline-flex items-center gap-1">
+                          <User className="h-2.5 w-2.5" />
+                          {act.actor_user}
+                        </span>
+                        {act.from_bureau && act.to_bureau && (
+                          <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 font-semibold text-violet-700">
+                            {act.from_bureau.replaceAll("_", " ")}
+                            <ChevronRight className="h-2.5 w-2.5" />
+                            {act.to_bureau.replaceAll("_", " ")}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  )}
-
-                  <div className="mt-2 text-[10px] text-slate-400 flex items-center justify-between">
-                    <span>Officer: {act.actor_user}</span>
-                    {act.from_bureau && act.to_bureau && (
-                      <span className="font-semibold text-purple-700">
-                        Movement: {act.from_bureau} → {act.to_bureau}
-                      </span>
-                    )}
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-3">
+            <p className="flex items-center gap-2 text-[10px] font-medium text-slate-500">
+              <Lock className="h-3 w-3 text-slate-400" />
+              Entries are append-only and cryptographically ordered. They cannot be edited or deleted.
+            </p>
           </div>
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* SIDE-BY-SIDE OVERLAP COMPARISON MODAL */}
-      {/* ========================================================================= */}
-      {activeModal === "OVERLAP_COMPARE" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="relative w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="h-5 w-5 text-rose-600" />
-                <h3 className="text-base font-bold text-slate-900">
-                  Cross-Bureau Overlap Side-by-Side Comparison
-                </h3>
-              </div>
-              <button onClick={resetModals} className="text-slate-400 hover:text-slate-700">
-                <X className="h-5 w-5" />
-              </button>
+      {/* Overlap compare modal */}
+      <Modal
+        open={activeModal === "OVERLAP_COMPARE"}
+        onClose={resetModals}
+        title="Cross-bureau overlap comparison"
+        description="Review both representations before directing a lead bureau."
+        icon={<ShieldAlert className="h-4 w-4" />}
+        tone="rose"
+        size="xl"
+        footer={
+          <>
+            <button type="button" onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={isLoading || !coordinationNote.trim()}
+              onClick={handleCoordinateOverlap}
+              className="btn btn-success btn-sm"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {isLoading ? "Saving…" : "Mark coordinated & link cases"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-rose-900">
+                <Sparkles className="h-3.5 w-3.5" />
+                Overlap confidence
+                <span className="uppercase">{overlapAlert?.confidence}</span>
+              </span>
+              <span className="font-mono text-[9.5px] text-rose-600">
+                Alert {overlapAlert?.id}
+              </span>
             </div>
+            <ul className="mt-2 space-y-1">
+              {overlapAlert?.match_reasons?.map((m: any, idx: number) => (
+                <li key={idx} className="flex items-start gap-1.5 text-[11px] text-rose-800">
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-rose-500" />
+                  {m.description}
+                </li>
+              ))}
+            </ul>
+          </div>
 
-            {/* Overlap Summary Alert Header */}
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 mb-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-rose-900">
-                  Overlap Confidence: <strong className="uppercase">{overlapAlert?.confidence}</strong>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="rounded-xl border-2 border-brand-300 bg-brand-50/30 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="rounded-md bg-brand-600 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                  Current case
                 </span>
-                <span className="text-[10px] font-mono text-rose-700">Alert ID: {overlapAlert?.id}</span>
+                <span className="font-mono text-[10.5px] font-bold text-brand-700">
+                  {caseItem.case_id}
+                </span>
               </div>
-              <ul className="mt-2 text-xs text-rose-800 space-y-1">
-                {overlapAlert?.match_reasons?.map((m: any, idx: number) => (
-                  <li key={idx} className="flex items-start gap-1.5">
-                    <span className="font-bold">•</span>
-                    <span>{m.description}</span>
-                  </li>
-                ))}
-              </ul>
+              <dl className="mt-3 space-y-2 text-[11px]">
+                <div>
+                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Bureau</dt>
+                  <dd className="mt-0.5"><BureauPill bureau={caseItem.assigned_bureau} full /></dd>
+                </div>
+                <div>
+                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Category</dt>
+                  <dd className="mt-0.5 font-bold text-slate-800">{caseItem.category}</dd>
+                </div>
+                <div>
+                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Status</dt>
+                  <dd className="mt-1 flex flex-wrap gap-1">
+                    <StatusPill status={caseItem.status} />
+                    <PriorityPill priority={caseItem.priority} />
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Representation</dt>
+                  <dd className="mt-0.5 line-clamp-4 leading-relaxed text-slate-600">
+                    {caseItem.description}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-3 border-t border-brand-200/60 pt-2 text-[10px] text-slate-500">
+                Received {formatDate(caseItem.date_received)}
+              </p>
             </div>
 
-            {/* Side-by-side Columns: Case A vs Case B */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Primary Case (Case A) */}
-              <div className="rounded-xl border-2 border-blue-400 bg-blue-50/20 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900 bg-blue-100 px-2 py-0.5 rounded">
-                    Current Case
-                  </span>
-                  <span className="font-mono text-xs font-bold text-blue-900">{caseItem.case_id}</span>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Bureau</span>
-                  <p className="text-xs font-bold text-slate-900">{caseItem.assigned_bureau}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Category</span>
-                  <p className="text-xs font-bold text-slate-900">{caseItem.category}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Status & Priority</span>
-                  <p className="text-xs text-slate-800">{caseItem.status} ({caseItem.priority})</p>
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Grievance Representation</span>
-                  <p className="text-xs text-slate-700 mt-1 line-clamp-4">{caseItem.description}</p>
-                </div>
-                <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-200">
-                  Received: {formatDate(caseItem.date_received)}
-                </div>
+            <div className="rounded-xl border-2 border-amber-300 bg-amber-50/30 p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                  Colliding case
+                </span>
+                <span className="font-mono text-[10.5px] font-bold text-amber-700">
+                  {collidingCase?.case_id ||
+                    overlapAlert?.case_ids?.find((id: string) => id !== caseItem.case_id)}
+                </span>
               </div>
-
-              {/* Colliding Case (Case B) */}
-              <div className="rounded-xl border-2 border-amber-400 bg-amber-50/20 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 bg-amber-100 px-2 py-0.5 rounded">
-                    Colliding Open Case
-                  </span>
-                  <span className="font-mono text-xs font-bold text-amber-900">
-                    {collidingCase?.case_id || overlapAlert?.case_ids?.find((id: string) => id !== caseItem.case_id)}
-                  </span>
+              <dl className="mt-3 space-y-2 text-[11px]">
+                <div>
+                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Bureau</dt>
+                  <dd className="mt-0.5">
+                    {collidingCase?.assigned_bureau ? (
+                      <BureauPill bureau={collidingCase.assigned_bureau} full />
+                    ) : (
+                      <span className="font-bold text-slate-800">Parallel bureau</span>
+                    )}
+                  </dd>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Bureau</span>
-                  <p className="text-xs font-bold text-slate-900">
-                    {collidingCase?.assigned_bureau || "Parallel Bureau"}
-                  </p>
+                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Category</dt>
+                  <dd className="mt-0.5 font-bold text-slate-800">
+                    {collidingCase?.category || "Capitation Fee"}
+                  </dd>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Category</span>
-                  <p className="text-xs font-bold text-slate-900">{collidingCase?.category || "Capitation Fee"}</p>
+                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Status</dt>
+                  <dd className="mt-1 flex flex-wrap gap-1">
+                    <StatusPill status={collidingCase?.status || "PENDING"} />
+                    <PriorityPill priority={collidingCase?.priority || "HIGH"} />
+                  </dd>
                 </div>
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Status & Priority</span>
-                  <p className="text-xs text-slate-800">{collidingCase?.status || "PENDING"} ({collidingCase?.priority || "HIGH"})</p>
+                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Representation</dt>
+                  <dd className="mt-0.5 line-clamp-4 leading-relaxed text-slate-600">
+                    {collidingCase?.description ||
+                      "Parallel representation submitted to the AICTE registry."}
+                  </dd>
                 </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Grievance Representation</span>
-                  <p className="text-xs text-slate-700 mt-1 line-clamp-4">
-                    {collidingCase?.description || "Parallel representation submitted to AICTE registry."}
-                  </p>
-                </div>
-                <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-200">
-                  Received: {formatDate(collidingCase?.date_received)}
-                </div>
-              </div>
-            </div>
-
-            {/* Inter-Bureau Coordination Action Box */}
-            <div className="mt-5 pt-4 border-t border-slate-200 space-y-3">
-              <label className="block text-xs font-bold text-slate-800">
-                Joint Coordination Minutes / Directive:
-              </label>
-              <textarea
-                rows={3}
-                value={coordinationNote}
-                onChange={(e) => setCoordinationNote(e.target.value)}
-                placeholder="Record joint decision between Bureaus (e.g., 'Regulation Bureau will take lead on inspection; PGRC grievance merged under AICTE/RB/2026/00042')..."
-                className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-blue-700 focus:outline-hidden"
-              />
-
-              {errorMsg && <p className="text-xs text-rose-600">{errorMsg}</p>}
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={resetModals}
-                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={isLoading || !coordinationNote.trim()}
-                  onClick={handleCoordinateOverlap}
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shadow-xs disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  <span>{isLoading ? "Saving..." : "Mark as Coordinated & Link Cases"}</span>
-                </button>
-              </div>
+              </dl>
+              <p className="mt-3 border-t border-amber-200/60 pt-2 text-[10px] text-slate-500">
+                Received {formatDate(collidingCase?.date_received)}
+              </p>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* ========================================================================= */}
-      {/* STATUS CHANGE MODAL */}
-      {/* ========================================================================= */}
-      {activeModal === "STATUS" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-sm font-bold text-slate-900">Update Grievance Status</h3>
-              <button onClick={resetModals}><X className="h-5 w-5 text-slate-400" /></button>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Select New Status</label>
-              <select
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value as any)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs font-medium"
-              >
-                <option value="PENDING">Pending Scrutiny</option>
-                <option value="UNDER_PROCESS">Under Process (Notice / Hearing / Inspection)</option>
-                <option value="DISPOSED">Disposed / Redressed (Speaking Order)</option>
-                <option value="TRANSFERRED">Transferred to External Bureau</option>
-                <option value="ESCALATED">Escalated to Competent Authority</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Official Remarks / Decision Summary *
-              </label>
-              <textarea
-                rows={3}
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Explain the rationale for status transition..."
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs"
-              />
-            </div>
-
-            {/* Document Upload */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Supporting Document (PDF/Docx)</label>
-              <input
-                type="file"
-                onChange={handleFileUpload}
-                className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-              {isUploading && <span className="text-[10px] text-blue-700">Uploading to Vercel Blob...</span>}
-              {uploadedUrl && <span className="text-[10px] text-emerald-600 block mt-1">Uploaded successfully.</span>}
-            </div>
-
-            {errorMsg && <p className="text-xs text-rose-600">{errorMsg}</p>}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={resetModals} className="px-3 py-1.5 text-xs text-slate-600">Cancel</button>
-              <button
-                onClick={handleUpdateStatus}
-                disabled={isLoading || remarks.length < 5}
-                className="rounded-lg bg-blue-900 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-              >
-                {isLoading ? "Updating..." : "Commit Status Change"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TRANSFER BUREAU MODAL */}
-      {/* ========================================================================= */}
-      {activeModal === "TRANSFER" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-sm font-bold text-slate-900">Transfer Case to Another Bureau</h3>
-              <button onClick={resetModals}><X className="h-5 w-5 text-slate-400" /></button>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Target Bureau/Cell *</label>
-              <select
-                value={toBureau}
-                onChange={(e) => setToBureau(e.target.value as any)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs font-medium"
-              >
-                <option value="REGULATION_BUREAU">Regulation Bureau (RB)</option>
-                <option value="PGRC">Public Grievance Redressal Cell (PGRC)</option>
-                <option value="APPROVAL_BUREAU">Approval Bureau (AB)</option>
-                <option value="SKILL_CELL">Skill Development Cell (SDC)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Transfer Justification & Reason * (min 10 chars)
-              </label>
-              <textarea
-                rows={3}
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Explain why this matter falls under the recipient bureau's mandate..."
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs"
-              />
-            </div>
-
-            {errorMsg && <p className="text-xs text-rose-600">{errorMsg}</p>}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={resetModals} className="px-3 py-1.5 text-xs text-slate-600">Cancel</button>
-              <button
-                onClick={handleTransfer}
-                disabled={isLoading || remarks.length < 10}
-                className="rounded-lg bg-blue-900 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-              >
-                {isLoading ? "Transferring..." : "Confirm Bureau Transfer"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* ESCALATE MODAL */}
-      {/* ========================================================================= */}
-      {activeModal === "ESCALATE" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-sm font-bold text-rose-900 flex items-center gap-1.5">
-                <Flame className="h-4 w-4 text-rose-600" />
-                <span>Escalate Case to Competent Authority</span>
-              </h3>
-              <button onClick={resetModals}><X className="h-5 w-5 text-slate-400" /></button>
-            </div>
-
-            <p className="text-xs text-slate-600">
-              This action flags this grievance directly to the Member Secretary & Hon&apos;ble Chairman, AICTE. Priority will be set to CRITICAL.
+          <div>
+            <label htmlFor="coordination-note" className="field-label">
+              Joint coordination minutes / directive
+            </label>
+            <textarea
+              id="coordination-note"
+              rows={3}
+              value={coordinationNote}
+              onChange={(e) => setCoordinationNote(e.target.value)}
+              placeholder="Record the joint decision between bureaus, e.g. 'Regulation Bureau leads the inspection; PGRC grievance merged under AICTE/RB/2026/00042.'"
+              className="input"
+            />
+            <p className="field-hint">
+              This note is written to both case timelines and the audit ledger.
             </p>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Reasons for Urgent Escalation * (min 10 chars)
-              </label>
-              <textarea
-                rows={3}
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Specify non-compliance, severe student impact, or SLA breach..."
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs"
-              />
-            </div>
-
-            {errorMsg && <p className="text-xs text-rose-600">{errorMsg}</p>}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={resetModals} className="px-3 py-1.5 text-xs text-slate-600">Cancel</button>
-              <button
-                onClick={handleEscalate}
-                disabled={isLoading || remarks.length < 10}
-                className="rounded-lg bg-rose-600 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-              >
-                {isLoading ? "Escalating..." : "Confirm Escalation"}
-              </button>
-            </div>
           </div>
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
         </div>
-      )}
+      </Modal>
 
-      {/* ========================================================================= */}
-      {/* ADD REMARK MODAL */}
-      {/* ========================================================================= */}
-      {activeModal === "REMARK" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-sm font-bold text-slate-900">Add Remark / Upload Document</h3>
-              <button onClick={resetModals}><X className="h-5 w-5 text-slate-400" /></button>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Officer Remark *</label>
-              <textarea
-                rows={3}
-                value={remarks}
-                onChange={(e) => setRemarks(e.target.value)}
-                placeholder="Record inquiry findings, hearing notes, or compliance updates..."
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Attach Supporting File</label>
-              <input
-                type="file"
-                onChange={handleFileUpload}
-                className="block w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-              {isUploading && <span className="text-[10px] text-blue-700">Uploading to Vercel Blob...</span>}
-              {uploadedUrl && <span className="text-[10px] text-emerald-600 block mt-1">Uploaded successfully.</span>}
-            </div>
-
-            {errorMsg && <p className="text-xs text-rose-600">{errorMsg}</p>}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={resetModals} className="px-3 py-1.5 text-xs text-slate-600">Cancel</button>
-              <button
-                onClick={handleAddRemark}
-                disabled={isLoading || remarks.length < 3}
-                className="rounded-lg bg-blue-900 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-              >
-                {isLoading ? "Recording..." : "Save to Timeline"}
-              </button>
-            </div>
+      {/* Status modal */}
+      <Modal
+        open={activeModal === "STATUS"}
+        onClose={resetModals}
+        title="Update grievance status"
+        description="Every transition is written to the append-only audit trail."
+        icon={<RefreshCw className="h-4 w-4" />}
+        footer={
+          <>
+            <button onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleUpdateStatus}
+              disabled={isLoading || remarks.length < 5}
+              className="btn btn-primary btn-sm"
+            >
+              {isLoading ? "Updating…" : "Commit status change"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="new-status" className="field-label">
+              New status <span className="text-rose-600">*</span>
+            </label>
+            <select
+              id="new-status"
+              value={newStatus}
+              onChange={(e) => setNewStatus(e.target.value as any)}
+              className="input"
+            >
+              <option value="PENDING">Pending scrutiny</option>
+              <option value="UNDER_PROCESS">Under process (notice / hearing / inspection)</option>
+              <option value="DISPOSED">Disposed / redressed (speaking order)</option>
+              <option value="TRANSFERRED">Transferred to external bureau</option>
+              <option value="ESCALATED">Escalated to competent authority</option>
+            </select>
           </div>
-        </div>
-      )}
 
-      {/* ========================================================================= */}
-      {/* LINK CASE MODAL */}
-      {/* ========================================================================= */}
-      {activeModal === "LINK" && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="text-sm font-bold text-slate-900">Link Related AICTE Case</h3>
-              <button onClick={resetModals}><X className="h-5 w-5 text-slate-400" /></button>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Target AICTE Case ID *</label>
-              <input
-                type="text"
-                placeholder="e.g. AICTE/RB/2026/00042"
-                value={linkTargetId}
-                onChange={(e) => setLinkTargetId(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs font-mono font-bold"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Relationship Type</label>
-              <select
-                value={linkType}
-                onChange={(e) => setLinkType(e.target.value as any)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs font-medium"
-              >
-                <option value="OVERLAP">OVERLAP (Concurrent jurisdiction / shared grievance)</option>
-                <option value="DUPLICATE">DUPLICATE (Identical representation)</option>
-                <option value="RELATED">RELATED (Same institution / linked issue)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Note (Optional)</label>
-              <input
-                type="text"
-                placeholder="Brief explanatory note..."
-                value={linkNote}
-                onChange={(e) => setLinkNote(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs"
-              />
-            </div>
-
-            {errorMsg && <p className="text-xs text-rose-600">{errorMsg}</p>}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={resetModals} className="px-3 py-1.5 text-xs text-slate-600">Cancel</button>
-              <button
-                onClick={handleLinkCase}
-                disabled={isLoading || !linkTargetId.trim()}
-                className="rounded-lg bg-blue-900 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-              >
-                {isLoading ? "Linking..." : "Establish Link"}
-              </button>
-            </div>
+          <div>
+            <label htmlFor="status-remarks" className="field-label">
+              Official remarks / decision summary <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              id="status-remarks"
+              rows={3}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              placeholder="Explain the rationale for this status transition…"
+              className="input"
+            />
+            <p className="field-hint">Minimum 5 characters. Visible to all authorized bureaus.</p>
           </div>
+
+          {uploadField}
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
         </div>
-      )}
+      </Modal>
+
+      {/* Transfer modal */}
+      <Modal
+        open={activeModal === "TRANSFER"}
+        onClose={resetModals}
+        title="Transfer case to another bureau"
+        description="Ownership moves immediately; the originating bureau retains observer access."
+        icon={<ArrowRightLeft className="h-4 w-4" />}
+        tone="violet"
+        footer={
+          <>
+            <button onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleTransfer}
+              disabled={isLoading || remarks.length < 10}
+              className="btn btn-primary btn-sm"
+            >
+              {isLoading ? "Transferring…" : "Confirm transfer"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="to-bureau" className="field-label">
+              Target bureau / cell <span className="text-rose-600">*</span>
+            </label>
+            <select
+              id="to-bureau"
+              value={toBureau}
+              onChange={(e) => setToBureau(e.target.value as any)}
+              className="input"
+            >
+              {bureauOptions.map((b) => (
+                <option key={b.value} value={b.value}>
+                  {b.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="transfer-remarks" className="field-label">
+              Transfer justification <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              id="transfer-remarks"
+              rows={3}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              placeholder="Explain why this matter falls under the recipient bureau's mandate…"
+              className="input"
+            />
+            <p className="field-hint">Minimum 10 characters.</p>
+          </div>
+
+          {uploadField}
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      {/* Escalate modal */}
+      <Modal
+        open={activeModal === "ESCALATE"}
+        onClose={resetModals}
+        title="Escalate to competent authority"
+        description="Flags this grievance to the Member Secretary and Hon'ble Chairman, AICTE."
+        icon={<Flame className="h-4 w-4" />}
+        tone="rose"
+        footer={
+          <>
+            <button onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleEscalate}
+              disabled={isLoading || remarks.length < 10}
+              className="btn btn-danger btn-sm"
+            >
+              {isLoading ? "Escalating…" : "Confirm escalation"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+            <p className="text-[11px] leading-relaxed text-rose-800">
+              Priority is automatically set to <strong>CRITICAL</strong> and an escalation
+              notification is dispatched. Use only for non-compliance, severe student impact, or SLA
+              breach.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="escalate-remarks" className="field-label">
+              Reasons for urgent escalation <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              id="escalate-remarks"
+              rows={3}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              placeholder="Specify non-compliance, severe student impact, or SLA breach…"
+              className="input"
+            />
+            <p className="field-hint">Minimum 10 characters.</p>
+          </div>
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      {/* Remark modal */}
+      <Modal
+        open={activeModal === "REMARK"}
+        onClose={resetModals}
+        title="Add remark / upload document"
+        description="Appends a dated note to the case verification trail."
+        icon={<MessageSquare className="h-4 w-4" />}
+        footer={
+          <>
+            <button onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleAddRemark}
+              disabled={isLoading || remarks.length < 3}
+              className="btn btn-primary btn-sm"
+            >
+              {isLoading ? "Recording…" : "Save to timeline"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="remark-text" className="field-label">
+              Officer remark <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              id="remark-text"
+              rows={4}
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              placeholder="Record inquiry findings, hearing notes, or compliance updates…"
+              className="input"
+            />
+          </div>
+
+          {uploadField}
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      {/* Link modal */}
+      <Modal
+        open={activeModal === "LINK"}
+        onClose={resetModals}
+        title="Link related AICTE case"
+        description="Creates a bidirectional reference between both case records."
+        icon={<Link2 className="h-4 w-4" />}
+        tone="amber"
+        footer={
+          <>
+            <button onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleLinkCase}
+              disabled={isLoading || !linkTargetId.trim()}
+              className="btn btn-primary btn-sm"
+            >
+              {isLoading ? "Linking…" : "Establish link"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="link-target" className="field-label">
+              Target AICTE case ID <span className="text-rose-600">*</span>
+            </label>
+            <input
+              id="link-target"
+              type="text"
+              placeholder="e.g. AICTE/RB/2026/00042"
+              value={linkTargetId}
+              onChange={(e) => setLinkTargetId(e.target.value)}
+              className="input font-mono"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="link-type" className="field-label">
+              Relationship type
+            </label>
+            <select
+              id="link-type"
+              value={linkType}
+              onChange={(e) => setLinkType(e.target.value as any)}
+              className="input"
+            >
+              <option value="OVERLAP">Overlap — concurrent jurisdiction / shared grievance</option>
+              <option value="DUPLICATE">Duplicate — identical representation</option>
+              <option value="RELATED">Related — same institution / linked issue</option>
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="link-note" className="field-label">
+              Note <span className="font-normal text-slate-400">(optional)</span>
+            </label>
+            <input
+              id="link-note"
+              type="text"
+              placeholder="Brief explanatory note…"
+              value={linkNote}
+              onChange={(e) => setLinkNote(e.target.value)}
+              className="input"
+            />
+          </div>
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   Search,
@@ -10,11 +10,21 @@ import {
   ShieldAlert,
   CheckCircle2,
   AlertTriangle,
+  X,
+  Menu,
+  Command,
+  ArrowUpRight,
+  Clock3,
+  Flame,
+  Inbox,
+  ChevronDown,
 } from "lucide-react";
 import { SessionUser } from "@/lib/rbac";
 import { getBureauLabel } from "@/lib/utils";
 import { markNotificationReadAction } from "@/actions/notification-actions";
 import { signOut } from "next-auth/react";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { cn } from "@/lib/utils";
 
 interface NavbarProps {
   user: SessionUser;
@@ -27,15 +37,72 @@ interface NavbarProps {
     created_at: Date | string;
   }[];
   openOverlapCount: number;
+  onMenu?: () => void;
 }
 
-export function Navbar({ user, notifications, openOverlapCount }: NavbarProps) {
+const notifIcon: Record<string, typeof Bell> = {
+  OVERLAP: ShieldAlert,
+  SLA_BREACHED: Flame,
+  SLA_APPROACHING: Clock3,
+  PENDING_REMINDER: Inbox,
+  ESCALATION: AlertTriangle,
+};
+
+const notifTone: Record<string, string> = {
+  OVERLAP: "bg-rose-50 text-rose-600 border-rose-100",
+  SLA_BREACHED: "bg-rose-50 text-rose-600 border-rose-100",
+  SLA_APPROACHING: "bg-amber-50 text-amber-600 border-amber-100",
+  PENDING_REMINDER: "bg-brand-50 text-brand-600 border-brand-100",
+  ESCALATION: "bg-violet-50 text-violet-600 border-violet-100",
+};
+
+function timeAgo(date: Date | string) {
+  const d = new Date(date).getTime();
+  const diff = Math.max(0, Date.now() - d);
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+export function Navbar({ user, notifications, openOverlapCount, onMenu }: NavbarProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [notifList, setNotifList] = useState(notifications);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const unreadCount = notifList.filter((n) => !n.read).length;
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setShowNotifications(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setShowProfile(false);
+      }
+    }
+    function handleKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,95 +112,121 @@ export function Navbar({ user, notifications, openOverlapCount }: NavbarProps) {
   };
 
   const handleMarkAsRead = async (id: string) => {
-    setNotifList((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    setNotifList((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     await markNotificationReadAction(id);
   };
 
+  const roleName = () => {
+    if (user.role === "COMPETENT_AUTHORITY") return "Competent Authority";
+    if (user.role === "REGULATION_OFFICER") return "Regulation Bureau";
+    if (user.role === "PGRC_OFFICER") return "PGRC Officer";
+    if (user.role === "REGIONAL_OFFICER")
+      return `Regional Officer${user.region ? ` · ${user.region}` : ""}`;
+    if (user.role === "ADMIN") return "Administrator";
+    return getBureauLabel(user.bureau);
+  };
+
+  const initials =
+    user.name
+      ?.split(" ")
+      .filter(Boolean)
+      .map((w) => w[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "AC";
+
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur shadow-xs">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-900 text-white shadow-md">
-              <span className="font-black text-sm tracking-tighter text-amber-400">AICTE</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-base font-bold tracking-tight text-slate-900">
-                  AICTE Complaints Portal
-                </span>
-                <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-blue-700 border border-blue-200">
-                  SINGLE SOURCE OF TRUTH
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 font-medium hidden sm:block">
-                Integrated Institution Complaint Monitoring & Status Dashboard
-              </p>
-            </div>
-          </Link>
-        </div>
+    <header
+      className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl"
+      style={{ height: "var(--navbar-height)" }}
+    >
+      <div className="flex h-full items-center gap-3 px-4 sm:px-6 lg:px-8">
+        <button
+          onClick={onMenu}
+          className="rounded-xl border border-slate-200 bg-white p-2 text-slate-600 shadow-sm transition-colors hover:bg-slate-50 lg:hidden"
+          aria-label="Open navigation menu"
+        >
+          <Menu className="h-[18px] w-[18px]" />
+        </button>
 
-        {/* Global Search Bar */}
-        <div className="hidden md:flex flex-1 max-w-md mx-8">
-          <form onSubmit={handleSearchSubmit} className="relative w-full">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search by Institution, AICTE ID, Case No, or Keyword..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-4 text-xs font-medium text-slate-900 transition-all placeholder:text-slate-400 focus:border-blue-700 focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-blue-700"
-            />
-          </form>
-        </div>
+        {/* Search */}
+        <form onSubmit={handleSearchSubmit} className="relative max-w-[440px] flex-1">
+          <Search
+            className={cn(
+              "pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors",
+              searchFocused ? "text-brand-500" : "text-slate-400"
+            )}
+          />
+          <input
+            ref={searchRef}
+            type="text"
+            placeholder="Search…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
+            aria-label="Global search"
+            className="h-10 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] pl-10 pr-4 text-[12.5px] font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-brand-300 focus:bg-[var(--surface-card)] focus:ring-[3.5px] focus:ring-brand-500/15 sm:pr-16"
+          />
+          <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9.5px] font-bold text-slate-400 sm:flex">
+            <Command className="h-2.5 w-2.5" /> K
+          </kbd>
+        </form>
 
-        {/* Actions & User Menu */}
-        <div className="flex items-center gap-3">
-          {/* Live Polling Status */}
-          <div className="hidden lg:flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <ThemeToggle />
+
+          {/* Live */}
+          <div className="hidden items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-2.5 py-1.5 text-[10.5px] font-bold text-emerald-700 xl:flex">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
             </span>
-            Live (30s Polling)
+            Live sync
           </div>
 
-          {/* Overlap Quick Pill */}
+          {/* Overlaps */}
           {openOverlapCount > 0 && (
             <Link
               href="/alerts"
-              className="flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100 transition-colors"
+              className="group flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50/80 px-2.5 py-1.5 text-[10.5px] font-bold text-rose-700 transition-all hover:border-rose-300 hover:bg-rose-100"
             >
-              <ShieldAlert className="h-3.5 w-3.5 text-rose-600 animate-pulse" />
-              <span>{openOverlapCount} Overlaps Open</span>
+              <ShieldAlert className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{openOverlapCount} overlaps</span>
+              <span className="sm:hidden">{openOverlapCount}</span>
             </Link>
           )}
 
-          {/* Notification Bell Dropdown */}
-          <div className="relative">
+          {/* Notifications */}
+          <div className="relative" ref={notifRef}>
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
-              className="relative rounded-lg p-2 text-slate-600 hover:bg-slate-100 transition-colors"
-              aria-label="Notifications"
+              onClick={() => setShowNotifications((v) => !v)}
+              aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
+              aria-expanded={showNotifications}
+              className={cn(
+                "relative rounded-xl border p-2 transition-all",
+                showNotifications
+                  ? "border-brand-200 bg-brand-50 text-brand-600"
+                  : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-800"
+              )}
             >
-              <Bell className="h-5 w-5" />
+              <Bell className="h-[18px] w-[18px]" />
               {unreadCount > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[10px] font-bold text-white shadow-xs">
-                  {unreadCount}
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-rose-500 px-0.5 text-[8.5px] font-extrabold text-white">
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-xl border border-slate-200 bg-white p-4 shadow-xl z-50">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-2">
+              <div className="absolute right-0 mt-2.5 w-[min(400px,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_-20px_rgba(6,10,20,0.35)] animate-slide-down">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3.5">
                   <div className="flex items-center gap-2">
-                    <h4 className="font-semibold text-sm text-slate-900">Notifications & Alerts</h4>
+                    <h4 className="font-display text-[13px] font-bold text-slate-900">
+                      Notifications
+                    </h4>
                     {unreadCount > 0 && (
-                      <span className="rounded-full bg-rose-100 text-rose-700 px-2 py-0.5 text-[10px] font-bold">
+                      <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[9.5px] font-bold text-rose-600">
                         {unreadCount} new
                       </span>
                     )}
@@ -141,76 +234,133 @@ export function Navbar({ user, notifications, openOverlapCount }: NavbarProps) {
                   <Link
                     href="/alerts"
                     onClick={() => setShowNotifications(false)}
-                    className="text-xs text-blue-700 hover:underline font-medium"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 hover:text-brand-700"
                   >
-                    View All
+                    View all <ArrowUpRight className="h-3 w-3" />
                   </Link>
                 </div>
 
-                <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                <div className="max-h-[340px] overflow-y-auto">
                   {notifList.length === 0 ? (
-                    <p className="py-6 text-center text-xs text-slate-400">No active notifications</p>
+                    <div className="px-6 py-12 text-center">
+                      <Bell className="mx-auto mb-2 h-7 w-7 text-slate-200" />
+                      <p className="text-[12px] font-semibold text-slate-500">You&apos;re all caught up</p>
+                      <p className="mt-0.5 text-[10.5px] text-slate-400">
+                        New alerts will appear here.
+                      </p>
+                    </div>
                   ) : (
-                    notifList.slice(0, 5).map((notif) => (
-                      <div
-                        key={notif.id}
-                        className={`py-2.5 text-xs ${
-                          notif.read ? "opacity-75" : "bg-blue-50/40 rounded-lg p-2"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="font-semibold text-slate-800 flex items-center gap-1">
-                            {notif.type === "OVERLAP" ? (
-                              <AlertTriangle className="h-3.5 w-3.5 text-rose-600 shrink-0" />
-                            ) : (
-                              <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
-                            )}
-                            {notif.title}
-                          </p>
-                          {!notif.read && (
-                            <button
-                              onClick={() => handleMarkAsRead(notif.id)}
-                              className="text-[10px] text-blue-700 hover:underline shrink-0"
-                            >
-                              Mark read
-                            </button>
+                    notifList.slice(0, 7).map((notif) => {
+                      const Icon = notifIcon[notif.type] || Bell;
+                      return (
+                        <div
+                          key={notif.id}
+                          className={cn(
+                            "border-b border-slate-50 px-4 py-3 transition-colors last:border-0 hover:bg-slate-50/80",
+                            !notif.read && "bg-brand-50/40"
                           )}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className={cn(
+                                "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
+                                notifTone[notif.type] || "border-slate-100 bg-slate-50 text-slate-500"
+                              )}
+                            >
+                              <Icon className="h-3.5 w-3.5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-[11.5px] font-bold leading-snug text-slate-800">
+                                  {notif.title}
+                                </p>
+                                {!notif.read && (
+                                  <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
+                                )}
+                              </div>
+                              <p className="mt-0.5 line-clamp-2 text-[10.5px] leading-relaxed text-slate-500">
+                                {notif.message}
+                              </p>
+                              <div className="mt-1.5 flex items-center justify-between">
+                                <span className="text-[9.5px] font-medium text-slate-400">
+                                  {timeAgo(notif.created_at)}
+                                </span>
+                                {!notif.read && (
+                                  <button
+                                    onClick={() => handleMarkAsRead(notif.id)}
+                                    className="rounded-md px-1.5 py-0.5 text-[9.5px] font-bold text-brand-600 hover:bg-brand-50"
+                                  >
+                                    Mark read
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-slate-600 mt-1 line-clamp-2">{notif.message}</p>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
             )}
           </div>
 
-          {/* User Profile Pill */}
-          <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-            <div className="hidden sm:block text-right">
-              <p className="text-xs font-semibold text-slate-900 leading-none">{user.name}</p>
-              <p className="text-[10px] text-slate-500 font-medium mt-0.5">
-                {user.role === "COMPETENT_AUTHORITY"
-                  ? "Competent Authority"
-                  : user.role === "REGULATION_OFFICER"
-                  ? "Regulation Bureau (RB)"
-                  : user.role === "PGRC_OFFICER"
-                  ? "PGRC Officer"
-                  : user.role === "REGIONAL_OFFICER"
-                  ? `Regional Officer (${user.region || "RO"})`
-                  : user.role === "ADMIN"
-                  ? "Administrator"
-                  : getBureauLabel(user.bureau)}
-              </p>
-            </div>
+          <div className="mx-0.5 hidden h-6 w-px bg-slate-200 sm:block" />
 
+          {/* Profile */}
+          <div className="relative" ref={profileRef}>
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              title="Sign Out"
-              className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-rose-600 transition-colors"
+              onClick={() => setShowProfile((v) => !v)}
+              aria-expanded={showProfile}
+              className="flex items-center gap-2.5 rounded-xl border border-transparent p-1 pr-1.5 transition-colors hover:border-slate-200 hover:bg-slate-50"
             >
-              <LogOut className="h-4 w-4" />
+              <div className="hidden text-right md:block">
+                <p className="max-w-[150px] truncate text-[11.5px] font-bold leading-none text-slate-900">
+                  {user.name}
+                </p>
+                <p className="mt-1 max-w-[150px] truncate text-[9.5px] font-semibold text-slate-400">
+                  {roleName()}
+                </p>
+              </div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-ink-800 to-ink-700 text-[10.5px] font-extrabold text-white shadow-sm ring-1 ring-ink-900/10">
+                {initials}
+              </div>
+              <ChevronDown className="hidden h-3.5 w-3.5 text-slate-400 sm:block" />
             </button>
+
+            {showProfile && (
+              <div className="absolute right-0 mt-2.5 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_-20px_rgba(6,10,20,0.35)] animate-slide-down">
+                <div className="border-b border-slate-100 px-4 py-3.5">
+                  <p className="text-[12px] font-bold text-slate-900">{user.name}</p>
+                  <p className="mt-0.5 truncate text-[10.5px] text-slate-500">{user.email}</p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    <span className="rounded-md bg-brand-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-brand-700">
+                      {roleName()}
+                    </span>
+                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600">
+                      {user.bureau === "ALL" ? "HQ" : user.bureau.replaceAll("_", " ")}
+                    </span>
+                  </div>
+                </div>
+                <div className="p-1.5">
+                  <Link
+                    href="/alerts"
+                    onClick={() => setShowProfile(false)}
+                    className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11.5px] font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" />
+                    Review alerts
+                  </Link>
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11.5px] font-semibold text-rose-600 hover:bg-rose-50"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Sign out
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

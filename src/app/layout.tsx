@@ -1,21 +1,41 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, Manrope } from "next/font/google";
+import { ThemeProvider, themeInitScript } from "@/components/theme/theme-provider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "AICTE | Integrated Institution Complaint Monitoring & Status Dashboard",
+  title: {
+    default: "AICTE Sentinel | Integrated Complaint Monitoring",
+    template: "%s · AICTE Sentinel",
+  },
   description:
     "Central single source of truth for technical institution grievance monitoring, inter-bureau collision prevention, and statutory SLA compliance across AICTE Bureaus and Regional Offices.",
+  keywords: [
+    "AICTE",
+    "grievance monitoring",
+    "complaint dashboard",
+    "SLA compliance",
+    "overlap detection",
+  ],
+  robots: { index: false, follow: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#0a1020",
 };
 
 export default function RootLayout({
@@ -24,9 +44,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900`}>
-        {children}
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+      className={`${inter.variable} ${manrope.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="antialiased">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

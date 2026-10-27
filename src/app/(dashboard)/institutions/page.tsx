@@ -1,7 +1,20 @@
 import Link from "next/link";
 import repository from "@/lib/services/repository";
-import { Building, ShieldAlert, ArrowRight, Search, MapPin, Tag } from "lucide-react";
-import { getBureauBadgeColor, getBureauShortName } from "@/lib/utils";
+import {
+  Building2,
+  ShieldAlert,
+  ArrowRight,
+  Search,
+  MapPin,
+  Tag,
+  SlidersHorizontal,
+  PlusCircle,
+  Layers,
+} from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
+import { BureauPill } from "@/components/ui/badges";
+import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 
 interface InstitutionsPageProps {
   searchParams: Promise<{
@@ -10,6 +23,36 @@ interface InstitutionsPageProps {
     type?: string;
     page?: string;
   }>;
+}
+
+const regions = [
+  "Northern",
+  "Western",
+  "Southern",
+  "Eastern",
+  "Central",
+  "North-Western",
+  "South-Western",
+];
+
+const types = [
+  "Engineering & Technology",
+  "Management",
+  "Polytechnic",
+  "Pharmacy",
+  "Architecture",
+];
+
+function query(
+  base: Record<string, string | undefined>,
+  overrides: Record<string, string | undefined>
+) {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries({ ...base, ...overrides })) {
+    if (v) sp.set(k, v);
+  }
+  const s = sp.toString();
+  return s ? `?${s}` : "";
 }
 
 export default async function InstitutionsPage({ searchParams }: InstitutionsPageProps) {
@@ -23,193 +66,260 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
     limit: 12,
   });
 
-  const regions = [
-    "Northern",
-    "Western",
-    "Southern",
-    "Eastern",
-    "Central",
-    "North-Western",
-    "South-Western",
-  ];
+  const activeFilters = [params.q, params.region, params.type].filter(Boolean).length;
+  const withOverlaps = data.institutions.filter((i: any) => i.openOverlaps > 0).length;
+  const totalActive = data.institutions.reduce((sum: number, i: any) => sum + i.activeCases, 0);
+
+  const base: Record<string, string | undefined> = {
+    q: params.q,
+    region: params.region,
+    type: params.type,
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-            Technical Institutions Directory
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Central repository of AICTE-approved institutions with cross-bureau grievance histories.
-          </p>
-        </div>
+    <div className="space-y-5">
+      <PageHeader
+        eyebrow="Registry"
+        title="Institution directory"
+        description="AICTE-approved institutions with a consolidated, cross-bureau grievance history."
+        icon={Building2}
+        tone="violet"
+        actions={
+          <Link href="/cases/new" className="btn btn-primary">
+            <PlusCircle className="h-3.5 w-3.5" />
+            Register complaint
+          </Link>
+        }
+      />
+
+      {/* Summary strip */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { label: "Institutions in view", value: data.total, tone: "text-slate-950", bg: "bg-slate-50 border-slate-200" },
+          { label: "With open overlaps", value: withOverlaps, tone: "text-rose-700", bg: "bg-rose-50 border-rose-200" },
+          { label: "Active cases (page)", value: totalActive, tone: "text-brand-700", bg: "bg-brand-50 border-brand-200" },
+          { label: "Regions covered", value: regions.length, tone: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
+        ].map((s) => (
+          <div key={s.label} className={cn("rounded-2xl border bg-white p-3.5 shadow-sm", s.bg)}>
+            <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-slate-400">{s.label}</p>
+            <p className={cn("mt-1.5 font-display text-[24px] font-extrabold leading-none tracking-tight", s.tone)}>
+              {s.value.toLocaleString("en-IN")}
+            </p>
+          </div>
+        ))}
       </div>
 
-      {/* Filters Bar */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-        <form method="GET" action="/institutions" className="flex-1 w-full flex items-center gap-3">
+      {/* Filters */}
+      <div className="panel p-4 sm:p-5">
+        <form method="GET" action="/institutions" className="flex flex-col gap-2.5 lg:flex-row lg:items-center">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               name="q"
               defaultValue={params.q || ""}
-              placeholder="Search by Institution Name, AICTE Permanent ID, City, or State..."
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:border-blue-700 focus:bg-white focus:outline-hidden"
+              placeholder="Search by institution name, AICTE ID, city, or state…"
+              className="input h-10 pl-10"
+              aria-label="Search institutions"
             />
           </div>
 
-          <select
-            name="region"
-            defaultValue={params.region || ""}
-            className="rounded-lg border border-slate-200 bg-slate-50 py-2 px-3 text-xs font-medium text-slate-700 focus:border-blue-700 focus:bg-white focus:outline-hidden"
-          >
-            <option value="">All Regions</option>
-            {regions.map((r) => (
-              <option key={r} value={r}>
-                {r} Region
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2.5">
+            <select name="region" defaultValue={params.region || ""} className="input h-10 w-full text-[11.5px] sm:w-[170px]" aria-label="Region">
+              <option value="">All regions</option>
+              {regions.map((r) => (
+                <option key={r} value={r}>{r} region</option>
+              ))}
+            </select>
 
-          <button
-            type="submit"
-            className="rounded-lg bg-blue-900 px-4 py-2 text-xs font-bold text-white hover:bg-blue-800 transition-colors shadow-2xs cursor-pointer"
-          >
-            Filter
-          </button>
+            <select name="type" defaultValue={params.type || ""} className="input h-10 w-full text-[11.5px] sm:w-[190px]" aria-label="Institution type">
+              <option value="">All institution types</option>
+              {types.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
 
-          {(params.q || params.region) && (
-            <Link
-              href="/institutions"
-              className="text-xs text-slate-500 hover:text-slate-900 font-semibold px-2 py-2"
-            >
-              Reset
-            </Link>
-          )}
+            <button type="submit" className="btn btn-primary btn-sm h-10 px-4">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              Filter
+            </button>
+
+            {activeFilters > 0 && (
+              <Link href="/institutions" className="btn btn-ghost btn-sm h-10">
+                Clear
+              </Link>
+            )}
+          </div>
         </form>
       </div>
 
-      {/* Institutions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {data.institutions.length === 0 ? (
-          <div className="col-span-full py-12 text-center bg-white rounded-xl border border-slate-200">
-            <Building className="mx-auto h-8 w-8 text-slate-300" />
-            <p className="mt-2 text-sm font-semibold text-slate-700">No institutions found</p>
-            <p className="text-xs text-slate-400 mt-1">Try adjusting your search query or region filter.</p>
-          </div>
-        ) : (
-          data.institutions.map((inst) => (
-            <div
-              key={inst.id}
-              className={`flex flex-col justify-between rounded-xl border bg-white p-5 shadow-2xs transition-all hover:shadow-md ${
-                inst.openOverlaps > 0
-                  ? "border-rose-300 bg-rose-50/20 hover:border-rose-400"
-                  : "border-slate-200 hover:border-blue-400"
-              }`}
-            >
-              <div>
-                {/* Header with AICTE ID & Region */}
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="font-mono text-[11px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                    ID: {inst.aicte_permanent_id}
-                  </span>
-                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
-                    {inst.region} Region
-                  </span>
-                </div>
-
-                {/* Overlap Pill if active */}
-                {inst.openOverlaps > 0 && (
-                  <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full border border-rose-300 bg-rose-100/80 px-2.5 py-0.5 text-[10px] font-black text-rose-800 animate-pulse">
-                    <ShieldAlert className="h-3 w-3 text-rose-600" />
-                    <span>OVERLAP ALERT: Coordination Required</span>
-                  </div>
-                )}
-
-                {/* Name & Type */}
-                <h3 className="text-sm font-bold text-slate-900 line-clamp-2">
-                  {inst.name}
-                </h3>
-                <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
-                  <Tag className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                  <span className="truncate">{inst.institution_type}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                  <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                  <span className="truncate">{inst.city}, {inst.state} ({inst.pincode})</span>
-                </div>
-
-                {/* Active Bureaus */}
-                <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-semibold text-slate-400">Active Bureaus:</span>
-                  {inst.activeBureaus.length === 0 ? (
-                    <span className="text-[10px] text-slate-400 italic">None active</span>
-                  ) : (
-                    inst.activeBureaus.map((b) => (
-                      <span
-                        key={b}
-                        className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${getBureauBadgeColor(b)}`}
-                      >
-                        {getBureauShortName(b)}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Footer with Case Counters & Link */}
-              <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-3 text-xs">
-                  <div>
-                    <span className="text-[10px] text-slate-400 block font-medium">Active Cases</span>
-                    <span className="font-bold text-slate-900">{inst.activeCases}</span>
-                  </div>
-                  <div className="border-l border-slate-200 pl-3">
-                    <span className="text-[10px] text-slate-400 block font-medium">Disposed</span>
-                    <span className="font-bold text-emerald-600">{inst.disposedCases}</span>
-                  </div>
-                </div>
-
-                <Link
-                  href={`/institutions/${inst.id}`}
-                  className="flex items-center gap-1 text-xs font-bold text-blue-900 hover:text-blue-700 group"
-                >
-                  <span>Full Profile</span>
-                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                </Link>
-              </div>
-            </div>
-          ))
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Layers className="h-3.5 w-3.5 text-slate-400" />
+          <p className="text-[11px] font-medium text-slate-500">
+            <span className="font-bold text-slate-900">{data.total}</span> institutions · page{" "}
+            {data.page} of {Math.max(1, data.totalPages)}
+          </p>
+        </div>
+        {activeFilters > 0 && (
+          <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-700">
+            {activeFilters} filter{activeFilters > 1 ? "s" : ""} active
+          </span>
         )}
       </div>
 
-      {/* Pagination */}
-      {data.totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-200 pt-4">
-          <p className="text-xs text-slate-500">
-            Showing Page <span className="font-bold">{data.page}</span> of <span className="font-bold">{data.totalPages}</span> ({data.total} total institutions)
-          </p>
+      {/* Grid */}
+      {data.institutions.length === 0 ? (
+        <EmptyState
+          icon={Building2}
+          title="No institutions found"
+          description="Try a different name, AICTE permanent ID, region, or institution type."
+          action={
+            <Link href="/institutions" className="btn btn-secondary btn-sm">
+              Reset search
+            </Link>
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 stagger-children">
+          {data.institutions.map((inst: any) => {
+            const monogram = inst.name
+              .replace(/[^A-Za-z ]/g, "")
+              .split(" ")
+              .filter((w: string) => w.length > 2 && !["the", "and", "of", "for"].includes(w.toLowerCase()))
+              .slice(0, 2)
+              .map((w: string) => w[0])
+              .join("")
+              .toUpperCase();
 
+            const overlap = inst.openOverlaps > 0;
+
+            return (
+              <Link
+                key={inst.id}
+                href={`/institutions/${inst.id}`}
+                className={cn(
+                  "group relative flex flex-col overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg",
+                  overlap ? "border-rose-200" : "border-slate-200 hover:border-brand-300"
+                )}
+              >
+                {overlap && (
+                  <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-rose-500 to-amber-400" />
+                )}
+
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-xl text-[12px] font-extrabold shadow-sm",
+                        overlap
+                          ? "bg-gradient-to-br from-rose-500 to-rose-600 text-white"
+                          : "bg-gradient-to-br from-ink-800 to-ink-700 text-white"
+                      )}
+                    >
+                      {monogram || "AI"}
+                    </div>
+                    <div>
+                      <span className="block font-mono text-[9.5px] font-bold tracking-tight text-brand-700">
+                        {inst.aicte_permanent_id}
+                      </span>
+                      <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                        {inst.region} region
+                      </span>
+                    </div>
+                  </div>
+
+                  {overlap ? (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-rose-600">
+                      <ShieldAlert className="h-3 w-3" />
+                      {inst.openOverlaps} overlap{inst.openOverlaps > 1 ? "s" : ""}
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700">
+                      Clear
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="mt-3.5 line-clamp-2 font-display text-[13px] font-bold leading-snug tracking-tight text-slate-900 group-hover:text-brand-700">
+                  {inst.name}
+                </h3>
+
+                <div className="mt-2 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500">
+                    <Tag className="h-3 w-3 shrink-0 text-slate-300" />
+                    <span className="truncate">{inst.institution_type}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500">
+                    <MapPin className="h-3 w-3 shrink-0 text-slate-300" />
+                    <span className="truncate">{inst.city}, {inst.state} · {inst.pincode}</span>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                  <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                    Active
+                  </span>
+                  {inst.activeBureaus.length === 0 ? (
+                    <span className="text-[9.5px] italic text-slate-400">No live inquiries</span>
+                  ) : (
+                    inst.activeBureaus.map((b: string) => <BureauPill key={b} bureau={b} />)
+                  )}
+                </div>
+
+                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">Active</p>
+                      <p className="mt-0.5 text-[13px] font-extrabold text-slate-900">{inst.activeCases}</p>
+                    </div>
+                    <div className="h-6 w-px bg-slate-100" />
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">Closed</p>
+                      <p className="mt-0.5 text-[13px] font-extrabold text-emerald-600">{inst.disposedCases}</p>
+                    </div>
+                    <div className="h-6 w-px bg-slate-100" />
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">Total</p>
+                      <p className="mt-0.5 text-[13px] font-extrabold text-slate-900">{inst.totalCases}</p>
+                    </div>
+                  </div>
+
+                  <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-brand-700">
+                    Profile
+                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {data.totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <p className="text-[11px] text-slate-500">
+            Page <span className="font-bold text-slate-900">{data.page}</span> of{" "}
+            <span className="font-bold text-slate-900">{data.totalPages}</span>
+          </p>
           <div className="flex items-center gap-2">
-            {page > 1 && (
-              <Link
-                href={`/institutions?page=${page - 1}${params.q ? `&q=${encodeURIComponent(params.q)}` : ""}${params.region ? `&region=${encodeURIComponent(params.region)}` : ""}`}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
-              >
-                Previous
-              </Link>
-            )}
-            {page < data.totalPages && (
-              <Link
-                href={`/institutions?page=${page + 1}${params.q ? `&q=${encodeURIComponent(params.q)}` : ""}${params.region ? `&region=${encodeURIComponent(params.region)}` : ""}`}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-2xs"
-              >
-                Next
-              </Link>
-            )}
+            <Link
+              href={`/institutions${query(base, { page: String(Math.max(1, page - 1)) })}`}
+              aria-disabled={page <= 1}
+              className={cn("btn btn-secondary btn-sm", page <= 1 && "pointer-events-none opacity-40")}
+            >
+              Previous
+            </Link>
+            <span className="flex h-8 min-w-8 items-center justify-center rounded-lg bg-ink-900 px-2 text-[11px] font-bold text-white">
+              {data.page}
+            </span>
+            <Link
+              href={`/institutions${query(base, { page: String(Math.min(data.totalPages, page + 1)) })}`}
+              aria-disabled={page >= data.totalPages}
+              className={cn("btn btn-secondary btn-sm", page >= data.totalPages && "pointer-events-none opacity-40")}
+            >
+              Next
+            </Link>
           </div>
         </div>
       )}
