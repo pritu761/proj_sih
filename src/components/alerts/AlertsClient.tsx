@@ -17,14 +17,21 @@ import {
   Sparkles,
   Clock3,
   Scale,
+  GitMerge,
+  Crown,
 } from "lucide-react";
 import { formatDateTime, getBureauLabel } from "@/lib/utils";
-import { coordinateOverlapAction, dismissOverlapAction } from "@/actions/overlap-actions";
+import {
+  coordinateOverlapAction,
+  dismissOverlapAction,
+  mergeOverlapAction,
+} from "@/actions/overlap-actions";
 import { SessionUser } from "@/lib/rbac";
 import { BureauPill, ConfidencePill } from "@/components/ui/badges";
 import { Modal } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CollisionFlow } from "./CollisionFlow";
+import { TrilayerPanel } from "./TrilayerPanel";
 import { cn } from "@/lib/utils";
 
 interface AlertsClientProps {
@@ -77,9 +84,10 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
   >("OPEN");
 
   const [activeAlert, setActiveAlert] = useState<any | null>(null);
-  const [modalMode, setModalMode] = useState<"COORDINATE" | "DISMISS" | null>(null);
+  const [modalMode, setModalMode] = useState<"COORDINATE" | "DISMISS" | "MERGE" | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
+  const [masterCaseId, setMasterCaseId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -171,6 +179,64 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
       setNoteText("");
       setModalMode(null);
     }
+  };
+
+  const recommendedMaster = (alert: any) => {
+    const linked = (alert?.cases ?? [])
+      .slice()
+      .sort(
+        (a: any, b: any) =>
+          new Date(a.date_received ?? 0).getTime() -
+          new Date(b.date_received ?? 0).getTime()
+      );
+    return linked[0]?.case_id ?? alert?.case_ids?.[0] ?? "";
+  };
+
+  const openMerge = (alert: any) => {
+    setActiveAlert(alert);
+    setModalMode("MERGE");
+    setMasterCaseId(recommendedMaster(alert));
+    setNoteText(
+      "Trilayer match confirmed. Parallel bureau action suspended; the oldest file becomes the master docket and all colliding files are linked as duplicates."
+    );
+    setErrorMsg("");
+  };
+
+  const handleMerge = async () => {
+    if (!activeAlert || !masterCaseId || !noteText.trim()) return;
+    setIsLoading(true);
+    setErrorMsg("");
+
+    const res = await mergeOverlapAction({
+      alertId: activeAlert.id,
+      masterCaseId,
+      mergeNote: noteText,
+    });
+
+    setIsLoading(false);
+    if (!res.success) {
+      setErrorMsg(res.error || "Failed to merge the collision.");
+      return;
+    }
+
+    setAlerts((prev) =>
+      prev.map((item) =>
+        item.id === activeAlert.id
+          ? {
+              ...item,
+              status: "COORDINATED",
+              coordination_note: noteText,
+              master_case_id: res.data?.masterCaseId ?? masterCaseId,
+              merged_case_ids: res.data?.mergedCaseIds ?? [],
+              merged_at: new Date().toISOString(),
+            }
+          : item
+      )
+    );
+    setActiveAlert(null);
+    setNoteText("");
+    setMasterCaseId("");
+    setModalMode(null);
   };
 
   const statusTabs = [
@@ -502,6 +568,34 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                     </ul>
                   </div>
 
+                  <div className="mt-2.5">
+                    <TrilayerPanel
+                      trilayer={alert.trilayer}
+                      confidence={alert.confidence}
+                      compact
+                      merged={Boolean(alert.master_case_id)}
+                      masterCaseId={alert.master_case_id}
+                      onMerge={isOpen && !alert.master_case_id ? () => openMerge(alert) : undefined}
+                    />
+                  </div>
+
+                  {alert.master_case_id && (
+                    <div className="mt-2.5 rounded-xl border border-emerald-300/40 bg-emerald-950/90 p-3 text-emerald-100">
+                      <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-emerald-300">
+                        <Crown className="h-3 w-3" />
+                        Master docket established
+                      </p>
+                      <p className="mt-1 font-mono text-[10.5px] font-bold text-white">
+                        {alert.master_case_id}
+                      </p>
+                      <p className="mt-0.5 text-[10px] leading-relaxed text-emerald-100/70">
+                        {alert.merged_case_ids?.length ?? 0} parallel file
+                        {(alert.merged_case_ids?.length ?? 0) === 1 ? "" : "s"} linked as duplicates ·{" "}
+                        {alert.merged_by ?? "AICTE officer"}
+                      </p>
+                    </div>
+                  )}
+
                   {alert.coordination_note && (
                     <div className="mt-2.5 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3">
                       <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-emerald-700">
@@ -582,7 +676,9 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
         title={
           modalMode === "COORDINATE"
             ? "Coordinate inter-bureau action"
-            : "Dismiss overlap alert"
+            : modalMode === "MERGE"
+              ? "Merge into one master docket"
+              : "Dismiss overlap alert"
         }
         description={
           modalMode === "COORDINATE"
@@ -591,16 +687,20 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                   ?.map((b: string) => getBureauLabel(b))
                   .join(" and ") ?? "the involved bureaus"
               }. Cases will be linked as OVERLAP.`
-            : "State why this alert does not require bureau alignment."
+            : modalMode === "MERGE"
+              ? "Select the file that will own the single inquiry. Every other colliding case is linked as a duplicate and annotated in its audit trail."
+              : "State why this alert does not require bureau alignment."
         }
         icon={
           modalMode === "COORDINATE" ? (
             <CheckCircle2 className="h-4 w-4" />
+          ) : modalMode === "MERGE" ? (
+            <GitMerge className="h-4 w-4" />
           ) : (
             <XCircle className="h-4 w-4" />
           )
         }
-        tone={modalMode === "COORDINATE" ? "emerald" : "slate"}
+        tone={modalMode === "COORDINATE" ? "emerald" : modalMode === "MERGE" ? "amber" : "slate"}
         footer={
           <>
             <button
@@ -608,6 +708,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                 setActiveAlert(null);
                 setNoteText("");
                 setModalMode(null);
+                setMasterCaseId("");
                 setErrorMsg("");
               }}
               className="btn btn-secondary btn-sm"
@@ -615,15 +716,34 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
               Cancel
             </button>
             <button
-              onClick={modalMode === "COORDINATE" ? handleCoordinate : handleDismiss}
-              disabled={isLoading || !noteText.trim()}
-              className={cn("btn btn-sm", modalMode === "COORDINATE" ? "btn-success" : "btn-primary")}
+              onClick={
+                modalMode === "COORDINATE"
+                  ? handleCoordinate
+                  : modalMode === "MERGE"
+                    ? handleMerge
+                    : handleDismiss
+              }
+              disabled={
+                isLoading ||
+                !noteText.trim() ||
+                (modalMode === "MERGE" && !masterCaseId)
+              }
+              className={cn(
+                "btn btn-sm",
+                modalMode === "COORDINATE"
+                  ? "btn-success"
+                  : modalMode === "MERGE"
+                    ? "btn-primary"
+                    : "btn-primary"
+              )}
             >
               {isLoading
                 ? "Saving…"
                 : modalMode === "COORDINATE"
                   ? "Confirm coordination"
-                  : "Confirm dismissal"}
+                  : modalMode === "MERGE"
+                    ? "Establish master docket"
+                    : "Confirm dismissal"}
             </button>
           </>
         }
@@ -646,9 +766,73 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
             </div>
           )}
 
+          {modalMode === "MERGE" && activeAlert && (
+            <fieldset>
+              <legend className="field-label">
+                Master docket <span className="text-rose-600">*</span>
+              </legend>
+              <div className="mt-1 space-y-1.5">
+                {(activeAlert.cases ?? []).map((item: any) => {
+                  const selected = masterCaseId === item.case_id;
+                  const isRecommended = recommendedMaster(activeAlert) === item.case_id;
+                  return (
+                    <label
+                      key={item.case_id}
+                      className={cn(
+                        "flex cursor-pointer items-start gap-2.5 rounded-xl border p-2.5 transition-colors",
+                        selected
+                          ? "border-emerald-300 bg-emerald-50/60"
+                          : "border-slate-200 bg-white hover:border-slate-300"
+                      )}
+                    >
+                      <input
+                        type="radio"
+                        name="master-case"
+                        value={item.case_id}
+                        checked={selected}
+                        onChange={() => setMasterCaseId(item.case_id)}
+                        className="mt-0.5 h-3.5 w-3.5 accent-emerald-600"
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          <span className="font-mono text-[10.5px] font-bold text-slate-800">
+                            {item.case_id}
+                          </span>
+                          {isRecommended && (
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-amber-700">
+                              Recommended · oldest
+                            </span>
+                          )}
+                          <BureauPill bureau={item.assigned_bureau} />
+                        </span>
+                        <span className="mt-0.5 block text-[10px] text-slate-500">
+                          {item.category}
+                          {item.date_received
+                            ? ` · received ${new Date(item.date_received).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })}`
+                            : ""}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="field-hint">
+                Recommended master is the oldest live file. All other files are linked as duplicates.
+              </p>
+            </fieldset>
+          )}
+
           <div>
             <label htmlFor="alert-note" className="field-label">
-              {modalMode === "COORDINATE" ? "Coordination note" : "Dismissal reason"}{" "}
+              {modalMode === "COORDINATE"
+                ? "Coordination note"
+                : modalMode === "MERGE"
+                  ? "Merge justification"
+                  : "Dismissal reason"}{" "}
               <span className="text-rose-600">*</span>
             </label>
             <textarea
@@ -659,14 +843,18 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
               placeholder={
                 modalMode === "COORDINATE"
                   ? "e.g. Regulation Bureau leads the inspection; PGRC merges its grievance under the RB case."
-                  : "e.g. Duplicate representation already merged; no parallel action remains."
+                  : modalMode === "MERGE"
+                    ? "e.g. Trilayer match confirmed on AICTE Permanent ID, category and 9-day burst window. Single inquiry under the oldest file."
+                    : "e.g. Duplicate representation already merged; no parallel action remains."
               }
               className="input"
             />
             <p className="field-hint">
               {modalMode === "COORDINATE"
                 ? "Written to both case timelines and the audit ledger."
-                : "Documented for audit; the alert leaves the active queue."}
+                : modalMode === "MERGE"
+                  ? "The master reference and merge note are written to every case timeline and the SHA-256 audit ledger."
+                  : "Documented for audit; the alert leaves the active queue."}
             </p>
           </div>
 
@@ -675,7 +863,9 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
             <p>
               {modalMode === "COORDINATE"
                 ? "Both bureaus will see the joint directive immediately in the case history."
-                : "Dismissals are reversible only by the Competent Authority."}
+                : modalMode === "MERGE"
+                  ? "Merging does not close the inquiry. It prevents two bureaus from issuing contradictory orders to the institution."
+                  : "Dismissals are reversible only by the Competent Authority."}
             </p>
           </div>
 

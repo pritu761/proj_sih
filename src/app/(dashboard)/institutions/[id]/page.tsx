@@ -26,6 +26,8 @@ import {
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { BureauPill, PriorityPill, StatusPill } from "@/components/ui/badges";
+import { ComplianceRiskCard } from "@/components/institutions/ComplianceRiskCard";
+import { assessInstitutionCompliance } from "@/lib/services/aph-engine";
 import { cn } from "@/lib/utils";
 
 interface InstitutionProfileProps {
@@ -92,6 +94,16 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
   const firstAlert = openOverlapAlerts[0];
   const firstAlertCase =
     cases.find((c: any) => c.case_id === firstAlert?.case_ids?.[0]) ??
+    activeCases[0];
+
+  const compliance = assessInstitutionCompliance(
+    institution,
+    cases,
+    openOverlapAlerts
+  );
+  const enforcementCase =
+    activeCases.find((c: any) => c.priority === "CRITICAL") ??
+    activeCases.find((c: any) => c.priority === "HIGH") ??
     activeCases[0];
 
   return (
@@ -278,6 +290,11 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
           </div>
         </div>
       </div>
+
+      <ComplianceRiskCard
+        assessment={compliance}
+        showCauseCaseId={enforcementCase?.id}
+      />
 
       {/* Cases + timeline */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">

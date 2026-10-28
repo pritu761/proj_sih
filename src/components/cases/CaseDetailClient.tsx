@@ -43,7 +43,9 @@ import { BureauPill, ConfidencePill, PriorityPill, StatusPill } from "@/componen
 import { SlaRing } from "@/components/ui/sla-ring";
 import { Modal } from "@/components/ui/modal";
 import { CaseBrief } from "./CaseBrief";
+import { EnforcementPanel } from "./EnforcementPanel";
 import type { CaseInsight } from "@/lib/services/risk-engine";
+import type { ComplianceAssessment } from "@/lib/services/aph-engine";
 import { cn } from "@/lib/utils";
 
 interface CaseDetailClientProps {
@@ -53,6 +55,7 @@ interface CaseDetailClientProps {
   collidingCase?: any;
   currentUser: SessionUser;
   insight?: CaseInsight | null;
+  compliance?: ComplianceAssessment | null;
 }
 
 const actionIcon: Record<string, typeof Inbox> = {
@@ -91,6 +94,7 @@ export function CaseDetailClient({
   collidingCase,
   currentUser,
   insight,
+  compliance,
 }: CaseDetailClientProps) {
   const router = useRouter();
 
@@ -540,6 +544,11 @@ export function CaseDetailClient({
           canAct={isAuthorizedToAct}
           onAction={(action) => setActiveModal(action)}
         />
+      )}
+
+      {/* Statutory enforcement: APH clause mapping, compliance risk, EoA/EVC, show-cause */}
+      {compliance && (
+        <EnforcementPanel assessment={compliance} caseItem={caseItem} />
       )}
 
       {/* Main grid */}

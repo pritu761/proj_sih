@@ -35,8 +35,8 @@ export function CountUp({
   className,
   style,
 }: CountUpProps) {
-  const [display, setDisplay] = useState(0);
-  const current = useRef(0);
+  const [display, setDisplay] = useState(value);
+  const current = useRef(value);
   const frame = useRef<number | null>(null);
 
   useEffect(() => {

@@ -62,6 +62,34 @@ export const DismissOverlapSchema = z.object({
   dismissedReason: z.string().min(5, "Reason for dismissal must be at least 5 characters long"),
 });
 
+export const MergeOverlapSchema = z.object({
+  alertId: z.string().min(1, "Alert ID is required"),
+  masterCaseId: z.string().min(1, "Select the master docket"),
+  mergeNote: z
+    .string()
+    .min(10, "Provide a merge justification of at least 10 characters"),
+});
+
+export const IngestionChannelEnum = z.enum([
+  "CPGRAMS",
+  "UGC_ESAMADHAN",
+  "DIRECT_PORTAL",
+  "EMAIL_OCR",
+  "VIGILANCE",
+]);
+
+export const SimulateIngestionSchema = z.object({
+  channel: IngestionChannelEnum,
+  aicte_permanent_id: z.string().min(1, "Select an institution"),
+  category: z.string().min(1, "Category is required"),
+  description: z
+    .string()
+    .min(30, "Describe the grievance in at least 30 characters"),
+  priority: CasePriorityEnum.default("MEDIUM"),
+  assigned_bureau: BureauEnum.optional(),
+  complainant_reference: z.string().optional(),
+});
+
 export const CreateCaseSchema = z.object({
   aicte_permanent_id: z.string().min(1, "AICTE Permanent ID is required"),
   source: z.enum(["student", "faculty", "stakeholder", "public", "other"]),

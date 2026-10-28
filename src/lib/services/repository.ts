@@ -1,7 +1,8 @@
 import { generateSeedData, SeedInstitution, SeedCase, SeedOverlapAlert } from "@/lib/mock-data-generator";
+import { SLA_CONFIGS } from "@/lib/demo-data";
 import { calculateCaseSla, computeAgeingBuckets } from "./sla-engine";
 import { buildRiskRadar, buildCaseInsight } from "./risk-engine";
-import { overlapDetector } from "./overlap-detector";
+import { overlapDetector, deriveTrilayerFromCases } from "./overlap-detector";
 import { logAuditEvent, inMemoryAuditLogs } from "./audit";
 import { SessionUser, assertCanActOnCase, canCoordinateOverlap, canViewCase } from "@/lib/rbac";
 
@@ -1057,6 +1058,11 @@ export class ComplaintRepository {
     }, 0);
     const caseIdCode = `AICTE/${bureauCode}/2026/${String(maxSequence + 1).padStart(5, "0")}`;
 
+    const slaConfig =
+      SLA_CONFIGS.find(
+        (c) => c.category.toLowerCase() === data.category.toLowerCase()
+      ) ?? SLA_CONFIGS[SLA_CONFIGS.length - 1];
+
     const newCase: SeedCase = {
       id: `case_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       case_id: caseIdCode,
@@ -1071,7 +1077,9 @@ export class ComplaintRepository {
       last_action: "Complaint registered on portal",
       last_action_date: new Date(),
       next_action_required: "Initial scrutiny by Bureau desk officer",
-      expected_disposal_date: new Date(Date.now() + 30 * 86400000),
+      expected_disposal_date: new Date(
+        Date.now() + slaConfig.timeline_days * 86400000
+      ),
       priority: data.priority || "MEDIUM",
       actions: [
         {
@@ -1104,6 +1112,7 @@ export class ComplaintRepository {
         description: c.description,
         assigned_bureau: c.assigned_bureau,
         status: c.status,
+        date_received: c.date_received,
       };
     });
 
@@ -1122,6 +1131,7 @@ export class ComplaintRepository {
         bureaus_involved: d.bureaus_involved,
         confidence: d.confidence,
         match_reasons: d.match_reasons as any,
+        trilayer: d.trilayer,
         detected_at: new Date(),
         status: "OPEN",
         coordination_note: null,
@@ -1199,6 +1209,129 @@ export class ComplaintRepository {
     return alert;
   }
 
+  /**
+   * Action: merge every colliding case into one master docket.
+   *
+   * The earliest/lead case becomes the master. All other files are linked as
+   * DUPLICATE, annotated in their action history, and the alert is closed as
+   * coordinated with the master reference retained for audit.
+   */
+  public async mergeOverlapAlert(
+    alertId: string,
+    masterCaseRef: string,
+    mergeNote: string,
+    actor: SessionUser
+  ) {
+    const store = getInMemoryStore();
+    const alert = store.overlapAlerts.find((o) => o.id === alertId);
+    if (!alert) throw new Error("Overlap alert not found.");
+
+    if (!canCoordinateOverlap(actor, alert)) {
+      throw new Error(
+        `Unauthorized: User ${actor.email} (${actor.bureau}) cannot merge an overlap involving ${alert.bureaus_involved.join(", ")}.`
+      );
+    }
+
+    if (alert.master_case_id) {
+      throw new Error(
+        `This collision is already merged into master docket ${alert.master_case_id}.`
+      );
+    }
+
+    const collisionCases = alert.case_ids
+      .map((cid) => store.cases.find((c) => c.case_id === cid || c.id === cid))
+      .filter((c): c is SeedCase => Boolean(c));
+
+    if (collisionCases.length < 2) {
+      throw new Error("At least two resolved cases are required to merge a docket.");
+    }
+
+    const master = collisionCases.find(
+      (c) => c.case_id === masterCaseRef || c.id === masterCaseRef
+    );
+    if (!master) {
+      throw new Error("Selected master case is not part of this collision.");
+    }
+
+    const mergedCases = collisionCases.filter((c) => c.id !== master.id);
+    if (mergedCases.length === 0) {
+      throw new Error("Select a master docket with at least one other colliding case.");
+    }
+
+    const now = new Date();
+    alert.status = "COORDINATED";
+    alert.coordination_note = mergeNote;
+    alert.master_case_id = master.case_id;
+    alert.merged_case_ids = mergedCases.map((c) => c.case_id);
+    alert.merged_at = now;
+    alert.merged_by = actor.email;
+
+    master.last_action = `Master docket established for ${mergedCases.length} merged file(s)`;
+    master.last_action_date = now;
+    master.actions.unshift({
+      actor_user: actor.email,
+      actor_bureau: actor.bureau,
+      action_type: "LINKED",
+      remarks: `Master docket ${master.case_id} established. Merged: ${mergedCases
+        .map((c) => c.case_id)
+        .join(", ")}. ${mergeNote}`,
+      timestamp: now,
+      attachments: [],
+    });
+
+    for (const mergedCase of mergedCases) {
+      this.upsertCaseLink(
+        master.case_id,
+        mergedCase.case_id,
+        "DUPLICATE",
+        mergeNote,
+        actor.email
+      );
+      mergedCase.last_action = `Merged into master docket ${master.case_id}`;
+      mergedCase.last_action_date = now;
+      mergedCase.actions.unshift({
+        actor_user: actor.email,
+        actor_bureau: actor.bureau,
+        action_type: "LINKED",
+        remarks: `Merged into master docket ${master.case_id}. Single inquiry will proceed under the master file. ${mergeNote}`,
+        timestamp: now,
+        attachments: [],
+      });
+    }
+
+    store.notifications.unshift({
+      id: `notif_${Date.now()}_merge`,
+      type: "OVERLAP",
+      case_id: master.case_id,
+      target_bureau: "ALL",
+      title: `Master docket established: ${master.case_id}`,
+      message: `${mergedCases.length} parallel file(s) merged by ${actor.name}. ${mergeNote}`,
+      read: false,
+      created_at: now,
+    });
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "MERGE_OVERLAP",
+      entity: "OverlapAlert",
+      entity_id: alert.id,
+      before: { status: "OPEN", case_ids: alert.case_ids },
+      after: {
+        status: "COORDINATED",
+        master_case_id: master.case_id,
+        merged_case_ids: alert.merged_case_ids,
+        mergeNote,
+      },
+    });
+
+    return {
+      masterCaseId: master.case_id,
+      masterInternalId: master.id,
+      mergedCaseIds: alert.merged_case_ids,
+      alert,
+    };
+  }
+
   public async dismissOverlapAlert(
     alertId: string,
     dismissedReason: string,
@@ -1236,6 +1369,26 @@ export class ComplaintRepository {
     const instMap = new Map(store.institutions.map((i) => [i.id, i]));
     const caseMap = new Map(store.cases.map((c) => [c.case_id, c]));
 
+    const explainableCase = (c: SeedCase) => {
+      const cInst = instMap.get(c.institution_id);
+      return {
+        id: c.id,
+        case_id: c.case_id,
+        institution_id: c.institution_id,
+        institution_aicte_id: cInst?.aicte_permanent_id,
+        institution_name: cInst?.name,
+        institution_normalized_name: cInst?.normalized_name,
+        institution_city: cInst?.city,
+        institution_state: cInst?.state,
+        institution_pincode: cInst?.pincode,
+        category: c.category,
+        description: c.description,
+        assigned_bureau: c.assigned_bureau,
+        status: c.status,
+        date_received: c.date_received,
+      };
+    };
+
     let alerts = store.overlapAlerts;
     if (user?.role === "REGIONAL_OFFICER" && user.region) {
       alerts = alerts.filter(
@@ -1244,20 +1397,59 @@ export class ComplaintRepository {
     }
 
     return alerts
-      .map((a) => ({
-        ...a,
-        institution: instMap.get(a.institution_id),
-        // Internal ids are required for route links; `case_ids` are display
-        // codes that contain slashes and cannot be used as a [id] segment.
-        cases: a.case_ids
+      .map((a) => {
+        const linked = a.case_ids
           .map((cid) => caseMap.get(cid))
-          .filter((c): c is SeedCase => Boolean(c))
-          .map((c) => ({
+          .filter((c): c is SeedCase => Boolean(c));
+
+        const storedReasons = (a.match_reasons ?? []) as {
+          rule?: string;
+          score?: number;
+        }[];
+        const storedFuzzyReason = storedReasons.find(
+          (r) => r.rule === "FUZZY_NAME_AND_LOCATION"
+        );
+        const storedExact = storedReasons.some(
+          (r) => r.rule === "EXACT_PERMANENT_ID"
+        );
+        const storedFuzzyScore =
+          typeof storedFuzzyReason?.score === "number"
+            ? storedFuzzyReason.score > 1
+              ? storedFuzzyReason.score / 100
+              : storedFuzzyReason.score
+            : undefined;
+
+        const trilayer =
+          a.trilayer ??
+          (linked.length >= 2
+            ? deriveTrilayerFromCases(
+                explainableCase(linked[0]),
+                explainableCase(linked[1]),
+                storedFuzzyReason && !storedExact
+                  ? {
+                      exactIdOverride: false,
+                      nameSimilarityOverride: storedFuzzyScore,
+                    }
+                  : undefined
+              )
+            : undefined);
+
+        return {
+          ...a,
+          trilayer,
+          institution: instMap.get(a.institution_id),
+          // Internal ids are required for route links; `case_ids` are display
+          // codes that contain slashes and cannot be used as a [id] segment.
+          cases: linked.map((c) => ({
             id: c.id,
             case_id: c.case_id,
             assigned_bureau: c.assigned_bureau,
+            category: c.category,
+            priority: c.priority,
+            date_received: c.date_received,
           })),
-      }))
+        };
+      })
       .sort(
         (a, b) =>
           new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()

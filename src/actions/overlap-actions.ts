@@ -3,7 +3,11 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import repository from "@/lib/services/repository";
-import { CoordinateOverlapSchema, DismissOverlapSchema } from "@/lib/validations";
+import {
+  CoordinateOverlapSchema,
+  DismissOverlapSchema,
+  MergeOverlapSchema,
+} from "@/lib/validations";
 import { SessionUser } from "@/lib/rbac";
 
 export async function coordinateOverlapAction(data: {
@@ -35,6 +39,41 @@ export async function coordinateOverlapAction(data: {
     return { success: true, data: updated };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to coordinate alert." };
+  }
+}
+
+export async function mergeOverlapAction(data: {
+  alertId: string;
+  masterCaseId: string;
+  mergeNote: string;
+}) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  const parsed = MergeOverlapSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const actor = session.user as unknown as SessionUser;
+    const merged = await repository.mergeOverlapAlert(
+      parsed.data.alertId,
+      parsed.data.masterCaseId,
+      parsed.data.mergeNote,
+      actor
+    );
+
+    revalidatePath("/");
+    revalidatePath("/alerts");
+    revalidatePath("/cases");
+    revalidatePath(`/cases/${merged.masterInternalId}`);
+    revalidatePath("/institutions");
+    return { success: true, data: merged };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to merge collision." };
   }
 }
 

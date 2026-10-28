@@ -1,4 +1,5 @@
 import { normalizeInstitutionName, SLA_CONFIGS } from "./demo-data";
+import type { TrilayerBreakdown } from "./services/overlap-detector";
 
 export interface SeedInstitution {
   id: string;
@@ -49,11 +50,16 @@ export interface SeedOverlapAlert {
   case_ids: string[];
   bureaus_involved: string[];
   confidence: "HIGH" | "MEDIUM" | "LOW";
-  match_reasons: { rule: string; description: string; score?: number }[];
+  match_reasons: { rule: string; description: string; score?: number; layer?: string }[];
+  trilayer?: TrilayerBreakdown;
   detected_at: Date;
   status: "OPEN" | "ACKNOWLEDGED" | "COORDINATED" | "DISMISSED";
   coordination_note: string | null;
   dismissed_reason: string | null;
+  master_case_id?: string | null;
+  merged_case_ids?: string[];
+  merged_at?: Date | null;
+  merged_by?: string | null;
 }
 
 export function generateSeedData() {

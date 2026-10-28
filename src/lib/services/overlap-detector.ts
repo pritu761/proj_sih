@@ -14,12 +14,33 @@ export interface CaseWithInstitution {
   description: string;
   assigned_bureau: string;
   status: string;
+  date_received?: Date | string;
 }
 
 export interface MatchReason {
   rule: "EXACT_PERMANENT_ID" | "FUZZY_NAME_AND_LOCATION" | "CONTENT_SIMILARITY" | "CATEGORY_OVERLAP";
   description: string;
   score?: number;
+  layer?: TrilayerKey;
+}
+
+export type TrilayerKey = "ENTITY" | "SEMANTIC" | "TEMPORAL";
+
+export interface TrilayerLayer {
+  key: TrilayerKey;
+  label: string;
+  score: number;
+  weight: number;
+  verdict: "STRONG" | "CORROBORATING" | "WEAK";
+  evidence: string[];
+}
+
+export interface TrilayerBreakdown {
+  entity: TrilayerLayer;
+  semantic: TrilayerLayer;
+  temporal: TrilayerLayer;
+  total: number;
+  formula: string;
 }
 
 export interface OverlapCandidate {
@@ -28,6 +49,7 @@ export interface OverlapCandidate {
   bureaus_involved: string[];
   confidence: "HIGH" | "MEDIUM" | "LOW";
   match_reasons: MatchReason[];
+  trilayer: TrilayerBreakdown;
 }
 
 export interface IOverlapDetector {
@@ -96,6 +118,206 @@ export function calculateContentSimilarity(descA: string, descB: string): number
   return total === 0 ? 0 : Math.round((common / total) * 100) / 100;
 }
 
+const LAYER_WEIGHT = {
+  ENTITY: 0.45,
+  SEMANTIC: 0.35,
+  TEMPORAL: 0.2,
+} as const;
+
+function verdictFor(score: number): TrilayerLayer["verdict"] {
+  if (score >= 80) return "STRONG";
+  if (score >= 60) return "CORROBORATING";
+  return "WEAK";
+}
+
+function daysBetween(a?: Date | string, b?: Date | string): number | null {
+  if (!a || !b) return null;
+  const first = new Date(a).getTime();
+  const second = new Date(b).getTime();
+  if (!Number.isFinite(first) || !Number.isFinite(second)) return null;
+  return Math.abs(Math.round((first - second) / 86_400_000));
+}
+
+/**
+ * Trilayer explainability model.
+ *
+ * Layer 1 — Entity:   AICTE Permanent ID, institutional name and geography.
+ * Layer 2 — Semantic: category equivalence and complaint-text overlap.
+ * Layer 3 — Temporal: filing burst window and simultaneous bureau action.
+ *
+ * The weighted total is deterministic and every point is backed by an
+ * evidence string that the UI renders next to the score.
+ */
+export function computeTrilayer(input: {
+  target: CaseWithInstitution;
+  other: CaseWithInstitution;
+  exactId: boolean;
+  nameSimilarity: number;
+  sameLocation: boolean;
+  sameCategory: boolean;
+  contentSimilarity: number;
+}): TrilayerBreakdown {
+  const {
+    target,
+    other,
+    exactId,
+    nameSimilarity,
+    sameLocation,
+    sameCategory,
+    contentSimilarity,
+  } = input;
+
+  const entityEvidence: string[] = [];
+  let entityScore = 0;
+  if (exactId) {
+    entityScore = 100;
+    entityEvidence.push(`Identical AICTE Permanent ID ${target.institution_aicte_id}.`);
+  } else if (nameSimilarity >= 0.65 && sameLocation) {
+    entityScore = Math.round(Math.min(100, nameSimilarity * 100 + 8));
+    entityEvidence.push(
+      `${Math.round(nameSimilarity * 100)}% name similarity after normalization.`
+    );
+    entityEvidence.push(
+      `Location corroborated: ${target.institution_city ?? "same city"} / ${target.institution_pincode ?? "same PIN"}.`
+    );
+  } else if (sameLocation) {
+    entityScore = 38;
+    entityEvidence.push("No name match, but city/PIN corroborates the same institution.");
+  } else {
+    entityScore = Math.round(nameSimilarity * 40);
+    entityEvidence.push("No exact identifier or location corroboration.");
+  }
+
+  const semanticEvidence: string[] = [];
+  let semanticScore: number;
+  if (sameCategory) {
+    semanticScore = Math.min(
+      100,
+      Math.round(contentSimilarity * 70 + 32)
+    );
+    semanticEvidence.push(`Same grievance category: ${target.category}.`);
+  } else {
+    semanticScore = Math.round(contentSimilarity * 85);
+    semanticEvidence.push("Different categories; only narrative text compared.");
+  }
+  if (contentSimilarity > 0) {
+    semanticEvidence.push(
+      `${Math.round(contentSimilarity * 100)}% token overlap in the representation text.`
+    );
+  }
+
+  const gap = daysBetween(target.date_received, other.date_received);
+  const temporalEvidence: string[] = [];
+  let temporalScore: number;
+  if (gap === null) {
+    temporalScore = 50;
+    temporalEvidence.push("Filing date unavailable; neutral burst score applied.");
+  } else if (gap <= 14) {
+    temporalScore = 100;
+    temporalEvidence.push(`Filed ${gap} day${gap === 1 ? "" : "s"} apart — inside the 14-day burst window.`);
+  } else if (gap <= 30) {
+    temporalScore = 82;
+    temporalEvidence.push(`Filed ${gap} days apart — inside the 30-day statutory burst window.`);
+  } else if (gap <= 45) {
+    temporalScore = 64;
+    temporalEvidence.push(`Filed ${gap} days apart — partial temporal overlap.`);
+  } else if (gap <= 90) {
+    temporalScore = 42;
+    temporalEvidence.push(`Filed ${gap} days apart — outside the active burst window.`);
+  } else {
+    temporalScore = 20;
+    temporalEvidence.push(`Filed ${gap} days apart — historical parallel, low burst risk.`);
+  }
+  if (target.assigned_bureau !== other.assigned_bureau) {
+    temporalEvidence.push(
+      `Both files are live simultaneously in ${target.assigned_bureau} and ${other.assigned_bureau}.`
+    );
+  }
+
+  const entity: TrilayerLayer = {
+    key: "ENTITY",
+    label: "Entity resolution",
+    score: entityScore,
+    weight: LAYER_WEIGHT.ENTITY,
+    verdict: verdictFor(entityScore),
+    evidence: entityEvidence,
+  };
+  const semantic: TrilayerLayer = {
+    key: "SEMANTIC",
+    label: "Semantic similarity",
+    score: semanticScore,
+    weight: LAYER_WEIGHT.SEMANTIC,
+    verdict: verdictFor(semanticScore),
+    evidence: semanticEvidence,
+  };
+  const temporal: TrilayerLayer = {
+    key: "TEMPORAL",
+    label: "Temporal burst",
+    score: temporalScore,
+    weight: LAYER_WEIGHT.TEMPORAL,
+    verdict: verdictFor(temporalScore),
+    evidence: temporalEvidence,
+  };
+
+  const total = Math.round(
+    entity.score * LAYER_WEIGHT.ENTITY +
+      semantic.score * LAYER_WEIGHT.SEMANTIC +
+      temporal.score * LAYER_WEIGHT.TEMPORAL
+  );
+
+  return {
+    entity,
+    semantic,
+    temporal,
+    total,
+    formula: "Entity 45% + Semantic 35% + Temporal 20%",
+  };
+}
+
+/**
+ * Reconstructs the trilayer view for alerts seeded before layer scores were
+ * persisted. Used by the alerts workspace so every alert is explainable.
+ */
+export function deriveTrilayerFromCases(
+  target: CaseWithInstitution,
+  other: CaseWithInstitution,
+  options?: { exactIdOverride?: boolean; nameSimilarityOverride?: number }
+): TrilayerBreakdown {
+  const resolvedExactId =
+    Boolean(target.institution_aicte_id) &&
+    Boolean(other.institution_aicte_id) &&
+    target.institution_aicte_id === other.institution_aicte_id;
+  // Seeded alerts carry the rule that originally fired. If the stored
+  // rationale is a fuzzy name/location match, the layer view must not claim
+  // an identical Permanent ID just because both files point at the same seed
+  // institution row.
+  const hasExactId = options?.exactIdOverride ?? resolvedExactId;
+
+  const targetNorm =
+    target.institution_normalized_name ||
+    (target.institution_name ? normalizeInstitutionName(target.institution_name) : "");
+  const otherNorm =
+    other.institution_normalized_name ||
+    (other.institution_name ? normalizeInstitutionName(other.institution_name) : "");
+
+  return computeTrilayer({
+    target,
+    other,
+    exactId: hasExactId,
+    nameSimilarity:
+      options?.nameSimilarityOverride ??
+      calculateTrigramSimilarity(targetNorm, otherNorm),
+    sameLocation:
+      (Boolean(target.institution_pincode) &&
+        target.institution_pincode === other.institution_pincode) ||
+      (Boolean(target.institution_city) &&
+        target.institution_city?.toLowerCase() === other.institution_city?.toLowerCase()),
+    sameCategory: target.category.toLowerCase() === other.category.toLowerCase(),
+    contentSimilarity: calculateContentSimilarity(target.description, other.description),
+  });
+}
+
+
 export class StandardOverlapDetector implements IOverlapDetector {
   public calculateTrigramSimilarity(a: string, b: string): number {
     return calculateTrigramSimilarity(a, b);
@@ -137,6 +359,7 @@ export class StandardOverlapDetector implements IOverlapDetector {
           rule: "EXACT_PERMANENT_ID",
           description: `Identical AICTE Permanent ID: ${targetCase.institution_aicte_id} active in ${targetCase.assigned_bureau} and ${other.assigned_bureau}.`,
           score: 1.0,
+          layer: "ENTITY",
         });
       }
 
@@ -155,6 +378,7 @@ export class StandardOverlapDetector implements IOverlapDetector {
           rule: "FUZZY_NAME_AND_LOCATION",
           description: `Fuzzy Name Similarity: ${Math.round(nameSimilarity * 100)}% ('${targetCase.institution_name}' vs '${other.institution_name}') with matching location (${targetCase.institution_city}, ${targetCase.institution_pincode}).`,
           score: nameSimilarity,
+          layer: "ENTITY",
         });
       }
 
@@ -165,6 +389,7 @@ export class StandardOverlapDetector implements IOverlapDetector {
         reasons.push({
           rule: "CATEGORY_OVERLAP",
           description: `Both cases address the same category: '${targetCase.category}'.`,
+          layer: "SEMANTIC",
         });
       }
 
@@ -175,10 +400,21 @@ export class StandardOverlapDetector implements IOverlapDetector {
           rule: "CONTENT_SIMILARITY",
           description: `Complaint text keyword overlap of ${Math.round(contentSim * 100)}%.`,
           score: contentSim,
+          layer: "SEMANTIC",
         });
       }
 
       if (reasons.length > 0 && totalScore >= 60) {
+        const trilayer = computeTrilayer({
+          target: targetCase,
+          other,
+          exactId: hasExactId,
+          nameSimilarity,
+          sameLocation: samePincode || sameCity,
+          sameCategory,
+          contentSimilarity: contentSim,
+        });
+
         const confidence: "HIGH" | "MEDIUM" | "LOW" =
           totalScore >= 80 ? "HIGH" : totalScore >= 65 ? "MEDIUM" : "LOW";
 
@@ -188,6 +424,7 @@ export class StandardOverlapDetector implements IOverlapDetector {
           bureaus_involved: Array.from(new Set([targetCase.assigned_bureau, other.assigned_bureau])).sort(),
           confidence,
           match_reasons: reasons,
+          trilayer,
         });
       }
     }

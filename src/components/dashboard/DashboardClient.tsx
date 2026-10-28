@@ -41,6 +41,7 @@ import {
 import { StatusPill, BureauPill, ConfidencePill } from "@/components/ui/badges";
 import { CountUp } from "@/components/ui/count-up";
 import { RiskRadar } from "./RiskRadar";
+import { IngestionSimulator } from "./IngestionSimulator";
 import { cn } from "@/lib/utils";
 
 interface DashboardClientProps {
@@ -284,6 +285,7 @@ export function DashboardClient({
                 <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
                 Refresh data
               </button>
+              <IngestionSimulator userRole={_userRole} userBureau={_userBureau} />
               <Link href="/cases/new" className="btn btn-primary btn-sm">
                 <PlusCircle className="h-3.5 w-3.5" />
                 Register complaint

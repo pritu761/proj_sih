@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import repository from "@/lib/services/repository";
 import { CaseDetailClient } from "@/components/cases/CaseDetailClient";
 import { SessionUser } from "@/lib/rbac";
+import { assessInstitutionCompliance } from "@/lib/services/aph-engine";
 
 interface CaseDetailPageProps {
   params: Promise<{ id: string }>;
@@ -25,6 +26,18 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
     notFound();
   }
 
+  const institutionData = data.caseItem.institution
+    ? await repository.getInstitutionById(data.caseItem.institution.id, user)
+    : null;
+
+  const compliance = institutionData
+    ? assessInstitutionCompliance(
+        institutionData.institution,
+        institutionData.cases,
+        institutionData.overlapAlerts
+      )
+    : null;
+
   return (
     <CaseDetailClient
       caseItem={data.caseItem}
@@ -33,6 +46,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       collidingCase={data.collidingCase}
       currentUser={user}
       insight={insight}
+      compliance={compliance}
     />
   );
 }
