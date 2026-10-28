@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
+import { CommandPalette } from "@/components/command/command-palette";
 import { SessionUser } from "@/lib/rbac";
 
 interface AppShellProps {
@@ -21,9 +23,12 @@ interface AppShellProps {
 
 export function AppShell({ user, openOverlapCount, notifications, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <div className="min-h-screen">
+      <span key={`route-${pathname}`} className="route-beam" aria-hidden="true" />
+
       <Sidebar
         user={user}
         openOverlapCount={openOverlapCount}
@@ -40,7 +45,7 @@ export function AppShell({ user, openOverlapCount, notifications, children }: Ap
         />
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
-          <div className="page-enter mx-auto w-full max-w-[1440px]">{children}</div>
+          <div key={pathname} className="page-enter mx-auto w-full max-w-[1440px]">{children}</div>
         </main>
 
         <footer className="mx-auto w-full max-w-[1440px] px-4 pb-6 sm:px-6 lg:px-8">
@@ -53,6 +58,8 @@ export function AppShell({ user, openOverlapCount, notifications, children }: Ap
           </div>
         </footer>
       </div>
+
+      <CommandPalette user={user} />
     </div>
   );
 }

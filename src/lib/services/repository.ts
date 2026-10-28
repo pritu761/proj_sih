@@ -1,5 +1,6 @@
 import { generateSeedData, SeedInstitution, SeedCase, SeedOverlapAlert } from "@/lib/mock-data-generator";
 import { calculateCaseSla, computeAgeingBuckets } from "./sla-engine";
+import { buildRiskRadar, buildCaseInsight } from "./risk-engine";
 import { overlapDetector } from "./overlap-detector";
 import { logAuditEvent, inMemoryAuditLogs } from "./audit";
 import { SessionUser, assertCanActOnCase } from "@/lib/rbac";
@@ -52,6 +53,35 @@ const globalRepo = globalThis as unknown as {
   };
 };
 
+function seedAuditLedger(cases: SeedCase[]) {
+  if (inMemoryAuditLogs.length > 0) return;
+  const seededLogs = cases
+    .flatMap((c) =>
+      c.actions.map((a) => ({
+        user: a.actor_user,
+        action: a.action_type,
+        entity: "CASE",
+        entity_id: c.case_id,
+        before: null,
+        after: {
+          status: c.status,
+          bureau: c.assigned_bureau,
+          priority: c.priority,
+          remarks: a.remarks,
+          attachments: a.attachments,
+        },
+        ip: "10.24.8.1",
+        timestamp: a.timestamp,
+      }))
+    )
+    .sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )
+    .slice(0, 80);
+
+  inMemoryAuditLogs.push(...seededLogs);
+}
+
 function getInMemoryStore() {
   if (!globalRepo.inMemoryData) {
     const seed = generateSeedData();
@@ -95,33 +125,7 @@ function getInMemoryStore() {
     };
 
     // Seed an initial tamper-evident audit ledger from the generated case actions
-    if (inMemoryAuditLogs.length === 0) {
-      const seededLogs = seed.cases
-        .flatMap((c) =>
-          c.actions.map((a) => ({
-            user: a.actor_user,
-            action: a.action_type,
-            entity: "CASE",
-            entity_id: c.case_id,
-            before: null,
-            after: {
-              status: c.status,
-              bureau: c.assigned_bureau,
-              priority: c.priority,
-              remarks: a.remarks,
-              attachments: a.attachments,
-            },
-            ip: "10.24.8.1",
-            timestamp: a.timestamp,
-          }))
-        )
-        .sort(
-          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        )
-        .slice(0, 80);
-
-      inMemoryAuditLogs.push(...seededLogs);
-    }
+    seedAuditLedger(seed.cases);
   }
   return globalRepo.inMemoryData;
 }
@@ -296,6 +300,13 @@ export class ComplaintRepository {
           )
         : 0;
 
+    // Explainable risk radar (portfolio-level breach forecast)
+    const scopedInstitutionIds = new Set(allCases.map((c) => c.institution_id));
+    const scopedOverlaps = isRegional
+      ? store.overlapAlerts.filter((o) => scopedInstitutionIds.has(o.institution_id))
+      : store.overlapAlerts;
+    const riskRadar = buildRiskRadar(allCases, store.institutions, scopedOverlaps);
+
     return {
       kpi: {
         totalReceived,
@@ -316,6 +327,7 @@ export class ComplaintRepository {
       monthlyTrends,
       urgentCases,
       openOverlapList,
+      riskRadar,
     };
   }
 
@@ -608,6 +620,86 @@ export class ComplaintRepository {
       overlapAlert,
       collidingCase,
     };
+  }
+
+  /**
+   * Explainable per-case risk score, next-best action and peer benchmark.
+   */
+  public async getCaseInsight(caseId: string) {
+    const store = getInMemoryStore();
+    const c = store.cases.find((item) => item.id === caseId || item.case_id === caseId);
+    if (!c) return null;
+
+    const inst = store.institutions.find((i) => i.id === c.institution_id);
+    const overlaps = store.overlapAlerts.filter(
+      (o) => o.institution_id === c.institution_id
+    );
+
+    return buildCaseInsight(c, inst, overlaps, store.cases, store.institutions);
+  }
+
+  /**
+   * Unified quick search across cases and institutions (command palette).
+   */
+  public async search(term: string) {
+    const store = getInMemoryStore();
+    const q = term.trim().toLowerCase();
+    if (q.length < 2) return { cases: [], institutions: [] };
+
+    const instMap = new Map(store.institutions.map((i) => [i.id, i]));
+
+    const cases = store.cases
+      .filter((c) => {
+        const inst = instMap.get(c.institution_id);
+        return [
+          c.case_id,
+          c.category,
+          c.description,
+          c.status.replace(/_/g, " "),
+          c.assigned_bureau.replace(/_/g, " "),
+          inst?.name,
+          inst?.city,
+          inst?.region,
+        ]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q));
+      })
+      .slice(0, 6)
+      .map((c) => {
+        const inst = instMap.get(c.institution_id);
+        const sla = calculateCaseSla(c.category, c.date_received, c.status);
+        return {
+          id: c.id,
+          case_id: c.case_id,
+          category: c.category,
+          status: c.status,
+          priority: c.priority,
+          bureau: c.assigned_bureau,
+          institution_name: inst?.name ?? "Unknown institution",
+          city: inst?.city ?? "",
+          remainingDays: sla.remainingDays,
+          isBreached: sla.isBreached,
+        };
+      });
+
+    const institutions = store.institutions
+      .filter((i) =>
+        [i.name, i.aicte_permanent_id, i.city, i.state, i.region, i.institution_type]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q))
+      )
+      .slice(0, 5)
+      .map((i) => ({
+        id: i.id,
+        name: i.name,
+        city: i.city,
+        state: i.state,
+        region: i.region,
+        aicte_permanent_id: i.aicte_permanent_id,
+        institution_type: i.institution_type,
+      }));
+
+    return { cases, institutions };
   }
 
   /**
@@ -1063,6 +1155,10 @@ export class ComplaintRepository {
   }
 
   public async getAuditLogs() {
+    // Ensure the in-memory store (and its seeded ledger) is initialised before
+    // reading, so route handlers see the same history as the audit page.
+    const store = getInMemoryStore();
+    seedAuditLedger(store.cases);
     return inMemoryAuditLogs;
   }
 }

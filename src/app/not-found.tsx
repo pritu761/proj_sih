@@ -4,6 +4,7 @@ import { ShieldCheck, ArrowLeft, Compass } from "lucide-react";
 export default function RootNotFound() {
   return (
     <main className="hero-mesh flex min-h-screen items-center justify-center px-4 py-12">
+      <span className="hero-scan" aria-hidden="true" />
       <div className="w-full max-w-lg text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[15px] bg-gradient-to-br from-saffron-400 to-saffron-600 shadow-[0_10px_30px_-10px_rgba(245,158,11,0.8)]">
           <ShieldCheck className="h-6 w-6 text-ink-950" />

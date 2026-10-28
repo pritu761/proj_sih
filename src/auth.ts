@@ -6,6 +6,9 @@ import { Role, Bureau } from "@/lib/rbac";
 import prisma from "@/lib/prisma";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  // Trust the deployment proxy (Vercel / local `next start`). Auth.js only
+  // auto-trusts hosts in development, which otherwise breaks production login.
+  trustHost: true,
   providers: [
     Credentials({
       name: "AICTE Credentials",

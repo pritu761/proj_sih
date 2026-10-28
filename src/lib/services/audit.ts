@@ -11,8 +11,14 @@ export interface AuditEntry {
   timestamp?: Date;
 }
 
-// In-memory audit log store for fallback
-export const inMemoryAuditLogs: AuditEntry[] = [];
+// In-memory audit log store for fallback.
+// Anchored on globalThis so that page renders, server actions and route
+// handlers (which Next may bundle separately) all read the same ledger.
+const globalAuditStore = globalThis as unknown as {
+  inMemoryAuditLogs?: AuditEntry[];
+};
+export const inMemoryAuditLogs: AuditEntry[] =
+  (globalAuditStore.inMemoryAuditLogs ??= []);
 
 export async function logAuditEvent(entry: AuditEntry): Promise<void> {
   const record = {

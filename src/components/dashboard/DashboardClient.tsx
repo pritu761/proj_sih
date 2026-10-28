@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -38,6 +39,8 @@ import {
   Area,
 } from "recharts";
 import { StatusPill, BureauPill, ConfidencePill } from "@/components/ui/badges";
+import { CountUp } from "@/components/ui/count-up";
+import { RiskRadar } from "./RiskRadar";
 import { cn } from "@/lib/utils";
 
 interface DashboardClientProps {
@@ -252,6 +255,7 @@ export function DashboardClient({
     <div className="space-y-5">
       {/* ── Command hero ── */}
       <section className="hero-mesh relative overflow-hidden rounded-[26px] border border-white/10 px-5 py-5 shadow-[0_24px_60px_-30px_rgba(6,10,20,0.6)] sm:px-7 sm:py-6">
+        <span className="hero-scan" aria-hidden="true" />
         <div className="relative z-10 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
@@ -296,7 +300,7 @@ export function DashboardClient({
               { label: "Disposal rate", value: `${disposalRate}%`, pct: disposalRate, color: "#34d399", icon: TrendingUp },
               { label: "SLA compliance", value: `${slaCompliance}%`, pct: slaCompliance, color: "#60a5fa", icon: Gauge },
               { label: "Avg. resolution", value: `${avgResolution}d`, pct: Math.min(100, (avgResolution / 45) * 100), color: "#fbbf4c", icon: Timer },
-            ].map((s) => {
+            ].map((s, si) => {
               const Icon = s.icon;
               return (
                 <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.045] p-3 backdrop-blur-sm">
@@ -308,7 +312,10 @@ export function DashboardClient({
                     {s.value}
                   </p>
                   <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full transition-all duration-700" style={{ width: `${s.pct}%`, background: s.color }} />
+                    <div
+                      className="meter-fill h-full rounded-full transition-all duration-700"
+                      style={{ width: `${s.pct}%`, background: s.color, animationDelay: `${120 + si * 110}ms` }}
+                    />
                   </div>
                 </div>
               );
@@ -357,8 +364,9 @@ export function DashboardClient({
             <Link
               key={kpi.label}
               href={kpi.href}
+              style={{ "--kpi-accent": kpi.accent } as CSSProperties}
               className={cn(
-                "group relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg",
+                "kpi-card group relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg",
                 kpi.alert ? "border-rose-200/80 bg-gradient-to-br from-white to-rose-50/40" : "border-slate-200"
               )}
             >
@@ -373,13 +381,13 @@ export function DashboardClient({
                 {kpi.label}
               </p>
               <p className="mt-1 font-display text-[29px] font-extrabold leading-none tracking-[-0.03em] text-slate-950">
-                {kpi.value.toLocaleString("en-IN")}
+                <CountUp value={kpi.value} />
               </p>
               <p className="mt-1.5 truncate text-[10px] font-medium text-slate-400">{kpi.sub}</p>
 
               <div className="mt-3.5 h-1 overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className="h-full rounded-full transition-all duration-700"
+                  className="meter-fill h-full rounded-full transition-all duration-700"
                   style={{ width: `${Math.max(3, Math.min(100, kpi.share))}%`, background: kpi.accent }}
                 />
               </div>
@@ -389,6 +397,8 @@ export function DashboardClient({
       </div>
 
       {/* ── Charts row 1 ── */}
+      <RiskRadar risk={metrics.riskRadar} />
+
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="panel xl:col-span-2">
           <div className="panel-head">

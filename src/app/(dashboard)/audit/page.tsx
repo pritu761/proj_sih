@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import repository from "@/lib/services/repository";
+import { buildAuditChain } from "@/lib/services/audit-chain";
 import { ScrollText, ShieldCheck } from "lucide-react";
 import { SessionUser } from "@/lib/rbac";
 import { PageHeader } from "@/components/ui/page-header";
@@ -15,6 +16,7 @@ export default async function AuditPage() {
   }
 
   const logs = await repository.getAuditLogs();
+  const chain = buildAuditChain(logs);
 
   return (
     <div className="space-y-5">
@@ -37,7 +39,18 @@ export default async function AuditPage() {
         }
       />
 
-      <AuditLedger logs={logs} />
+      <AuditLedger
+        logs={chain.entries}
+        chain={{
+          head: chain.head,
+          count: chain.count,
+          valid: chain.valid,
+          brokenAt: chain.brokenAt,
+          algorithm: chain.algorithm,
+          genesis: chain.genesis,
+          builtAt: chain.builtAt,
+        }}
+      />
     </div>
   );
 }

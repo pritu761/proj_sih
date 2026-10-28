@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   Bell,
@@ -68,15 +67,11 @@ function timeAgo(date: Date | string) {
 }
 
 export function Navbar({ user, notifications, openOverlapCount, onMenu }: NavbarProps) {
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [notifList, setNotifList] = useState(notifications);
-  const [searchFocused, setSearchFocused] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
 
   const unreadCount = notifList.filter((n) => !n.read).length;
 
@@ -92,8 +87,7 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu }: Navbar
     function handleKey(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        searchRef.current?.focus();
-        searchRef.current?.select();
+        window.dispatchEvent(new Event("sentinel:command"));
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -103,13 +97,6 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu }: Navbar
       document.removeEventListener("keydown", handleKey);
     };
   }, []);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/cases?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
   const handleMarkAsRead = async (id: string) => {
     setNotifList((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -149,29 +136,23 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu }: Navbar
           <Menu className="h-[18px] w-[18px]" />
         </button>
 
-        {/* Search */}
-        <form onSubmit={handleSearchSubmit} className="relative max-w-[440px] flex-1">
-          <Search
-            className={cn(
-              "pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors",
-              searchFocused ? "text-brand-500" : "text-slate-400"
-            )}
-          />
-          <input
-            ref={searchRef}
-            type="text"
-            placeholder="Search…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setSearchFocused(true)}
-            onBlur={() => setSearchFocused(false)}
-            aria-label="Global search"
-            className="h-10 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] pl-10 pr-4 text-[12.5px] font-medium text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-brand-300 focus:bg-[var(--surface-card)] focus:ring-[3.5px] focus:ring-brand-500/15 sm:pr-16"
-          />
-          <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 items-center gap-0.5 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9.5px] font-bold text-slate-400 sm:flex">
+        {/* Command palette trigger */}
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event("sentinel:command"))}
+          aria-label="Open command palette"
+          aria-keyshortcuts="Control+K Meta+K"
+          className="group relative flex h-10 w-full max-w-[440px] flex-1 items-center gap-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)] pl-3.5 pr-2.5 text-left transition-all hover:border-brand-300 hover:bg-[var(--surface-card)] focus-visible:border-brand-300 focus-visible:outline-none focus-visible:ring-[3.5px] focus-visible:ring-brand-500/15"
+        >
+          <Search className="h-4 w-4 shrink-0 text-slate-400 transition-colors group-hover:text-brand-500" />
+          <span className="flex-1 truncate text-[12.5px] font-medium text-slate-400">
+            <span className="hidden md:inline">Search cases, institutions, commands...</span>
+            <span className="md:hidden">Search...</span>
+          </span>
+          <kbd className="hidden items-center gap-0.5 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9.5px] font-bold text-slate-400 sm:flex">
             <Command className="h-2.5 w-2.5" /> K
           </kbd>
-        </form>
+        </button>
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <ThemeToggle />

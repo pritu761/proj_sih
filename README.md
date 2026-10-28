@@ -56,7 +56,7 @@ This prototype provides an authorized, role-guarded platform that unifies all gr
 | **Scheduled Jobs** | Vercel Cron Jobs (`vercel.json`) | Automated SLA breach scan, reminder dispatch, batch overlap scan |
 | **Live Polling** | SWR / React Client Polling (30s) | Serverless-compatible real-time dashboard updates without WebSockets |
 | **Reporting** | `pdf-lib` + Streaming CSV | Native serverless PDF & CSV report generation (no Puppeteer bloat) |
-| **Testing** | Vitest | 18 unit tests covering Overlap Detection, SLA Engine, and RBAC |
+| **Testing** | Vitest | 30 unit tests covering Overlap Detection, SLA Engine, RBAC, Risk Engine, and Audit Chain |
 
 ---
 
@@ -125,7 +125,58 @@ The `OverlapDetector` service implements a multi-tiered collision prevention alg
 
 ---
 
-## 6. Local Setup Instructions
+## 6. Sentinel Intelligence Layer (Hackathon Differentiators)
+
+Five capabilities built specifically to demonstrate what a modern grievance command centre can do. Every one is deterministic, offline-capable, and needs no external AI keys, so the whole demo runs from a clean `npm run dev`.
+
+### 6.1 Sentinel Command Palette (`Ctrl/Cmd + K`)
+A keyboard-first command surface available on every page.
+- Fuzzy search across cases, institutions, and static navigation.
+- Quick actions: toggle theme, export CSV, open open-collision queue.
+- Recent destinations persisted in `localStorage`; full arrow-key/Enter/Esc support and ARIA combobox semantics.
+- Backed by `/api/search`, which is session-guarded and searches case ID, category, description, institution, city, and region.
+
+### 6.2 Sentinel Risk Radar (dashboard)
+A portfolio breach forecast that replaces "trust me" scoring with an audit-ready model.
+- **Exposure index** (0-100), overdue count, critical count, and 7/15/30-day breach horizons.
+- **Priority watchlist** ranked by score, with the strongest driver printed on each row.
+- **Visible weights:** SLA pressure 45, priority 15, stagnation 12, overlap 10, churn 8, statutory category 6.
+- Bands: `CRITICAL ≥ 80`, `HIGH ≥ 60`, `MODERATE ≥ 40`, `LOW < 40`.
+- Refreshes with the existing 30-second dashboard poll.
+
+### 6.3 Sentinel Brief (case workspace)
+Per-file explanation of *why* the case is ranked where it is, and what to do next.
+- Score gauge, band, elapsed vs. statutory clock, and the top three weighted drivers with point values.
+- **Recommended next action** wired directly into the existing status, escalation, transfer, remark, and link workflows.
+- Peer benchmark against similar closed files (sample size, median resolution days, delta).
+- Read-only lock for officers outside the assigned bureau.
+
+### 6.4 Collision Topology (overlap alerts)
+An institution → bureau flow map of live cross-bureau collisions.
+- Link thickness encodes the number of parallel cases; hover reveals institution, bureau, count, and confidence.
+- Clicking any link or node filters the alert list, scrolls to the matching card, and highlights it.
+- Horizontally pannable on mobile so labels stay legible.
+
+### 6.5 Tamper-Evident Audit Chain (`/audit`)
+SHA-256 hash chain over the append-only ledger.
+- Canonical payload: `seq | prevHash | user | action | entity | entityId | ip | timestamp | before | after`.
+- Genesis block `GENESIS`; each block displays its sequence, previous hash, and sealed hash.
+- **Verify ledger integrity** re-computes every hash server-side (`/api/audit/verify`, Admin/Authority only) and compares against the anchored prefix, so an edited payload, actor, IP, timestamp, or a deleted block is detected and reported as `broken at #NNNN`.
+- Chain head is copyable for evidence packs; the ledger opens per-entry JSON with block, previous hash, and sealed hash.
+
+### 6.6 Motion & interaction layer
+Purposeful, GPU-friendly motion that explains state changes rather than decorating them.
+- Ambient aurora drift and a single scan beam in the command hero; a top progress beam replays on every route change.
+- KPI, exposure, audit, and risk-score numbers count up with an eased RAF loop, and gauges/meters draw in from zero.
+- Collision topology edges draw on sequentially, nodes fade in by rank, and the risk watchlist re-staggers when the forecast horizon changes.
+- Micro-interactions: KPI spotlight and accent sweep, primary-button sheen, palette result stagger, and an audit verification sweep that ends in a verified pop.
+- All of it is disabled under `prefers-reduced-motion: reduce`, including the RAF counters, so the dashboard renders in its final state instantly.
+
+> **Why it stands out:** the differentiators are explainable and inspectable. A judge can click any risk score to see its arithmetic, follow a collision edge to the exact alert, or verify the audit chain and get a cryptographic head hash — no black-box model, no paid API, no network dependency.
+
+---
+
+## 7. Local Setup Instructions
 
 ### Prerequisites
 - Node.js `v20+` or `v22+`
@@ -163,7 +214,7 @@ npm run prisma:seed # or: npx tsx prisma/seed.ts
 ```bash
 npm test
 ```
-Runs 18 Vitest unit tests verifying Overlap Detection, SLA Calculations, and RBAC rules.
+Runs 30 Vitest unit tests verifying Overlap Detection, SLA Calculations, RBAC rules, the explainable Risk Engine, and the tamper-evident Audit Chain.
 
 ### Step 6: Start Development Server
 ```bash
@@ -173,7 +224,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 7. Step-by-Step Vercel Deployment
+## 8. Step-by-Step Vercel Deployment
 
 1. **Push to GitHub / GitLab:**
    Push this project repository to your Git provider.
@@ -200,7 +251,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 8. End-to-End Demo Script Walkthrough
+## 9. End-to-End Demo Script Walkthrough
 
 Follow this 8-step script to demonstrate all system capabilities:
 
@@ -227,10 +278,14 @@ Follow this 8-step script to demonstrate all system capabilities:
    Navigate to `/cases?sla_status=BREACHED`. Observe colour-coded countdown chips showing overdue days in crimson, approaching thresholds in amber, and normal timelines in emerald.
 8. **Export Official Reports:**
    Navigate to `/reports`. Click **"Download Official PDF Report"** to generate the executive report via `pdf-lib`, or click **"Export CSV Dataset"** for the full data grid.
+9. **Sentinel Command Palette:**
+   Press **Ctrl/Cmd + K** anywhere. Type `apex` and open a case in one keystroke, or run *Switch to dark mode* / *Export case register* without leaving the keyboard.
+10. **Explainable Risk + Integrity Proof:**
+   On the dashboard, switch the Risk Radar between 7/15/30 days and open a watchlist row. The case workspace shows the **Sentinel Brief** with every point accounted for and a one-click recommended action. On `/alerts`, hover the **Collision Topology** and click a link to jump to the alert. Finish on `/audit` with **Verify ledger integrity** — the server recomputes all 80 SHA-256 blocks and returns a copyable head hash.
 
 ---
 
-## 9. Future Enhancements
+## 10. Future Enhancements
 
 1. **Parichay / MeriPehchaan Government SSO:**
    Integration with National Single Sign-On (NSSO / Jan Parichay) for seamless, passwordless login by central and state government officials.

@@ -42,6 +42,8 @@ import { Breadcrumbs } from "@/components/ui/page-header";
 import { BureauPill, ConfidencePill, PriorityPill, StatusPill } from "@/components/ui/badges";
 import { SlaRing } from "@/components/ui/sla-ring";
 import { Modal } from "@/components/ui/modal";
+import { CaseBrief } from "./CaseBrief";
+import type { CaseInsight } from "@/lib/services/risk-engine";
 import { cn } from "@/lib/utils";
 
 interface CaseDetailClientProps {
@@ -50,6 +52,7 @@ interface CaseDetailClientProps {
   overlapAlert?: any;
   collidingCase?: any;
   currentUser: SessionUser;
+  insight?: CaseInsight | null;
 }
 
 const actionIcon: Record<string, typeof Inbox> = {
@@ -87,6 +90,7 @@ export function CaseDetailClient({
   overlapAlert,
   collidingCase,
   currentUser,
+  insight,
 }: CaseDetailClientProps) {
   const router = useRouter();
 
@@ -528,6 +532,15 @@ export function CaseDetailClient({
           </div>
         </div>
       </div>
+
+      {/* Sentinel Brief - explainable risk, drivers and next best action */}
+      {insight && (
+        <CaseBrief
+          insight={insight}
+          canAct={isAuthorizedToAct}
+          onAction={(action) => setActiveModal(action)}
+        />
+      )}
 
       {/* Main grid */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">

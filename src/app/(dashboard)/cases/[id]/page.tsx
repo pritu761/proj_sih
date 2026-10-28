@@ -13,7 +13,10 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
   const user = session?.user as unknown as SessionUser;
 
   const { id } = await params;
-  const data = await repository.getCaseById(id);
+  const [data, insight] = await Promise.all([
+    repository.getCaseById(id),
+    repository.getCaseInsight(id),
+  ]);
 
   if (!data) {
     notFound();
@@ -26,6 +29,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       overlapAlert={data.overlapAlert}
       collidingCase={data.collidingCase}
       currentUser={user}
+      insight={insight}
     />
   );
 }

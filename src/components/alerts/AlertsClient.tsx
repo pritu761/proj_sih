@@ -24,6 +24,7 @@ import { SessionUser } from "@/lib/rbac";
 import { BureauPill, ConfidencePill } from "@/components/ui/badges";
 import { Modal } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
+import { CollisionFlow } from "./CollisionFlow";
 import { cn } from "@/lib/utils";
 
 interface AlertsClientProps {
@@ -77,6 +78,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
 
   const [activeAlert, setActiveAlert] = useState<any | null>(null);
   const [modalMode, setModalMode] = useState<"COORDINATE" | "DISMISS" | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const [noteText, setNoteText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -103,6 +105,19 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
   const institutionsAtRisk = new Set(
     alerts.filter((a) => a.status === "OPEN").map((a) => a.institution_id)
   ).size;
+
+  const focusAlert = (id: string) => {
+    const target = alerts.find((a) => a.id === id);
+    if (!target) return;
+    setStatusFilter(target.status as typeof statusFilter);
+    setHighlightId(id);
+    window.setTimeout(() => {
+      document
+        .getElementById(`alert-${id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    window.setTimeout(() => setHighlightId(null), 3200);
+  };
 
   const handleCoordinate = async () => {
     if (!activeAlert || !noteText.trim()) return;
@@ -296,6 +311,9 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
         </div>
       )}
 
+      {/* Collision topology */}
+      <CollisionFlow alerts={alerts} onSelect={focusAlert} />
+
       {/* Filter bar */}
       <div className="panel flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
@@ -362,10 +380,13 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
             return (
               <article
                 key={alert.id}
+                id={`alert-${alert.id}`}
                 className={cn(
                   "relative overflow-hidden rounded-2xl border bg-gradient-to-br shadow-sm transition-shadow hover:shadow-md",
                   meta.wash,
-                  meta.border
+                  meta.border,
+                  highlightId === alert.id &&
+                    "ring-2 ring-brand-400 ring-offset-2 ring-offset-[var(--surface-bg)] shadow-lg"
                 )}
               >
                 <span className={cn("absolute inset-y-0 left-0 w-1 bg-gradient-to-b", meta.rail)} />
