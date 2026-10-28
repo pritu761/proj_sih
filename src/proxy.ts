@@ -25,13 +25,15 @@ export function proxy(request: NextRequest) {
     request.cookies.get("next-auth.session-token")?.value ||
     request.cookies.get("__Secure-next-auth.session-token")?.value;
 
-  // If no session token is found on a protected route, redirect to /login
+  // If no session token is found on a protected route, redirect to /login.
+  // The callback is only needed for deep links; the root path already defaults
+  // to "/" on the login page, so keep that URL clean for shared demo links.
   if (!token) {
     const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set(
-      "callbackUrl",
-      `${pathname}${request.nextUrl.search}`
-    );
+    const destination = `${pathname}${request.nextUrl.search}`;
+    if (destination !== "/") {
+      loginUrl.searchParams.set("callbackUrl", destination);
+    }
     return NextResponse.redirect(loginUrl);
   }
 
