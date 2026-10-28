@@ -5,7 +5,11 @@ import { SessionUser } from "@/lib/rbac";
 
 export async function GET() {
   const session = await auth();
-  const user = session?.user as unknown as SessionUser | undefined;
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = session.user as unknown as SessionUser;
   const metrics = await repository.getDashboardMetrics(user);
   return NextResponse.json(metrics);
 }

@@ -376,7 +376,11 @@ export function generateSeedData() {
       const category = categories[(iIdx * 2 + k) % categories.length];
       const status = statuses[(currentCaseNum + k) % statuses.length];
       const source = sources[(currentCaseNum + iIdx) % sources.length];
-      const daysAgo = 3 + (currentCaseNum % 85); // Ages 3 to 88 days ago
+      // Keep every generated action in the past. The second action is dated
+      // `dateReceived + 5 days`, so an age below 6 would place seeded audit
+      // events after the seed reference `now` and (on a live install) after
+      // real wall-clock events, which would reorder the audit chain.
+      const daysAgo = 6 + (currentCaseNum % 82); // Ages 6 to 87 days ago
       const dateReceived = new Date(now.getTime() - daysAgo * 86400000);
       const slaConfig = SLA_CONFIGS.find(c => c.category === category) || SLA_CONFIGS[0];
       const expectedDisposal = new Date(dateReceived.getTime() + slaConfig.timeline_days * 86400000);

@@ -1,27 +1,20 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
+import repository from "@/lib/services/repository";
 import { AlertsClient } from "@/components/alerts/AlertsClient";
 import { SessionUser } from "@/lib/rbac";
-import { generateSeedData } from "@/lib/mock-data-generator";
 
 export default async function AlertsPage() {
   const session = await auth();
-  const user = session?.user as unknown as SessionUser;
+  if (!session?.user) {
+    redirect("/login");
+  }
 
-  const { institutions, overlapAlerts } = generateSeedData();
+  const user = session.user as unknown as SessionUser;
 
-  // Attach institution details
-  const alertsWithInst = overlapAlerts.map((a) => {
-    const inst = institutions.find((i) => i.id === a.institution_id);
-    return {
-      ...a,
-      institution: inst,
-    };
-  });
+  // Read from the shared repository store (not a fresh seed) so coordinate and
+  // dismiss actions persist across refreshes and are region-scoped.
+  const alerts = await repository.getOverlapAlerts(user);
 
-  return (
-    <AlertsClient
-      initialAlerts={alertsWithInst}
-      currentUser={user}
-    />
-  );
+  return <AlertsClient initialAlerts={alerts} currentUser={user} />;
 }

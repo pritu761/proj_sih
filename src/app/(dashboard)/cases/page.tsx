@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import repository from "@/lib/services/repository";
 import {
@@ -72,7 +73,10 @@ function buildQuery(
 
 export default async function CasesPage({ searchParams }: CasesPageProps) {
   const session = await auth();
-  const user = session?.user as unknown as SessionUser;
+  if (!session?.user) {
+    redirect("/login");
+  }
+  const user = session.user as unknown as SessionUser;
   const params = await searchParams;
 
   const page = parseInt(params.page || "1", 10);

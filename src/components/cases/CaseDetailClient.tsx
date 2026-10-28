@@ -154,7 +154,7 @@ export function CaseDetailClient({
     setIsLoading(true);
     setErrorMsg("");
     const res = await updateCaseStatusAction({
-      caseId: caseItem.case_id,
+      caseId: caseItem.id,
       status: newStatus,
       remarks,
       attachments: uploadedUrl ? [uploadedUrl] : [],
@@ -172,7 +172,7 @@ export function CaseDetailClient({
     setIsLoading(true);
     setErrorMsg("");
     const res = await transferCaseAction({
-      caseId: caseItem.case_id,
+      caseId: caseItem.id,
       toBureau,
       remarks,
       attachments: uploadedUrl ? [uploadedUrl] : [],
@@ -190,7 +190,7 @@ export function CaseDetailClient({
     setIsLoading(true);
     setErrorMsg("");
     const res = await escalateCaseAction({
-      caseId: caseItem.case_id,
+      caseId: caseItem.id,
       remarks,
       attachments: uploadedUrl ? [uploadedUrl] : [],
     });
@@ -207,7 +207,7 @@ export function CaseDetailClient({
     setIsLoading(true);
     setErrorMsg("");
     const res = await addRemarkAction({
-      caseId: caseItem.case_id,
+      caseId: caseItem.id,
       remarks,
       attachments: uploadedUrl ? [uploadedUrl] : [],
     });
@@ -224,7 +224,7 @@ export function CaseDetailClient({
     setIsLoading(true);
     setErrorMsg("");
     const res = await linkCasesAction({
-      caseAId: caseItem.case_id,
+      caseAId: caseItem.id,
       caseBId: linkTargetId,
       linkType,
       note: linkNote,

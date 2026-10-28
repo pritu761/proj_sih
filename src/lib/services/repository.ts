@@ -3,7 +3,7 @@ import { calculateCaseSla, computeAgeingBuckets } from "./sla-engine";
 import { buildRiskRadar, buildCaseInsight } from "./risk-engine";
 import { overlapDetector } from "./overlap-detector";
 import { logAuditEvent, inMemoryAuditLogs } from "./audit";
-import { SessionUser, assertCanActOnCase } from "@/lib/rbac";
+import { SessionUser, assertCanActOnCase, canCoordinateOverlap, canViewCase } from "@/lib/rbac";
 
 export interface CaseFilterOptions {
   q?: string;
@@ -26,6 +26,7 @@ export interface CaseFilterOptions {
 
 // Global In-Memory Cache to support instant preview and seamless unit/UI flows
 const globalRepo = globalThis as unknown as {
+  auditLedgerSeeded?: boolean;
   inMemoryData?: {
     institutions: SeedInstitution[];
     cases: SeedCase[];
@@ -54,7 +55,11 @@ const globalRepo = globalThis as unknown as {
 };
 
 function seedAuditLedger(cases: SeedCase[]) {
-  if (inMemoryAuditLogs.length > 0) return;
+  // Seed historical case actions exactly once per process. Login/logout audit
+  // events may arrive before the first page render, so an empty-array check
+  // would wrongly skip the historical ledger.
+  if (globalRepo.auditLedgerSeeded) return;
+  globalRepo.auditLedgerSeeded = true;
   const seededLogs = cases
     .flatMap((c) =>
       c.actions.map((a) => ({
@@ -139,11 +144,16 @@ export class ComplaintRepository {
     const isRegional = user?.role === "REGIONAL_OFFICER" && Boolean(user.region);
 
     // Apply region filter if Regional Officer
+    const regionInstIds = isRegional
+      ? new Set(
+          store.institutions
+            .filter((i) => i.region === user!.region)
+            .map((i) => i.id)
+        )
+      : null;
+
     let allCases = store.cases;
-    if (isRegional) {
-      const regionInstIds = new Set(
-        store.institutions.filter((i) => i.region === user.region).map((i) => i.id)
-      );
+    if (regionInstIds) {
       allCases = allCases.filter((c) => regionInstIds.has(c.institution_id));
     }
 
@@ -199,7 +209,10 @@ export class ComplaintRepository {
       }
     }
 
-    const openOverlapAlerts = store.overlapAlerts.filter((o) => o.status === "OPEN").length;
+    const scopedOverlapAlerts = regionInstIds
+      ? store.overlapAlerts.filter((o) => regionInstIds.has(o.institution_id))
+      : store.overlapAlerts;
+    const openOverlapAlerts = scopedOverlapAlerts.filter((o) => o.status === "OPEN").length;
     const ageingBuckets = computeAgeingBuckets(allCases);
 
     const bureauWorkload = Object.entries(bureauMap).map(([bureau, counts]) => ({
@@ -267,7 +280,7 @@ export class ComplaintRepository {
       .slice(0, 6);
 
     // Open overlap alerts enriched for the command center
-    const openOverlapList = store.overlapAlerts
+    const openOverlapList = scopedOverlapAlerts
       .filter((o) => o.status === "OPEN")
       .map((o) => {
         const inst = instLookup.get(o.institution_id);
@@ -301,11 +314,7 @@ export class ComplaintRepository {
         : 0;
 
     // Explainable risk radar (portfolio-level breach forecast)
-    const scopedInstitutionIds = new Set(allCases.map((c) => c.institution_id));
-    const scopedOverlaps = isRegional
-      ? store.overlapAlerts.filter((o) => scopedInstitutionIds.has(o.institution_id))
-      : store.overlapAlerts;
-    const riskRadar = buildRiskRadar(allCases, store.institutions, scopedOverlaps);
+    const riskRadar = buildRiskRadar(allCases, store.institutions, scopedOverlapAlerts);
 
     return {
       kpi: {
@@ -403,13 +412,18 @@ export class ComplaintRepository {
   /**
    * Institution Profile with consolidated history across all Bureaus and Overlap Banner
    */
-  public async getInstitutionById(id: string) {
+  public async getInstitutionById(id: string, user?: SessionUser) {
     const store = getInMemoryStore();
     const inst = store.institutions.find(
       (i) => i.id === id || i.aicte_permanent_id === id
     );
 
     if (!inst) return null;
+
+    // Regional officers may only open institutions inside their region.
+    if (user?.role === "REGIONAL_OFFICER" && user.region && inst.region !== user.region) {
+      return null;
+    }
 
     const cases = store.cases
       .filter((c) => c.institution_id === inst.id)
@@ -558,12 +572,19 @@ export class ComplaintRepository {
   /**
    * Case Tracking Detail with SLA Countdown, Timeline, Overlap alerts, and Links
    */
-  public async getCaseById(id: string) {
+  public async getCaseById(id: string, user?: SessionUser) {
     const store = getInMemoryStore();
     const c = store.cases.find((item) => item.id === id || item.case_id === id);
     if (!c) return null;
 
     const inst = store.institutions.find((i) => i.id === c.institution_id);
+
+    // Enforce regional visibility for case detail pages. Returning null makes
+    // the page render a 404 rather than leaking another region's record.
+    if (!canViewCase(user, { ...c, institution: inst })) {
+      return null;
+    }
+
     const sla = calculateCaseSla(c.category, c.date_received, c.status);
 
     // Linked cases
@@ -641,16 +662,19 @@ export class ComplaintRepository {
   /**
    * Unified quick search across cases and institutions (command palette).
    */
-  public async search(term: string) {
+  public async search(term: string, user?: SessionUser) {
     const store = getInMemoryStore();
     const q = term.trim().toLowerCase();
     if (q.length < 2) return { cases: [], institutions: [] };
 
+    const regionFilter =
+      user?.role === "REGIONAL_OFFICER" && user.region ? user.region : null;
     const instMap = new Map(store.institutions.map((i) => [i.id, i]));
 
     const cases = store.cases
       .filter((c) => {
         const inst = instMap.get(c.institution_id);
+        if (regionFilter && inst?.region !== regionFilter) return false;
         return [
           c.case_id,
           c.category,
@@ -683,11 +707,12 @@ export class ComplaintRepository {
       });
 
     const institutions = store.institutions
-      .filter((i) =>
-        [i.name, i.aicte_permanent_id, i.city, i.state, i.region, i.institution_type]
+      .filter((i) => {
+        if (regionFilter && i.region !== regionFilter) return false;
+        return [i.name, i.aicte_permanent_id, i.city, i.state, i.region, i.institution_type]
           .filter(Boolean)
-          .some((v) => String(v).toLowerCase().includes(q))
-      )
+          .some((v) => String(v).toLowerCase().includes(q));
+      })
       .slice(0, 5)
       .map((i) => ({
         id: i.id,
@@ -821,6 +846,7 @@ export class ComplaintRepository {
     assertCanActOnCase(actor, c);
 
     const prevPriority = c.priority;
+    const previousStatus = c.status;
     c.status = "ESCALATED";
     c.priority = "CRITICAL";
     c.last_action = `Escalated to Competent Authority by ${actor.bureau}`;
@@ -854,7 +880,7 @@ export class ComplaintRepository {
       action: "ESCALATE_CASE",
       entity: "Case",
       entity_id: c.case_id,
-      before: { priority: prevPriority, status: c.status },
+      before: { priority: prevPriority, status: previousStatus },
       after: { priority: "CRITICAL", status: "ESCALATED", remarks },
     });
 
@@ -902,6 +928,42 @@ export class ComplaintRepository {
   }
 
   /**
+   * Internal helper that writes (or updates) a canonical case-to-case link.
+   * Authorization is checked by callers so overlap coordination can link cases
+   * across the bureaus that are party to an alert.
+   */
+  private upsertCaseLink(
+    caseAId: string,
+    caseBId: string,
+    linkType: "OVERLAP" | "DUPLICATE" | "RELATED",
+    note: string,
+    actorEmail: string
+  ) {
+    const store = getInMemoryStore();
+    const [c1, c2] = [caseAId, caseBId].sort();
+    const existing = store.caseLinks.find(
+      (l) => l.case_a_id === c1 && l.case_b_id === c2
+    );
+
+    if (existing) {
+      existing.link_type = linkType;
+      existing.note = note;
+    } else {
+      store.caseLinks.push({
+        id: `link_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        case_a_id: c1,
+        case_b_id: c2,
+        link_type: linkType,
+        created_by: actorEmail,
+        created_at: new Date(),
+        note,
+      });
+    }
+
+    return { caseAId: c1, caseBId: c2 };
+  }
+
+  /**
    * Action: Link two cases (OVERLAP / DUPLICATE / RELATED)
    */
   public async linkCases(
@@ -912,26 +974,32 @@ export class ComplaintRepository {
     actor: SessionUser
   ) {
     const store = getInMemoryStore();
-    const [c1, c2] = [caseAId, caseBId].sort();
-
-    const existing = store.caseLinks.find(
-      (l) => l.case_a_id === c1 && l.case_b_id === c2
+    const caseA = store.cases.find(
+      (c) => c.id === caseAId || c.case_id === caseAId
+    );
+    const caseB = store.cases.find(
+      (c) => c.id === caseBId || c.case_id === caseBId
     );
 
-    if (existing) {
-      existing.link_type = linkType;
-      existing.note = note;
-    } else {
-      store.caseLinks.push({
-        id: `link_${Date.now()}`,
-        case_a_id: c1,
-        case_b_id: c2,
-        link_type: linkType,
-        created_by: actor.email,
-        created_at: new Date(),
-        note,
-      });
+    if (!caseA || !caseB) {
+      throw new Error("Both cases must exist before they can be linked.");
     }
+    if (caseA.id === caseB.id) {
+      throw new Error("A case cannot be linked to itself.");
+    }
+
+    // Linking mutates a shared record, so the actor must be authorised on both
+    // sides of the relationship.
+    assertCanActOnCase(actor, caseA);
+    assertCanActOnCase(actor, caseB);
+
+    const { caseAId: c1, caseBId: c2 } = this.upsertCaseLink(
+      caseA.case_id,
+      caseB.case_id,
+      linkType,
+      note,
+      actor.email
+    );
 
     await logAuditEvent({
       user: actor.email,
@@ -977,11 +1045,20 @@ export class ComplaintRepository {
         ? "SDC"
         : "PGRC";
 
-    const caseCount = store.cases.length + 1;
-    const caseIdCode = `AICTE/${bureauCode}/2026/${String(300 + caseCount).padStart(5, "0")}`;
+    // Registering a case is a write action: regional officers are read-only and
+    // bureau officers may only create cases for their own bureau.
+    assertCanActOnCase(actor, { assigned_bureau: data.assigned_bureau });
+
+    // Derive the next registry number from the highest existing sequence so
+    // repeated or seeded cases can never collide.
+    const maxSequence = store.cases.reduce((max, c) => {
+      const match = /(\d+)$/.exec(c.case_id);
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
+    const caseIdCode = `AICTE/${bureauCode}/2026/${String(maxSequence + 1).padStart(5, "0")}`;
 
     const newCase: SeedCase = {
-      id: `case_${Date.now()}`,
+      id: `case_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       case_id: caseIdCode,
       institution_id: inst.id,
       date_received: new Date(),
@@ -1089,12 +1166,26 @@ export class ComplaintRepository {
     const alert = store.overlapAlerts.find((o) => o.id === alertId);
     if (!alert) throw new Error("Overlap alert not found.");
 
+    if (!canCoordinateOverlap(actor, alert)) {
+      throw new Error(
+        `Unauthorized: User ${actor.email} (${actor.bureau}) cannot coordinate an overlap involving ${alert.bureaus_involved.join(", ")}.`
+      );
+    }
+
     alert.status = "COORDINATED";
     alert.coordination_note = coordinationNote;
 
-    // Automatically link the cases as OVERLAP
+    // Automatically link the cases as OVERLAP. Coordination permission covers
+    // the alert, so the link is written directly instead of re-checking
+    // per-case bureau ownership on both sides of a cross-bureau collision.
     if (alert.case_ids.length >= 2) {
-      await this.linkCases(alert.case_ids[0], alert.case_ids[1], "OVERLAP", coordinationNote, actor);
+      this.upsertCaseLink(
+        alert.case_ids[0],
+        alert.case_ids[1],
+        "OVERLAP",
+        coordinationNote,
+        actor.email
+      );
     }
 
     await logAuditEvent({
@@ -1117,6 +1208,12 @@ export class ComplaintRepository {
     const alert = store.overlapAlerts.find((o) => o.id === alertId);
     if (!alert) throw new Error("Overlap alert not found.");
 
+    if (!canCoordinateOverlap(actor, alert)) {
+      throw new Error(
+        `Unauthorized: User ${actor.email} (${actor.bureau}) cannot dismiss an overlap involving ${alert.bureaus_involved.join(", ")}.`
+      );
+    }
+
     alert.status = "DISMISSED";
     alert.dismissed_reason = dismissedReason;
 
@@ -1129,6 +1226,42 @@ export class ComplaintRepository {
     });
 
     return alert;
+  }
+
+  /**
+   * Overlap alerts enriched with institution details for the alerts workspace.
+   */
+  public async getOverlapAlerts(user?: SessionUser) {
+    const store = getInMemoryStore();
+    const instMap = new Map(store.institutions.map((i) => [i.id, i]));
+    const caseMap = new Map(store.cases.map((c) => [c.case_id, c]));
+
+    let alerts = store.overlapAlerts;
+    if (user?.role === "REGIONAL_OFFICER" && user.region) {
+      alerts = alerts.filter(
+        (a) => instMap.get(a.institution_id)?.region === user.region
+      );
+    }
+
+    return alerts
+      .map((a) => ({
+        ...a,
+        institution: instMap.get(a.institution_id),
+        // Internal ids are required for route links; `case_ids` are display
+        // codes that contain slashes and cannot be used as a [id] segment.
+        cases: a.case_ids
+          .map((cid) => caseMap.get(cid))
+          .filter((c): c is SeedCase => Boolean(c))
+          .map((c) => ({
+            id: c.id,
+            case_id: c.case_id,
+            assigned_bureau: c.assigned_bureau,
+          })),
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime()
+      );
   }
 
   /**
@@ -1147,10 +1280,15 @@ export class ComplaintRepository {
     return notifs;
   }
 
-  public async markNotificationRead(id: string) {
-    const store = getInMemoryStore();
-    const n = store.notifications.find((item) => item.id === id);
-    if (n) n.read = true;
+  public async markNotificationRead(id: string, user?: SessionUser) {
+    const visible = await this.getNotifications(user);
+    const notification = visible.find((item) => item.id === id);
+
+    if (!notification) {
+      throw new Error("Notification not found or not visible to the current user.");
+    }
+
+    notification.read = true;
     return true;
   }
 

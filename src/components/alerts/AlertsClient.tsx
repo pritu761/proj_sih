@@ -453,17 +453,35 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                         Colliding cases
                       </p>
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        {alert.case_ids?.map((cid: string) => (
-                          <Link
-                            key={cid}
-                            href={`/cases/${cid}`}
-                            className="group inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-white px-2 py-1 font-mono text-[10px] font-bold text-brand-700 transition-colors hover:border-brand-400 hover:bg-brand-50"
-                          >
-                            <Link2 className="h-2.5 w-2.5" />
-                            {cid}
-                            <ArrowUpRight className="h-2.5 w-2.5 opacity-0 transition-opacity group-hover:opacity-100" />
-                          </Link>
-                        ))}
+                        {alert.case_ids?.map((cid: string) => {
+                          const linkedCase = alert.cases?.find(
+                            (item: any) => item.case_id === cid
+                          );
+                          const label = (
+                            <>
+                              <Link2 className="h-2.5 w-2.5" />
+                              {cid}
+                            </>
+                          );
+
+                          return linkedCase ? (
+                            <Link
+                              key={cid}
+                              href={`/cases/${linkedCase.id}`}
+                              className="group inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-white px-2 py-1 font-mono text-[10px] font-bold text-brand-700 transition-colors hover:border-brand-400 hover:bg-brand-50"
+                            >
+                              {label}
+                              <ArrowUpRight className="h-2.5 w-2.5 opacity-0 transition-opacity group-hover:opacity-100" />
+                            </Link>
+                          ) : (
+                            <span
+                              key={cid}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[10px] font-bold text-slate-500"
+                            >
+                              {label}
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

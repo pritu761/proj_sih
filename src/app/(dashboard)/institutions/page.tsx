@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import repository from "@/lib/services/repository";
+import { SessionUser } from "@/lib/rbac";
 import {
   Building2,
   ShieldAlert,
@@ -56,11 +59,23 @@ function query(
 }
 
 export default async function InstitutionsPage({ searchParams }: InstitutionsPageProps) {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const user = session.user as unknown as SessionUser;
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
+
+  // Regional officers are always confined to their own region, regardless of
+  // any `region` query parameter they try to supply.
+  const region =
+    user.role === "REGIONAL_OFFICER" ? user.region ?? undefined : params.region;
+
   const data = await repository.getInstitutions({
     q: params.q,
-    region: params.region,
+    region,
     type: params.type,
     page,
     limit: 12,

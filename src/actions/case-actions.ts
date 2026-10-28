@@ -207,7 +207,7 @@ export async function createCaseAction(data: {
     revalidatePath("/");
     revalidatePath("/cases");
     revalidatePath("/alerts");
-    return { success: true, caseId: created.case_id };
+    return { success: true, caseId: created.id, caseCode: created.case_id };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to create case." };
   }

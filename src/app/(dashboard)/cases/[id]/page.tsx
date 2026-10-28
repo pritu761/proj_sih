@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { auth } from "@/auth";
 import repository from "@/lib/services/repository";
 import { CaseDetailClient } from "@/components/cases/CaseDetailClient";
@@ -10,11 +10,14 @@ interface CaseDetailPageProps {
 
 export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
   const session = await auth();
-  const user = session?.user as unknown as SessionUser;
+  if (!session?.user) {
+    redirect("/login");
+  }
 
+  const user = session.user as unknown as SessionUser;
   const { id } = await params;
   const [data, insight] = await Promise.all([
-    repository.getCaseById(id),
+    repository.getCaseById(id, user),
     repository.getCaseInsight(id),
   ]);
 

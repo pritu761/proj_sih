@@ -1,17 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import repository from "@/lib/services/repository";
 import { overlapDetector } from "@/lib/services/overlap-detector";
-
-function isAuthorizedCron(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // Allowed in dev
-
-  const authHeader = req.headers.get("authorization");
-  if (authHeader === `Bearer ${secret}`) return true;
-
-  const keyParam = req.nextUrl.searchParams.get("key");
-  return keyParam === secret;
-}
+import { isAuthorizedCron } from "@/lib/cron-auth";
 
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCron(req)) {

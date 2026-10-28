@@ -237,9 +237,9 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
    - Under **Storage**, create a new **Blob Store** and link it to this project.
    - Vercel automatically exposes `BLOB_READ_WRITE_TOKEN`.
 5. **Set Environment Variables in Vercel Settings:**
-   - `AUTH_SECRET`: Random 32+ character string (e.g. `openssl rand -base64 32`)
-   - `NEXTAUTH_URL`: `https://your-vercel-domain.vercel.app`
-   - `CRON_SECRET`: Secure bearer token for Vercel Cron jobs
+   - `AUTH_SECRET`: Random 32+ character string (e.g. `openssl rand -base64 32`). Required in production; the app refuses to start without it.
+   - **Do not set `NEXTAUTH_URL` (or `AUTH_URL`) to `http://localhost:3000`.** Auth.js uses it to build absolute redirects, which sends users to localhost after logout. Leave it unset so the request host is used (host trust is enabled), or set it to the exact public origin, e.g. `AUTH_URL=https://your-vercel-domain.vercel.app`.
+   - `CRON_SECRET`: Secure bearer token for Vercel Cron jobs. Cron routes fail closed in production when this is missing.
 6. **Deploy & Apply Migrations:**
    Run deploy, then in the Vercel CLI or via GitHub Action:
    ```bash

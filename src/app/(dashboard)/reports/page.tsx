@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import repository from "@/lib/services/repository";
 import {
   Download,
@@ -23,7 +24,10 @@ import { cn } from "@/lib/utils";
 
 export default async function ReportsPage() {
   const session = await auth();
-  const user = session?.user as unknown as SessionUser;
+  if (!session?.user) {
+    redirect("/login");
+  }
+  const user = session.user as unknown as SessionUser;
   const metrics = await repository.getDashboardMetrics(user);
 
   const kpi = metrics.kpi;

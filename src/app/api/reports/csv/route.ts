@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import repository from "@/lib/services/repository";
 import { formatDate } from "@/lib/utils";
+import { SessionUser } from "@/lib/rbac";
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -9,17 +10,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const user = session.user as unknown as SessionUser;
   const searchParams = req.nextUrl.searchParams;
-  const casesRes = await repository.getCases({
-    q: searchParams.get("q") || undefined,
-    bureau: searchParams.get("bureau") || undefined,
-    region: searchParams.get("region") || undefined,
-    category: searchParams.get("category") || undefined,
-    status: searchParams.get("status") || undefined,
-    priority: searchParams.get("priority") || undefined,
-    sla_status: (searchParams.get("sla_status") as any) || undefined,
-    limit: 5000,
-  });
+  const casesRes = await repository.getCases(
+    {
+      q: searchParams.get("q") || undefined,
+      bureau: searchParams.get("bureau") || undefined,
+      region: searchParams.get("region") || undefined,
+      category: searchParams.get("category") || undefined,
+      status: searchParams.get("status") || undefined,
+      priority: searchParams.get("priority") || undefined,
+      sla_status: (searchParams.get("sla_status") as any) || undefined,
+      limit: 5000,
+    },
+    user
+  );
 
   const headers = [
     "Case ID",

@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { auth } from "@/auth";
 import repository from "@/lib/services/repository";
+import { SessionUser } from "@/lib/rbac";
 import {
   ShieldAlert,
   MapPin,
@@ -53,8 +55,14 @@ const actionTone: Record<string, string> = {
 };
 
 export default async function InstitutionProfilePage({ params }: InstitutionProfileProps) {
+  const session = await auth();
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const user = session.user as unknown as SessionUser;
   const { id } = await params;
-  const data = await repository.getInstitutionById(id);
+  const data = await repository.getInstitutionById(id, user);
 
   if (!data) notFound();
 
@@ -82,6 +90,9 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
       .toUpperCase() || "AI";
 
   const firstAlert = openOverlapAlerts[0];
+  const firstAlertCase =
+    cases.find((c: any) => c.case_id === firstAlert?.case_ids?.[0]) ??
+    activeCases[0];
 
   return (
     <div className="space-y-5">
@@ -144,7 +155,7 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
             </div>
 
             <div className="flex shrink-0 flex-wrap gap-2">
-              <Link href={`/cases/${firstAlert?.case_ids?.[0] ?? activeCases[0]?.id ?? ""}`} className="btn btn-secondary btn-sm">
+              <Link href={`/cases/${firstAlertCase?.id ?? ""}`} className="btn btn-secondary btn-sm">
                 View case
               </Link>
               <Link href="/alerts?status=OPEN" className="btn btn-danger btn-sm">

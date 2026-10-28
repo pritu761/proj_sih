@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import repository from "@/lib/services/repository";
 import { DashboardClient } from "@/components/dashboard/DashboardClient";
@@ -5,7 +6,11 @@ import { SessionUser } from "@/lib/rbac";
 
 export default async function DashboardPage() {
   const session = await auth();
-  const user = session?.user as unknown as SessionUser;
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const user = session.user as unknown as SessionUser;
   const metrics = await repository.getDashboardMetrics(user);
 
   return (

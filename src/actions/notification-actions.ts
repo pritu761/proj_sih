@@ -3,6 +3,7 @@
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import repository from "@/lib/services/repository";
+import { SessionUser } from "@/lib/rbac";
 
 export async function markNotificationReadAction(id: string) {
   const session = await auth();
@@ -11,7 +12,8 @@ export async function markNotificationReadAction(id: string) {
   }
 
   try {
-    await repository.markNotificationRead(id);
+    const actor = session.user as unknown as SessionUser;
+    await repository.markNotificationRead(id, actor);
     revalidatePath("/");
     revalidatePath("/alerts");
     return { success: true };

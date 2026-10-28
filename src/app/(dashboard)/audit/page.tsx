@@ -9,7 +9,11 @@ import { AuditLedger } from "@/components/audit/AuditLedger";
 
 export default async function AuditPage() {
   const session = await auth();
-  const user = session?.user as unknown as SessionUser;
+  if (!session?.user) {
+    redirect("/login");
+  }
+
+  const user = session.user as unknown as SessionUser;
 
   if (user.role !== "ADMIN" && user.role !== "COMPETENT_AUTHORITY") {
     redirect("/");

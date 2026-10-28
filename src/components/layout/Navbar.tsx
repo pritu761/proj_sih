@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   Bell,
@@ -67,9 +68,11 @@ function timeAgo(date: Date | string) {
 }
 
 export function Navbar({ user, notifications, openOverlapCount, onMenu }: NavbarProps) {
+  const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [notifList, setNotifList] = useState(notifications);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -101,6 +104,25 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu }: Navbar
   const handleMarkAsRead = async (id: string) => {
     setNotifList((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     await markNotificationReadAction(id);
+  };
+
+  /**
+   * Sign out without letting Auth.js build an absolute redirect URL from the
+   * configured auth origin. Navigating client-side keeps the browser on the
+   * deployment's current origin (never a stale `http://localhost:3000`).
+   */
+  const handleSignOut = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    setShowProfile(false);
+    try {
+      await signOut({ redirect: false });
+    } catch (err) {
+      console.error("Sign out request failed; clearing local session view.", err);
+    } finally {
+      router.replace("/login");
+      router.refresh();
+    }
   };
 
   const roleName = () => {
@@ -333,7 +355,7 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu }: Navbar
                     Review alerts
                   </Link>
                   <button
-                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    onClick={handleSignOut}
                     className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11.5px] font-semibold text-rose-600 hover:bg-rose-50"
                   >
                     <LogOut className="h-3.5 w-3.5" />

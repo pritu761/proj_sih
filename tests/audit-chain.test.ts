@@ -6,6 +6,7 @@ import {
   GENESIS_HASH,
 } from "@/lib/services/audit-chain";
 import type { AuditEntry } from "@/lib/services/audit";
+import { generateSeedData } from "@/lib/mock-data-generator";
 
 function entry(overrides: Partial<AuditEntry> = {}): AuditEntry {
   return {
@@ -110,5 +111,82 @@ describe("Tamper-evident audit chain", () => {
     expect(
       hashEntry(1, GENESIS_HASH, { ...base, timestamp: new Date("2026-10-20T10:00:01Z") })
     ).not.toBe(hash);
+  });
+});
+
+describe("Seeded audit ledger stays append-only", () => {
+  // The seed generator uses a fixed reference date; every historical action it
+  // emits must fall on or before it so live session events always append.
+  const SEED_REFERENCE = new Date("2026-10-26T12:00:00Z");
+
+  function seededLogs() {
+    const seed = generateSeedData();
+    return seed.cases
+      .flatMap((c) =>
+        c.actions.map((a) => ({
+          user: a.actor_user,
+          action: a.action_type,
+          entity: "CASE",
+          entity_id: c.case_id,
+          before: null,
+          after: { status: c.status, bureau: c.assigned_bureau, priority: c.priority },
+          ip: "10.24.8.1",
+          timestamp: a.timestamp,
+        }))
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      )
+      .slice(0, 80);
+  }
+
+  beforeEach(() => {
+    resetAuditAttestation();
+  });
+
+  it("never seeds actions after the seed reference date", () => {
+    const logs = seededLogs();
+    expect(logs.length).toBeGreaterThan(0);
+    const newest = Math.max(...logs.map((l) => new Date(l.timestamp).getTime()));
+    expect(newest).toBeLessThanOrEqual(SEED_REFERENCE.getTime());
+  });
+
+  it("keeps the anchored prefix valid when a newer login/logout is appended", () => {
+    const logs: AuditEntry[] = [...seededLogs()];
+
+    const history = buildAuditChain(logs);
+    expect(history.valid).toBe(true);
+
+    logs.unshift(
+      entry({
+        user: "admin@aicte.gov.in",
+        action: "LOGIN",
+        entity: "Session",
+        entity_id: "u_admin",
+        before: null,
+        after: { role: "ADMIN" },
+        timestamp: new Date(SEED_REFERENCE.getTime() + 60 * 60 * 1000),
+      })
+    );
+    const afterLogin = buildAuditChain(logs);
+    expect(afterLogin.valid).toBe(true);
+    expect(afterLogin.count).toBe(history.count + 1);
+
+    logs.unshift(
+      entry({
+        user: "admin@aicte.gov.in",
+        action: "LOGOUT",
+        entity: "Session",
+        entity_id: "u_admin",
+        before: null,
+        after: { role: "ADMIN" },
+        timestamp: new Date(SEED_REFERENCE.getTime() + 61 * 60 * 1000),
+      })
+    );
+    const afterLogout = buildAuditChain(logs);
+    expect(afterLogout.valid).toBe(true);
+    expect(afterLogout.count).toBe(history.count + 2);
+    expect(afterLogout.brokenAt).toBeNull();
   });
 });
