@@ -256,6 +256,16 @@ export function DashboardClient({
     <div className="space-y-5">
       {/* ── Command hero ── */}
       <section className="hero-mesh relative overflow-hidden rounded-[26px] border border-white/10 px-5 py-5 shadow-[0_24px_60px_-30px_rgba(6,10,20,0.6)] sm:px-7 sm:py-6">
+        {/* Real AICTE HQ architectural backdrop */}
+        <div
+          className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center opacity-20 filter contrast-125 mix-blend-luminosity"
+          style={{
+            backgroundImage: "url('/images/aicte-hq.webp')",
+            maskImage: "linear-gradient(to right, transparent 5%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.85) 100%)",
+            WebkitMaskImage: "linear-gradient(to right, transparent 5%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0.85) 100%)",
+          }}
+          aria-hidden="true"
+        />
         <span className="hero-scan" aria-hidden="true" />
         <div className="relative z-10 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-2xl">

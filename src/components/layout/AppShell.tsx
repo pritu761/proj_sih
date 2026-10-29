@@ -26,7 +26,22 @@ export function AppShell({ user, openOverlapCount, notifications, children }: Ap
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen">
+    <div className="relative min-h-screen">
+      {/* Ambient AICTE Headquarters architectural watermark */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 select-none overflow-hidden"
+        aria-hidden="true"
+      >
+        <div
+          className="absolute -right-16 top-0 h-[720px] w-[960px] max-w-none bg-contain bg-right-top bg-no-repeat opacity-[0.038] transition-opacity duration-700 dark:opacity-[0.048]"
+          style={{
+            backgroundImage: "url('/images/aicte-hq.webp')",
+            maskImage: "radial-gradient(ellipse 95% 85% at 85% 15%, black 25%, transparent 80%)",
+            WebkitMaskImage: "radial-gradient(ellipse 95% 85% at 85% 15%, black 25%, transparent 80%)",
+          }}
+        />
+      </div>
+
       <span key={`route-${pathname}`} className="route-beam" aria-hidden="true" />
 
       <Sidebar

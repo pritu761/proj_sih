@@ -283,6 +283,25 @@ export default function LoginPage() {
 
       {/* Left brand rail */}
       <section className="hero-mesh relative hidden flex-col justify-between overflow-hidden p-10 lg:flex xl:p-14">
+        {/* Photorealistic AICTE HQ Building Backdrop */}
+        <div
+          className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center transition-transform duration-1000"
+          style={{
+            backgroundImage: "url('/images/aicte-hq.webp')",
+            filter: "contrast(1.1) brightness(0.36) saturate(1.12)",
+          }}
+          aria-hidden="true"
+        />
+        {/* Cinematic gradient wash for maximum legibility */}
+        <div
+          className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-t from-ink-950 via-ink-950/80 to-ink-950/50"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top_left,rgba(59,118,246,0.35),transparent_65%),radial-gradient(ellipse_at_bottom_right,rgba(245,158,11,0.2),transparent_60%)]"
+          aria-hidden="true"
+        />
+
         <span className="hero-scan" aria-hidden="true" />
         <div className="relative z-10 flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-gradient-to-br from-saffron-400 to-saffron-600 shadow-[0_10px_30px_-10px_rgba(245,158,11,0.8)]">
@@ -364,7 +383,17 @@ export default function LoginPage() {
       </section>
 
       {/* Right form */}
-      <section className="flex min-h-screen items-center justify-center px-4 py-10 sm:px-8">
+      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-8">
+        {/* Subtle ambient watermark on form backdrop */}
+        <div
+          className="pointer-events-none absolute -right-24 -top-24 h-[520px] w-[620px] select-none bg-contain bg-right-top bg-no-repeat opacity-[0.032] dark:opacity-[0.042]"
+          style={{
+            backgroundImage: "url('/images/aicte-hq.webp')",
+            maskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
+            WebkitMaskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
+          }}
+          aria-hidden="true"
+        />
         <Suspense
           fallback={
             <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-400">
