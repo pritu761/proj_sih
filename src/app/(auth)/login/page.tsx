@@ -288,7 +288,7 @@ export default function LoginPage() {
           className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center transition-transform duration-1000"
           style={{
             backgroundImage: "url('/images/aicte-hq.webp')",
-            filter: "contrast(1.1) brightness(0.36) saturate(1.12)",
+            filter: "contrast(1.15) brightness(0.48) saturate(1.18)",
           }}
           aria-hidden="true"
         />

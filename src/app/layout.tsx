@@ -61,14 +61,14 @@ export default function RootLayout({
         >
           {/* Real AICTE Headquarters Building spanning full viewport */}
           <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.22] dark:opacity-[0.15] filter contrast-[1.08] saturate-[1.1] transition-opacity duration-700"
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.28] filter contrast-[1.08] saturate-[1.1] transition-opacity duration-700 dark:opacity-[0.38] dark:brightness-95 dark:contrast-125 dark:saturate-120"
             style={{
               backgroundImage: "url('/images/aicte-hq.webp')",
             }}
           />
           {/* Subtle atmospheric wash for reading comfort */}
           <div
-            className="absolute inset-0 bg-gradient-to-b from-[var(--surface-bg)]/80 via-[var(--surface-bg)]/65 to-[var(--surface-bg)]/85"
+            className="absolute inset-0 bg-gradient-to-b from-[var(--surface-bg)]/75 via-[var(--surface-bg)]/50 to-[var(--surface-bg)]/80 transition-colors duration-500 dark:from-[#070c16]/50 dark:via-[#070c16]/30 dark:to-[#070c16]/60"
           />
         </div>
 
