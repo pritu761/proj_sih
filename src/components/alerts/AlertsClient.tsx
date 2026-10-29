@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
@@ -10,6 +10,7 @@ import {
   Building2,
   MapPin,
   ArrowUpRight,
+  ArrowDown,
   Radar,
   GitCompareArrows,
   SlidersHorizontal,
@@ -113,6 +114,26 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
   const institutionsAtRisk = new Set(
     alerts.filter((a) => a.status === "OPEN").map((a) => a.institution_id)
   ).size;
+
+  const scrollToQueue = (
+    status: "ALL" | "OPEN" | "ACKNOWLEDGED" | "COORDINATED" | "DISMISSED" = "OPEN"
+  ) => {
+    setStatusFilter(status);
+    window.setTimeout(() => {
+      const el = document.getElementById("alerts-queue");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 60);
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (hash === "#alerts-queue" || hash === "#review-queue") {
+      scrollToQueue("OPEN");
+    }
+  }, []);
 
   const focusAlert = (id: string) => {
     const target = alerts.find((a) => a.id === id);
@@ -290,6 +311,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
             tone: "text-rose-700 bg-rose-50 border-rose-200",
             note: "Awaiting coordination",
             alert: counts.OPEN > 0,
+            targetStatus: "OPEN" as const,
           },
           {
             label: "High confidence",
@@ -298,6 +320,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
             tone: "text-amber-700 bg-amber-50 border-amber-200",
             note: "Strong institutional match",
             alert: false,
+            targetStatus: "OPEN" as const,
           },
           {
             label: "Institutions at risk",
@@ -306,6 +329,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
             tone: "text-brand-700 bg-brand-50 border-brand-200",
             note: "Parallel bureau action",
             alert: false,
+            targetStatus: "OPEN" as const,
           },
           {
             label: "Resolved by coordination",
@@ -314,14 +338,17 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
             tone: "text-emerald-700 bg-emerald-50 border-emerald-200",
             note: "Joint directives recorded",
             alert: false,
+            targetStatus: "COORDINATED" as const,
           },
         ].map((s) => {
           const Icon = s.icon;
           return (
-            <div
+            <button
               key={s.label}
+              type="button"
+              onClick={() => scrollToQueue(s.targetStatus)}
               className={cn(
-                "rounded-2xl border bg-white p-4 shadow-sm",
+                "rounded-2xl border bg-white p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer",
                 s.alert ? "border-rose-200 bg-gradient-to-br from-white to-rose-50/50" : "border-slate-200"
               )}
             >
@@ -342,7 +369,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                 {s.value}
               </p>
               <p className="mt-1.5 text-[10px] font-medium text-slate-400">{s.note}</p>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -367,11 +394,12 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
               </div>
             </div>
             <button
-              onClick={() => setStatusFilter("OPEN")}
-              className="btn btn-danger btn-sm shrink-0 self-start sm:self-auto"
+              type="button"
+              onClick={() => scrollToQueue("OPEN")}
+              className="btn btn-danger btn-sm shrink-0 self-start sm:self-auto inline-flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow"
             >
               Review queue
-              <ArrowUpRight className="h-3.5 w-3.5" />
+              <ArrowDown className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
@@ -381,7 +409,10 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
       <CollisionFlow alerts={alerts} onSelect={focusAlert} />
 
       {/* Filter bar */}
-      <div className="panel flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        id="alerts-queue"
+        className="panel scroll-mt-24 flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+      >
         <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500">
           <SlidersHorizontal className="h-3.5 w-3.5 text-slate-400" />
           Showing

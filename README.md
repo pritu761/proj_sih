@@ -56,7 +56,7 @@ This prototype provides an authorized, role-guarded platform that unifies all gr
 | **Scheduled Jobs** | Vercel Cron Jobs (`vercel.json`) | Automated SLA breach scan, reminder dispatch, batch overlap scan |
 | **Live Polling** | SWR / React Client Polling (30s) | Serverless-compatible real-time dashboard updates without WebSockets |
 | **Reporting** | `pdf-lib` + Streaming CSV | Native serverless PDF & CSV report generation (no Puppeteer bloat) |
-| **Testing** | Vitest | 30 unit tests covering Overlap Detection, SLA Engine, RBAC, Risk Engine, and Audit Chain |
+| **Testing** | Vitest | 38 unit tests across 6 suites covering Overlap Detection, SLA Engine, RBAC, Risk Engine, Audit Chain, and Sentinel Features |
 
 ---
 
@@ -94,7 +94,9 @@ Every role has tailored permissions enforced in middleware and at the server act
 | `linkCasesAction` | `caseAId, caseBId, linkType, note?` | Any Officer | Connects cases as `OVERLAP`, `DUPLICATE`, or `RELATED` |
 | `createCaseAction` | `aicte_permanent_id, source, category, description, assigned_bureau, priority` | Any Officer | Registers complaint; **triggers real-time Overlap Detector** |
 | `coordinateOverlapAction` | `alertId, coordinationNote` | Bureaus Involved / Mgt / Admin | Marks overlap alert coordinated and auto-links cases |
+| `mergeOverlapAction` | `alertId, masterCaseId, mergeNote` | Bureaus Involved / Mgt / Admin | **Consolidates colliding files under an established master docket**, links duplicate cases, and suspends parallel proceedings |
 | `dismissOverlapAction` | `alertId, dismissedReason` | Bureaus Involved / Mgt / Admin | Dismisses false-positive collision with mandatory rationale |
+| `simulateIngestionAction` | `channel, category, priority, institutionId, description` | Authenticated Officer | Ingests real-time synthetic or custom grievance through the live classification and collision detection pipeline |
 | `markNotificationReadAction` | `notificationId` | Authenticated Officer | Marks targeted notification as read |
 
 ### Route Handlers (`src/app/api/*`)
@@ -104,6 +106,9 @@ Every role has tailored permissions enforced in middleware and at the server act
 | `/api/auth/[...nextauth]` | `GET`, `POST` | Public | Auth.js authentication lifecycle & session management |
 | `/api/dashboard/metrics` | `GET` | Session | Real-time SWR / 30s polling metrics for dashboard charts |
 | `/api/institutions/list` | `GET` | Session | Lightweight list of institutions for case registration selector |
+| `/api/search` | `GET` | Session | High-speed multi-entity fuzzy search for the Sentinel Command Palette |
+| `/api/notices/show-cause/[caseId]` | `GET` | Session | Generates official, printable statutory show-cause notices compliant with AICTE APH Chapter VII |
+| `/api/audit/verify` | `GET` | Admin / Authority | Verifies full cryptographic integrity of the SHA-256 anchored audit ledger |
 | `/api/upload` | `POST` | Session | Validates type/size and stores files in Vercel Blob |
 | `/api/reports/csv` | `GET` | Session | Generates streaming CSV export respecting URL query filters |
 | `/api/reports/pdf` | `GET` | Session | Serverless executive PDF report generated using `pdf-lib` |
@@ -113,7 +118,7 @@ Every role has tailored permissions enforced in middleware and at the server act
 
 ---
 
-## 5. Cross-Bureau Overlap Detection (Key Innovation)
+## 5. Cross-Bureau Overlap Detection & Trilayer Explainability
 
 The `OverlapDetector` service implements a multi-tiered collision prevention algorithm:
 
@@ -125,54 +130,75 @@ The `OverlapDetector` service implements a multi-tiered collision prevention alg
 
 ---
 
-## 6. Sentinel Intelligence Layer (Hackathon Differentiators)
+## 6. Sentinel Intelligence & Enforcement Layer (Hackathon Differentiators)
 
-Five capabilities built specifically to demonstrate what a modern grievance command centre can do. Every one is deterministic, offline-capable, and needs no external AI keys, so the whole demo runs from a clean `npm run dev`.
+Capabilities built specifically to demonstrate what a modern grievance command centre can do. Every component is deterministic, offline-capable, and needs no external paid AI keys, so the entire demo runs from a clean `npm run dev`.
 
 ### 6.1 Sentinel Command Palette (`Ctrl/Cmd + K`)
 A keyboard-first command surface available on every page.
 - Fuzzy search across cases, institutions, and static navigation.
-- Quick actions: toggle theme, export CSV, open open-collision queue.
+- Quick actions: toggle theme, export CSV, jump to the collision review queue.
 - Recent destinations persisted in `localStorage`; full arrow-key/Enter/Esc support and ARIA combobox semantics.
 - Backed by `/api/search`, which is session-guarded and searches case ID, category, description, institution, city, and region.
 
-### 6.2 Sentinel Risk Radar (dashboard)
+### 6.2 Sentinel Risk Radar & Breach Horizons (Dashboard)
 A portfolio breach forecast that replaces "trust me" scoring with an audit-ready model.
 - **Exposure index** (0-100), overdue count, critical count, and 7/15/30-day breach horizons.
 - **Priority watchlist** ranked by score, with the strongest driver printed on each row.
 - **Visible weights:** SLA pressure 45, priority 15, stagnation 12, overlap 10, churn 8, statutory category 6.
 - Bands: `CRITICAL ≥ 80`, `HIGH ≥ 60`, `MODERATE ≥ 40`, `LOW < 40`.
-- Refreshes with the existing 30-second dashboard poll.
+- Refreshes automatically with the 30-second dashboard poll.
 
-### 6.3 Sentinel Brief (case workspace)
+### 6.3 Sentinel Brief (Case Workspace)
 Per-file explanation of *why* the case is ranked where it is, and what to do next.
 - Score gauge, band, elapsed vs. statutory clock, and the top three weighted drivers with point values.
 - **Recommended next action** wired directly into the existing status, escalation, transfer, remark, and link workflows.
 - Peer benchmark against similar closed files (sample size, median resolution days, delta).
 - Read-only lock for officers outside the assigned bureau.
 
-### 6.4 Collision Topology (overlap alerts)
-An institution → bureau flow map of live cross-bureau collisions.
+### 6.4 Collision Topology & Fast Queue Navigation (`/alerts`)
+An interactive institution → bureau flow map of live cross-bureau collisions.
 - Link thickness encodes the number of parallel cases; hover reveals institution, bureau, count, and confidence.
 - Clicking any link or node filters the alert list, scrolls to the matching card, and highlights it.
-- Horizontally pannable on mobile so labels stay legible.
+- **Smooth Queue Navigation:** The "Review queue" button and top summary KPI cards smoothly scroll straight down past the topology graph directly into the review queue (`#alerts-queue`), pre-filtering to the desired status.
 
-### 6.5 Tamper-Evident Audit Chain (`/audit`)
+### 6.5 Trilayer Explainability Panel
+Replaces opaque AI decisions with transparent, defensible matching across three audit layers:
+1. **Layer 1: Deterministic Entity Match:** Matches verified AICTE Permanent ID, address coordinates, city/state, and institutional alias deduplication.
+2. **Layer 2: Statutory Taxonomy Overlap:** Compares statutory grievance categories (e.g. Capitation Fee, Faculty Unpaid Wages, Ragging, Infrastructure Deficiency) across reporting bureaus.
+3. **Layer 3: Semantic Narrative Convergence:** Analyzes tokenized narrative overlap, keyword clustering, and recurring complainant signatures across independent filings.
+
+### 6.6 Master Docket Establishment & Consolidation (`mergeOverlapAction`)
+When cross-bureau inquiries collide, officers can designate a single **Master Docket** (typically the oldest, primary file):
+- Subordinate cases are automatically cross-linked as duplicates.
+- Redundant parallel proceedings are suspended to protect administrative resources and prevent contradictory bureau notices.
+- All subsequent directives and evidence become unified under the lead bureau.
+
+### 6.7 AICTE Approval Process Handbook (APH) Enforcement Engine
+Translates grievance patterns directly into statutory enforcement actions governed by **AICTE Approval Process Handbook (APH) Chapter VII**:
+- **Statutory Violation Mapping:** Automatically identifies applicable clauses (e.g., Clause 7.1/7.2/7.3 for excess fees, withholding certificates, or unapproved programs).
+- **Proportional Penal Recommendations:** Evaluates repeat offense history and suggests calibrated statutory penalties: reduction in approved intake, "No Admission" status, withdrawal of approval, or forfeiture of security deposit.
+- **Official Statutory Show-Cause Notice Generator (`/api/notices/show-cause/[caseId]`):** Formulates formal, printable legal show-cause notices pre-populated with statutory citations, factual allegations, hearing dates, and Competent Authority sign-off blocks.
+
+### 6.8 Live Grievance Ingestion Simulator
+An interactive simulator allowing evaluators to inject synthetic or custom complaints in real time:
+- Ingest across simulated channels (Student Portal, National Grievance Portal, Vigilance Cell, Anonymous Whistleblower).
+- Watch the live pipeline classify categories, calculate SLA deadlines, run trigram fuzzy matching, and flag collision alerts on the fly.
+
+### 6.9 Tamper-Evident SHA-256 Audit Chain (`/audit`)
 SHA-256 hash chain over the append-only ledger.
 - Canonical payload: `seq | prevHash | user | action | entity | entityId | ip | timestamp | before | after`.
 - Genesis block `GENESIS`; each block displays its sequence, previous hash, and sealed hash.
 - **Verify ledger integrity** re-computes every hash server-side (`/api/audit/verify`, Admin/Authority only) and compares against the anchored prefix, so an edited payload, actor, IP, timestamp, or a deleted block is detected and reported as `broken at #NNNN`.
 - Chain head is copyable for evidence packs; the ledger opens per-entry JSON with block, previous hash, and sealed hash.
 
-### 6.6 Motion & interaction layer
-Purposeful, GPU-friendly motion that explains state changes rather than decorating them.
-- Ambient aurora drift and a single scan beam in the command hero; a top progress beam replays on every route change.
-- KPI, exposure, audit, and risk-score numbers count up with an eased RAF loop, and gauges/meters draw in from zero.
-- Collision topology edges draw on sequentially, nodes fade in by rank, and the risk watchlist re-staggers when the forecast horizon changes.
-- Micro-interactions: KPI spotlight and accent sweep, primary-button sheen, palette result stagger, and an audit verification sweep that ends in a verified pop.
-- All of it is disabled under `prefers-reduced-motion: reduce`, including the RAF counters, so the dashboard renders in its final state instantly.
+### 6.10 Motion & Accessibility Layer
+Purposeful, GPU-friendly motion that explains state changes rather than decorating them:
+- Ambient aurora drift and single scan beam in the command hero; route transition progress beam.
+- Count-up metric animations with eased RAF loops; topology draw-in and audit verification sweeps.
+- Full respect for `prefers-reduced-motion: reduce`, instantly presenting final states without animation loops.
 
-> **Why it stands out:** the differentiators are explainable and inspectable. A judge can click any risk score to see its arithmetic, follow a collision edge to the exact alert, or verify the audit chain and get a cryptographic head hash — no black-box model, no paid API, no network dependency.
+> **Why it stands out:** Every capability is explainable and inspectable. A judge can click any risk score to inspect its arithmetic, trace a collision through all three explainability layers, generate a statutory show-cause notice, or verify 80+ audit blocks cryptographically — completely offline, with zero third-party API dependencies.
 
 ---
 
@@ -214,7 +240,7 @@ npm run prisma:seed # or: npx tsx prisma/seed.ts
 ```bash
 npm test
 ```
-Runs 30 Vitest unit tests verifying Overlap Detection, SLA Calculations, RBAC rules, the explainable Risk Engine, and the tamper-evident Audit Chain.
+Runs 38 Vitest unit tests across 6 test suites verifying Overlap Detection, SLA Calculations, RBAC rules, the explainable Risk Engine, the tamper-evident Audit Chain, and Sentinel Intelligence Features.
 
 ### Step 6: Start Development Server
 ```bash
@@ -253,35 +279,44 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 9. End-to-End Demo Script Walkthrough
 
-Follow this 8-step script to demonstrate all system capabilities:
+Follow this 12-step script to demonstrate all system capabilities during evaluation:
 
 ```
-[1. Login] ──> [2. Dashboard & KPIs] ──> [3. Overlap Alert] ──> [4. Side-by-Side Compare]
-     │                                                                     │
-     ▼                                                                     ▼
-[8. Export PDF] <── [7. SLA Breach] <── [6. Transfer Case] <── [5. Coordinate & Link]
+[1. Login] ──> [2. Ingestion Simulator] ──> [3. Dashboard & KPIs] ──> [4. Overlap & Trilayer]
+     │                                                                           │
+     ▼                                                                           ▼
+[12. Audit Integrity] <── [11. APH Show-Cause] <── [10. Master Docket] <── [5. Side-by-Side]
 ```
 
 1. **Login:**
    Navigate to `/login`. Click the **Dr. Ramesh Unnikrishnan (Regulation Bureau)** quick persona button to authenticate with `REGULATION_OFFICER` permissions.
-2. **Dashboard & Workload Analytics:**
-   View real-time KPI cards. Notice **"Open Overlap Alerts"** flagged in red and the glowing alert banner. Examine the **Bureau Workload** and **Pending Ageing** charts. Click on the **PGRC** bar to filter cases.
-3. **Overlap Alert Inspection:**
-   Click the prominent banner **"Review & Coordinate Overlaps"** (or open `/alerts`). Notice the collision for **Apex Institute of Engineering & Technology** involving `AICTE/PGRC/2026/00101` and `AICTE/RB/2026/00042`.
-4. **Side-by-Side Comparison:**
-   Click **"Track"** on case `AICTE/RB/2026/00042` (`/cases/case_00042`). Notice the prominent warning banner: *"Potential Overlapping Cases – Coordination Required"*. Click **"Compare Side-by-Side"** to inspect Case A and Case B simultaneously with algorithm match rationale.
-5. **Coordinate & Link Cases:**
-   In the comparison modal, enter coordination directives: *"Regulation Bureau and PGRC held joint hearing; inquiry merged under RB lead."* Click **"Mark as Coordinated & Link Cases"**. The alert status updates immediately and the cases are cross-linked.
-6. **Case Workflow Mutation (Transfer Bureau):**
+2. **Live Ingestion Simulator:**
+   Open the **Live Ingestion Simulator** on the dashboard. Ingest a synthetic multi-channel grievance (e.g. from the National Grievance Portal or an Anonymous Whistleblower) and watch the pipeline automatically classify the category, assign SLA statutory clocks, run trigram similarity, and trigger instant collision alerts.
+3. **Dashboard & Workload Analytics:**
+   View real-time KPI cards. Notice **"Open Overlap Alerts"** flagged in red and the glowing alert banner. Examine the **Bureau Workload** and **Pending Ageing** charts. Click on any bureau bar to filter cases.
+4. **Overlap Alerts Hub & Review Queue:**
+   Open `/alerts`. Click the banner's **"Review queue"** button or any of the summary KPI cards (e.g. *Open collisions*, *High confidence*) to smoothly jump down to the queue. Inspect the **Collision Topology** flow map showing cross-bureau friction.
+5. **Trilayer Explainability:**
+   On any open collision card, inspect the **Trilayer Explainability Panel**:
+   - **Layer 1 (Entity):** Verified AICTE Permanent ID and geographic coordinates.
+   - **Layer 2 (Taxonomy):** Overlapping statutory violation categories across reporting bureaus.
+   - **Layer 3 (Narrative):** Semantic content convergence and recurring complainant phrases.
+6. **Master Docket Establishment & Consolidation:**
+   Click **"Confirm & establish master docket"**. Confirm the oldest active case as the primary file. Subordinate parallel cases are instantly consolidated as duplicates, preventing duplicated administrative effort and contradictory bureau notices.
+7. **Side-by-Side Comparison:**
+   Click **"Track"** on case `AICTE/RB/2026/00042` (`/cases/case_00042`). Notice the prominent warning banner: *"Potential Overlapping Cases – Coordination Required"*. Click **"Compare Side-by-Side"** to inspect colliding files simultaneously.
+8. **Case Workflow Mutation (Transfer Bureau):**
    Click **"Transfer Bureau"**. Select **"Approval Bureau"**, enter a justification, and submit. Observe that the case status immediately switches to `TRANSFERRED` and the action is appended to the immutable vertical timeline.
-7. **SLA Countdown & Warning:**
+9. **SLA Countdown & Warning:**
    Navigate to `/cases?sla_status=BREACHED`. Observe colour-coded countdown chips showing overdue days in crimson, approaching thresholds in amber, and normal timelines in emerald.
-8. **Export Official Reports:**
-   Navigate to `/reports`. Click **"Download Official PDF Report"** to generate the executive report via `pdf-lib`, or click **"Export CSV Dataset"** for the full data grid.
-9. **Sentinel Command Palette:**
-   Press **Ctrl/Cmd + K** anywhere. Type `apex` and open a case in one keystroke, or run *Switch to dark mode* / *Export case register* without leaving the keyboard.
-10. **Explainable Risk + Integrity Proof:**
-   On the dashboard, switch the Risk Radar between 7/15/30 days and open a watchlist row. The case workspace shows the **Sentinel Brief** with every point accounted for and a one-click recommended action. On `/alerts`, hover the **Collision Topology** and click a link to jump to the alert. Finish on `/audit` with **Verify ledger integrity** — the server recomputes all 80 SHA-256 blocks and returns a copyable head hash.
+10. **APH Enforcement & Statutory Show-Cause Generator:**
+    On the case details page, expand the **Enforcement Panel (APH Chapter VII)**. Review recommended statutory sanctions (intake reduction / no-admission status). Click **"Generate Statutory Show-Cause Notice"** to preview and download the official legal notice ready for service.
+11. **Sentinel Command Palette:**
+    Press **Ctrl/Cmd + K** anywhere. Type `apex` to open a case in one keystroke, or run *Switch to dark mode* / *Export case register* without leaving the keyboard.
+12. **Tamper-Evident SHA-256 Audit Verification:**
+    Navigate to `/audit`. Inspect the chronological ledger with chained block hashes. Click **"Verify ledger integrity"** — the server recomputes every SHA-256 block from genesis and confirms full chain validity with a copyable cryptographic head hash.
+13. **Export Official Reports:**
+    Navigate to `/reports`. Click **"Download Official PDF Report"** to generate the executive report via `pdf-lib`, or click **"Export CSV Dataset"** for the full data grid.
 
 ---
 
