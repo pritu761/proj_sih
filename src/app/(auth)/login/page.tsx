@@ -276,7 +276,7 @@ export default function LoginPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--surface-bg)] lg:grid lg:grid-cols-[1.05fr_1fr]">
+    <div className="min-h-screen bg-[var(--surface-bg)]/60 backdrop-blur-[1px] lg:grid lg:grid-cols-[1.05fr_1fr]">
       <div className="fixed right-4 top-4 z-50">
         <ThemeToggle />
       </div>
@@ -383,17 +383,7 @@ export default function LoginPage() {
       </section>
 
       {/* Right form */}
-      <section className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 sm:px-8">
-        {/* Subtle ambient watermark on form backdrop */}
-        <div
-          className="pointer-events-none absolute -right-24 -top-24 h-[520px] w-[620px] select-none bg-contain bg-right-top bg-no-repeat opacity-[0.032] dark:opacity-[0.042]"
-          style={{
-            backgroundImage: "url('/images/aicte-hq.webp')",
-            maskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
-            WebkitMaskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
-          }}
-          aria-hidden="true"
-        />
+      <section className="relative flex min-h-screen items-center justify-center px-4 py-10 sm:px-8">
         <Suspense
           fallback={
             <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-400">

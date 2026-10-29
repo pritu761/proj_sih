@@ -53,8 +53,28 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="antialiased">
-        <ThemeProvider>{children}</ThemeProvider>
+      <body className="antialiased relative min-h-screen">
+        {/* Full-Page Background: AICTE Headquarters (All Pages) */}
+        <div
+          className="pointer-events-none fixed inset-0 z-0 select-none overflow-hidden"
+          aria-hidden="true"
+        >
+          {/* Real AICTE Headquarters Building spanning full viewport */}
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-[0.22] dark:opacity-[0.15] filter contrast-[1.08] saturate-[1.1] transition-opacity duration-700"
+            style={{
+              backgroundImage: "url('/images/aicte-hq.webp')",
+            }}
+          />
+          {/* Subtle atmospheric wash for reading comfort */}
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-[var(--surface-bg)]/80 via-[var(--surface-bg)]/65 to-[var(--surface-bg)]/85"
+          />
+        </div>
+
+        <div className="relative z-10 min-h-screen">
+          <ThemeProvider>{children}</ThemeProvider>
+        </div>
       </body>
     </html>
   );
