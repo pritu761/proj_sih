@@ -24,9 +24,9 @@ const roleMeta: Record<string, { label: string; className: string }> = {
   ADMIN: { label: "Admin", className: "bg-ink-900 text-white" },
   COMPETENT_AUTHORITY: { label: "Authority", className: "bg-saffron-500 text-ink-950" },
   REGULATION_OFFICER: { label: "RB", className: "bg-indigo-600 text-white" },
-  PGRC_OFFICER: { label: "PGRC", className: "bg-sky-600 text-white" },
+  PGRC_OFFICER: { label: "PGRC", className: "bg-sky-700 text-white" },
   BUREAU_OFFICER: { label: "AB", className: "bg-amber-500 text-ink-950" },
-  REGIONAL_OFFICER: { label: "Region", className: "bg-teal-600 text-white" },
+  REGIONAL_OFFICER: { label: "Region", className: "bg-teal-700 text-white" },
 };
 
 function safeCallbackUrl(value: string | null) {
@@ -376,7 +376,7 @@ export default function LoginPage() {
               </div>
             ))}
           </div>
-          <p className="mt-4 text-[9.5px] font-medium leading-relaxed text-slate-600">
+          <p className="mt-4 text-[9.5px] font-medium leading-relaxed text-slate-400">
             All India Council for Technical Education · Nelson Mandela Marg, Vasant Kunj, New Delhi 110070
           </p>
         </div>

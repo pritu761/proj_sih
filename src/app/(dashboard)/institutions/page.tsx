@@ -262,11 +262,11 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
 
                 <div className="mt-2 space-y-1">
                   <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500">
-                    <Tag className="h-3 w-3 shrink-0 text-slate-300" />
+                    <Tag className="h-3 w-3 shrink-0 text-slate-400" />
                     <span className="truncate">{inst.institution_type}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-[10.5px] text-slate-500">
-                    <MapPin className="h-3 w-3 shrink-0 text-slate-300" />
+                    <MapPin className="h-3 w-3 shrink-0 text-slate-400" />
                     <span className="truncate">{inst.city}, {inst.state} · {inst.pincode}</span>
                   </div>
                 </div>

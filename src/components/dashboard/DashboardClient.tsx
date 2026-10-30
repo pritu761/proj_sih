@@ -40,8 +40,10 @@ import {
 } from "recharts";
 import { StatusPill, BureauPill, ConfidencePill } from "@/components/ui/badges";
 import { CountUp } from "@/components/ui/count-up";
+import { useToast } from "@/components/ui/toast";
 import { RiskRadar } from "./RiskRadar";
 import { IngestionSimulator } from "./IngestionSimulator";
+import { OperationsWire } from "./OperationsWire";
 import { cn } from "@/lib/utils";
 
 interface DashboardClientProps {
@@ -69,7 +71,7 @@ const statusColor: Record<string, string> = {
 function ChartTooltip({ active, payload, label, suffix }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-white/10 bg-ink-900/95 px-3.5 py-2.5 shadow-2xl backdrop-blur">
+    <div className="dark-surface rounded-xl border border-white/10 bg-ink-900/95 px-3.5 py-2.5 shadow-2xl backdrop-blur">
       {label && (
         <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
           {label}
@@ -101,6 +103,7 @@ export function DashboardClient({
   userName,
 }: DashboardClientProps) {
   const router = useRouter();
+  const toast = useToast();
   const [metrics, setMetrics] = useState(initialMetrics);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -125,10 +128,15 @@ export function DashboardClient({
     setIsRefreshing(true);
     try {
       const res = await fetch("/api/dashboard/metrics");
-      if (res.ok) {
-        setMetrics(await res.json());
-        setLastUpdated(new Date());
-      }
+      if (!res.ok) throw new Error("Metrics endpoint unavailable");
+      setMetrics(await res.json());
+      setLastUpdated(new Date());
+      toast.success("Command picture refreshed", "Live registry metrics are up to date.");
+    } catch {
+      toast.error(
+        "Refresh failed",
+        "The registry did not respond. Showing the last known operating picture."
+      );
     } finally {
       setTimeout(() => setIsRefreshing(false), 500);
     }
@@ -141,6 +149,52 @@ export function DashboardClient({
   const avgResolution = metrics.avgResolutionDays ?? 0;
   const urgentCases: any[] = metrics.urgentCases ?? [];
   const openOverlaps: any[] = metrics.openOverlapList ?? [];
+  const topRegion = [...(metrics.regionCases ?? [])].sort(
+    (a: any, b: any) => b.cases - a.cases
+  )[0];
+
+  const wireItems = [
+    {
+      value: `${k.pendingBeyondTimeline}`,
+      text: "files beyond the statutory timeline",
+      href: "/cases?sla_status=BREACHED",
+      tone: "#fb7185",
+    },
+    {
+      value: `${k.openOverlapAlerts}`,
+      text: "cross-bureau overlaps awaiting a lead",
+      href: "/alerts?status=OPEN",
+      tone: "#fbbf24",
+    },
+    {
+      value: `${disposalRate}%`,
+      text: `disposal rate · ${k.disposed} of ${k.totalReceived} closed`,
+      href: "/cases?status=DISPOSED",
+      tone: "#34d399",
+    },
+    {
+      value: `${slaCompliance}%`,
+      text: "SLA compliance · target 90%",
+      href: "/reports",
+      tone: slaCompliance >= 90 ? "#34d399" : "#60a5fa",
+    },
+    {
+      value: `${avgResolution}d`,
+      text: "average resolution time",
+      href: "/reports",
+      tone: "#93b8fd",
+    },
+    ...(topRegion
+      ? [
+          {
+            value: `${topRegion.cases}`,
+            text: `active cases in ${topRegion.region} region`,
+            href: `/cases?region=${encodeURIComponent(topRegion.region)}`,
+            tone: "#f59e0b",
+          },
+        ]
+      : []),
+  ];
 
   const kpis = [
     {
@@ -300,7 +354,7 @@ export function DashboardClient({
                 <PlusCircle className="h-3.5 w-3.5" />
                 Register complaint
               </Link>
-              <span className="ml-1 text-[10px] font-medium text-slate-500">
+              <span className="ml-1 text-[10px] font-medium text-slate-400">
                 Synced {lastUpdated ? lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "just now"}
               </span>
             </div>
@@ -317,7 +371,7 @@ export function DashboardClient({
               return (
                 <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.045] p-3 backdrop-blur-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-500">{s.label}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">{s.label}</span>
                     <Icon className="h-3.5 w-3.5" style={{ color: s.color }} />
                   </div>
                   <p className="mt-2 font-display text-[21px] font-extrabold leading-none tracking-tight text-white">
@@ -335,6 +389,8 @@ export function DashboardClient({
           </div>
         </div>
       </section>
+
+      <OperationsWire items={wireItems} />
 
       {/* ── Overlap alert ── */}
       {k.openOverlapAlerts > 0 && (

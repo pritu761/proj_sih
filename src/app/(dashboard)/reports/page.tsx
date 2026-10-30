@@ -268,7 +268,7 @@ export default async function ReportsPage() {
           <div className="panel p-4">
             <div className="flex items-center justify-between">
               <h2 className="panel-title">Export centre</h2>
-              <Timer className="h-3.5 w-3.5 text-slate-300" />
+              <Timer className="h-3.5 w-3.5 text-slate-400" />
             </div>
             <p className="panel-sub mb-3">Downloadable statutory extracts</p>
 
@@ -289,7 +289,7 @@ export default async function ReportsPage() {
                     CSV · full filtered registry
                   </span>
                 </span>
-                <Download className="h-3.5 w-3.5 shrink-0 text-slate-300 transition-colors group-hover:text-emerald-600" />
+                <Download className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-emerald-600" />
               </a>
 
               <a
@@ -308,7 +308,7 @@ export default async function ReportsPage() {
                     PDF · signed-off summary
                   </span>
                 </span>
-                <Download className="h-3.5 w-3.5 shrink-0 text-slate-300 transition-colors group-hover:text-brand-600" />
+                <Download className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-brand-600" />
               </a>
             </div>
           </div>

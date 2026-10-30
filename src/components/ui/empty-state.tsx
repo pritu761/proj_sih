@@ -22,7 +22,7 @@ export function EmptyState({
       )}
     >
       <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <Icon className="h-6 w-6 text-slate-300" />
+        <Icon className="h-6 w-6 text-slate-400" />
       </div>
       <h3 className="font-display text-[14px] font-bold text-slate-800">{title}</h3>
       {description && (

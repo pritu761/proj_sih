@@ -4,7 +4,6 @@ import { auth } from "@/auth";
 import repository from "@/lib/services/repository";
 import {
   Search,
-  Download,
   PlusCircle,
   ExternalLink,
   FolderSearch,
@@ -13,6 +12,8 @@ import {
   Building2,
   CalendarDays,
   ArrowUpDown,
+  LayoutGrid,
+  List,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { SLA_CONFIGS } from "@/lib/demo-data";
@@ -20,6 +21,7 @@ import { SessionUser } from "@/lib/rbac";
 import { PageHeader } from "@/components/ui/page-header";
 import { BureauPill, PriorityPill, SlaPill, StatusPill } from "@/components/ui/badges";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ExportCsvButton } from "@/components/cases/export-csv-button";
 import { cn } from "@/lib/utils";
 
 interface CasesPageProps {
@@ -35,6 +37,7 @@ interface CasesPageProps {
     date_to?: string;
     sortBy?: "date_received" | "last_action_date" | "priority" | "status";
     sortOrder?: "asc" | "desc";
+    view?: "table" | "grid";
     page?: string;
   }>;
 }
@@ -127,6 +130,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
     date_to: params.date_to,
     sortBy: params.sortBy,
     sortOrder: params.sortOrder,
+    view: params.view,
   };
 
   const labelFor = (key: string, value: string) => {
@@ -154,10 +158,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
         tone="blue"
         actions={
           <>
-            <a href={exportCsvUrl} download="aicte_cases_export.csv" className="btn btn-secondary">
-              <Download className="h-3.5 w-3.5" />
-              Export CSV
-            </a>
+            <ExportCsvButton href={exportCsvUrl} />
             <Link href="/cases/new" className="btn btn-primary">
               <PlusCircle className="h-3.5 w-3.5" />
               Register case
@@ -285,7 +286,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
 
       {/* Table */}
       <div className="panel overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-4 py-3.5 sm:px-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3.5 sm:px-5">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-brand-500" />
             <h2 className="font-display text-[13px] font-bold text-slate-900">Case registry</h2>
@@ -293,17 +294,53 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
               {data.total}
             </span>
           </div>
-          <Link
-            href={`/cases${buildQuery(baseForPagination, {
-              sortBy: "date_received",
-              sortOrder: params.sortOrder === "asc" ? "desc" : "asc",
-              page: undefined,
-            })}`}
-            className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500 hover:text-brand-600"
-          >
-            <ArrowUpDown className="h-3 w-3" />
-            Received {params.sortOrder === "asc" ? "oldest first" : "newest first"}
-          </Link>
+          <div className="flex items-center gap-2.5">
+            <div
+              role="group"
+              aria-label="Registry view"
+              className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5"
+            >
+              <Link
+                href={`/cases${buildQuery(baseForPagination, { view: undefined, page: undefined })}`}
+                aria-current={params.view !== "grid" ? "page" : undefined}
+                title="Table view"
+                aria-label="Table view"
+                className={cn(
+                  "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                  params.view !== "grid"
+                    ? "bg-white text-slate-800 shadow-sm"
+                    : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                <List className="h-3.5 w-3.5" />
+              </Link>
+              <Link
+                href={`/cases${buildQuery(baseForPagination, { view: "grid", page: undefined })}`}
+                aria-current={params.view === "grid" ? "page" : undefined}
+                title="Card view"
+                aria-label="Card view"
+                className={cn(
+                  "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                  params.view === "grid"
+                    ? "bg-white text-slate-800 shadow-sm"
+                    : "text-slate-400 hover:text-slate-600"
+                )}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <Link
+              href={`/cases${buildQuery(baseForPagination, {
+                sortBy: "date_received",
+                sortOrder: params.sortOrder === "asc" ? "desc" : "asc",
+                page: undefined,
+              })}`}
+              className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500 hover:text-brand-600"
+            >
+              <ArrowUpDown className="h-3 w-3" />
+              Received {params.sortOrder === "asc" ? "oldest first" : "newest first"}
+            </Link>
+          </div>
         </div>
 
         {data.cases.length === 0 ? (
@@ -318,6 +355,82 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
                 </Link>
               }
             />
+          </div>
+        ) : params.view === "grid" ? (
+          <div className="grid grid-cols-1 gap-3.5 p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-3">
+            {data.cases.map((c: any) => (
+              <div
+                key={c.id}
+                className="group relative flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <Link
+                    href={`/cases/${c.id}`}
+                    className="font-mono text-[10.5px] font-bold text-brand-700 hover:underline"
+                  >
+                    {c.case_id}
+                  </Link>
+                  <PriorityPill priority={c.priority} />
+                </div>
+
+                <Link
+                  href={`/institutions/${c.institution_id}`}
+                  className="mt-2.5 line-clamp-2 text-[12.5px] font-bold leading-snug text-slate-900 transition-colors hover:text-brand-700 hover:underline"
+                >
+                  {c.institution?.name}
+                </Link>
+                <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[9.5px] font-medium text-slate-400">
+                  <Building2 className="h-3 w-3 shrink-0 text-slate-400" />
+                  <span className="truncate">
+                    {c.institution?.city}, {c.institution?.region} · {c.institution?.aicte_permanent_id}
+                  </span>
+                </p>
+
+                <div className="mt-3 flex min-w-0 flex-wrap items-center gap-1.5">
+                  <BureauPill bureau={c.assigned_bureau} />
+                  <span className="badge max-w-full truncate border-slate-200 bg-slate-50 text-slate-600">
+                    {c.category}
+                  </span>
+                </div>
+
+                <div className="mt-auto pt-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <StatusPill status={c.status} />
+                    <SlaPill breached={c.sla.isBreached} approaching={c.sla.isApproaching}>
+                      {c.sla.isBreached
+                        ? `${Math.abs(c.sla.remainingDays)}d overdue`
+                        : `${c.sla.remainingDays}d left`}
+                    </SlaPill>
+                  </div>
+                  <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${Math.max(4, Math.min(100, c.sla.percentElapsed))}%`,
+                        background: c.sla.isBreached
+                          ? "#dc2626"
+                          : c.sla.isApproaching
+                            ? "#d97706"
+                            : "#059669",
+                      }}
+                    />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+                    <span className="flex items-center gap-1 text-[9.5px] font-medium text-slate-400">
+                      <CalendarDays className="h-2.5 w-2.5" />
+                      {formatDate(c.date_received)}
+                    </span>
+                    <Link
+                      href={`/cases/${c.id}`}
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-700 hover:underline"
+                    >
+                      Open case
+                      <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -355,7 +468,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
                         href={`/institutions/${c.institution_id}`}
                         className="flex items-center gap-1.5 text-[11.5px] font-semibold text-slate-800 hover:text-brand-700 hover:underline"
                       >
-                        <Building2 className="h-3 w-3 shrink-0 text-slate-300" />
+                        <Building2 className="h-3 w-3 shrink-0 text-slate-400" />
                         <span className="truncate">{c.institution?.name}</span>
                       </Link>
                       <span className="mt-0.5 block pl-[18px] text-[9.5px] text-slate-400">

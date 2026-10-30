@@ -207,18 +207,18 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                   <div className="mt-2 flex flex-wrap items-center gap-3 text-[10.5px] text-slate-500">
                     {institution.contact_email && (
                       <span className="inline-flex items-center gap-1.5">
-                        <Mail className="h-3 w-3 text-slate-300" />
+                        <Mail className="h-3 w-3 text-slate-400" />
                         {institution.contact_email}
                       </span>
                     )}
                     {institution.contact_phone && (
                       <span className="inline-flex items-center gap-1.5">
-                        <Phone className="h-3 w-3 text-slate-300" />
+                        <Phone className="h-3 w-3 text-slate-400" />
                         {institution.contact_phone}
                       </span>
                     )}
                     <span className="inline-flex items-center gap-1.5">
-                      <MapPin className="h-3 w-3 text-slate-300" />
+                      <MapPin className="h-3 w-3 text-slate-400" />
                       {institution.region} Regional Office
                     </span>
                   </div>
@@ -319,7 +319,7 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
 
           {cases.length === 0 ? (
             <div className="panel p-10 text-center">
-              <Inbox className="mx-auto h-8 w-8 text-slate-200" />
+              <Inbox className="mx-auto h-8 w-8 text-slate-400" />
               <p className="mt-2 text-[12px] font-semibold text-slate-600">No cases on record</p>
               <p className="text-[10.5px] text-slate-400">This institution has a clean grievance history.</p>
             </div>

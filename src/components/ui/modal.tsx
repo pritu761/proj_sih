@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +44,7 @@ export function Modal({
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || typeof document === "undefined") return null;
 
   const toneMap = {
     blue: "bg-brand-50 text-brand-700 border-brand-100",
@@ -61,7 +62,7 @@ export function Modal({
     xl: "max-w-5xl",
   };
 
-  return (
+  return createPortal(
     <div
       className="modal-backdrop"
       role="presentation"
@@ -118,6 +119,7 @@ export function Modal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

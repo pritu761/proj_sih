@@ -77,7 +77,7 @@ export function TrilayerPanel({
 }) {
   if (!trilayer) {
     return (
-      <div className="rounded-xl border border-white/10 bg-slate-950/70 p-3 text-[10.5px] text-slate-400">
+      <div className="dark-surface rounded-xl border border-white/10 bg-slate-950/70 p-3 text-[10.5px] text-slate-400">
         Layer scores are being reconstructed from the case record.
       </div>
     );
@@ -91,7 +91,7 @@ export function TrilayerPanel({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.9)]",
+        "dark-surface relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.9)]",
         compact ? "p-3.5" : "p-4"
       )}
     >
@@ -113,7 +113,7 @@ export function TrilayerPanel({
             </p>
             <p className={cn("font-display text-[22px] font-extrabold leading-none tracking-tight", scoreTone(trilayer.total))}>
               {trilayer.total}
-              <span className="ml-0.5 text-[10px] font-bold text-slate-600">/100</span>
+              <span className="ml-0.5 text-[10px] font-bold text-slate-400">/100</span>
             </p>
           </div>
           <span

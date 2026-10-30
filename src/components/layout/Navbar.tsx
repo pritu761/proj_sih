@@ -18,12 +18,14 @@ import {
   Flame,
   Inbox,
   ChevronDown,
+  Keyboard,
 } from "lucide-react";
 import { SessionUser } from "@/lib/rbac";
 import { getBureauLabel } from "@/lib/utils";
 import { markNotificationReadAction } from "@/actions/notification-actions";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 interface NavbarProps {
@@ -38,6 +40,7 @@ interface NavbarProps {
   }[];
   openOverlapCount: number;
   onMenu?: () => void;
+  onShortcuts?: () => void;
 }
 
 const notifIcon: Record<string, typeof Bell> = {
@@ -67,8 +70,9 @@ function timeAgo(date: Date | string) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-export function Navbar({ user, notifications, openOverlapCount, onMenu }: NavbarProps) {
+export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortcuts }: NavbarProps) {
   const router = useRouter();
+  const toast = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [notifList, setNotifList] = useState(notifications);
@@ -87,23 +91,20 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu }: Navbar
         setShowProfile(false);
       }
     }
-    function handleKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        window.dispatchEvent(new Event("sentinel:command"));
-      }
-    }
     document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleKey);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleKey);
     };
   }, []);
 
   const handleMarkAsRead = async (id: string) => {
     setNotifList((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    await markNotificationReadAction(id);
+    try {
+      await markNotificationReadAction(id);
+      toast.info("Notification marked as read", "It stays available in your alert history.");
+    } catch {
+      toast.error("Could not update notification", "Please try again in a moment.");
+    }
   };
 
   /**
@@ -246,7 +247,7 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu }: Navbar
                 <div className="max-h-[340px] overflow-y-auto">
                   {notifList.length === 0 ? (
                     <div className="px-6 py-12 text-center">
-                      <Bell className="mx-auto mb-2 h-7 w-7 text-slate-200" />
+                      <Bell className="mx-auto mb-2 h-7 w-7 text-slate-400" />
                       <p className="text-[12px] font-semibold text-slate-500">You&apos;re all caught up</p>
                       <p className="mt-0.5 text-[10.5px] text-slate-400">
                         New alerts will appear here.
@@ -354,6 +355,21 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu }: Navbar
                     <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" />
                     Review alerts
                   </Link>
+                  {onShortcuts && (
+                    <button
+                      onClick={() => {
+                        setShowProfile(false);
+                        onShortcuts();
+                      }}
+                      className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11.5px] font-semibold text-slate-600 hover:bg-slate-50"
+                    >
+                      <Keyboard className="h-3.5 w-3.5 text-slate-400" />
+                      Keyboard shortcuts
+                      <kbd className="ml-auto rounded border border-slate-200 bg-slate-50 px-1 py-px font-mono text-[8.5px] text-slate-400">
+                        ?
+                      </kbd>
+                    </button>
+                  )}
                   <button
                     onClick={handleSignOut}
                     className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11.5px] font-semibold text-rose-600 hover:bg-rose-50"

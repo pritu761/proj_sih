@@ -94,7 +94,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-[262px_1fr]">
         {/* Radar scope */}
-        <div className="relative overflow-hidden border-b border-slate-100 bg-ink-950 p-5 lg:border-b-0 lg:border-r">
+        <div className="dark-surface relative overflow-hidden border-b border-slate-100 bg-ink-950 p-5 lg:border-b-0 lg:border-r">
           <div
             className="pointer-events-none absolute inset-0 opacity-70"
             style={{
@@ -224,7 +224,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
                         active ? "bg-brand-50/60" : "hover:bg-slate-50"
                       )}
                     >
-                      <span className="w-4 shrink-0 text-center font-mono text-[10px] font-bold text-slate-300">
+                      <span className="w-4 shrink-0 text-center font-mono text-[10px] font-bold text-slate-400">
                         {String(idx + 1).padStart(2, "0")}
                       </span>
 
@@ -278,7 +278,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
                         </p>
                       </div>
 
-                      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-slate-300 transition-colors group-hover:text-brand-500" />
+                      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-brand-500" />
                     </Link>
                   </li>
                 );

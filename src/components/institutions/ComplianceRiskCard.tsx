@@ -37,7 +37,7 @@ export function ComplianceRiskCard({
   const dash = (Math.min(100, assessment.score) / 100) * circumference;
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.9)]">
+    <section className="dark-surface relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-4 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.9)]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
 
       <div className="flex items-start justify-between gap-3">
@@ -174,7 +174,7 @@ export function ComplianceRiskCard({
         )}
       </div>
 
-      <p className="mt-2 flex items-start gap-1 text-[7.5px] leading-relaxed text-slate-600">
+      <p className="mt-2 flex items-start gap-1 text-[7.5px] leading-relaxed text-slate-400">
         <ShieldAlert className="mt-0.5 h-2 w-2 shrink-0" />
         Deterministic APH engine. Every point is traceable and every notice carries a SHA-256 digest.
       </p>

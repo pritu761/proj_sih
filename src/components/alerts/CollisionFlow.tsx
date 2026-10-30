@@ -179,7 +179,7 @@ export function CollisionFlow({
   if (model.institutions.length === 0) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-        <Network className="mx-auto h-6 w-6 text-slate-200" />
+        <Network className="mx-auto h-6 w-6 text-slate-400" />
         <p className="mt-2 text-[12px] font-semibold text-slate-500">
           No active collisions to plot.
         </p>

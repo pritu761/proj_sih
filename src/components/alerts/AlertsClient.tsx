@@ -506,7 +506,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                         <Clock3 className="h-2.5 w-2.5" />
                         {formatDateTime(alert.detected_at)}
                       </span>
-                      <span className="hidden font-mono text-[9px] text-slate-300 sm:inline">
+                      <span className="hidden font-mono text-[9px] text-slate-500 sm:inline">
                         {alert.id}
                       </span>
                     </div>
@@ -531,12 +531,12 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                         href={`/institutions/${alert.institution_id}`}
                         className="mt-1 inline-flex items-start gap-1.5 font-display text-[13px] font-bold leading-snug text-slate-900 hover:text-brand-700 hover:underline"
                       >
-                        <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-300" />
+                        <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
                         {alert.institution?.name || "Target Technical Institution"}
                       </Link>
                       <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-5 text-[10px] text-slate-500">
                         <span className="inline-flex items-center gap-1">
-                          <MapPin className="h-2.5 w-2.5 text-slate-300" />
+                          <MapPin className="h-2.5 w-2.5 text-slate-400" />
                           {alert.institution?.city}, {alert.institution?.state}
                         </span>
                         <span className="font-mono text-slate-400">
@@ -611,7 +611,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                   </div>
 
                   {alert.master_case_id && (
-                    <div className="mt-2.5 rounded-xl border border-emerald-300/40 bg-emerald-950/90 p-3 text-emerald-100">
+                    <div className="dark-surface mt-2.5 rounded-xl border border-emerald-300/40 bg-emerald-950/90 p-3 text-emerald-100">
                       <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-emerald-300">
                         <Crown className="h-3 w-3" />
                         Master docket established

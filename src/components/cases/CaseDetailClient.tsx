@@ -397,7 +397,7 @@ export function CaseDetailClient({
               </Link>
               {caseItem.institution?.city && (
                 <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3 w-3 text-slate-300" />
+                  <MapPin className="h-3 w-3 text-slate-400" />
                   {caseItem.institution.city}, {caseItem.institution.state}
                 </span>
               )}
@@ -493,7 +493,7 @@ export function CaseDetailClient({
           <p className="text-[10.5px] font-medium text-slate-500">
             <span className="font-bold text-slate-700">Last action:</span>{" "}
             {caseItem.last_action}
-            <span className="mx-1.5 text-slate-300">·</span>
+            <span className="mx-1.5 text-slate-400">·</span>
             {latestAction ? formatDateTime(latestAction.timestamp) : formatDate(caseItem.last_action_date)}
           </p>
 
@@ -646,7 +646,7 @@ export function CaseDetailClient({
 
             {linkedCases.length === 0 ? (
               <div className="px-5 py-8 text-center">
-                <Link2 className="mx-auto h-6 w-6 text-slate-200" />
+                <Link2 className="mx-auto h-6 w-6 text-slate-400" />
                 <p className="mt-2 text-[11px] font-medium italic text-slate-400">
                   No cross-referenced cases linked yet.
                 </p>

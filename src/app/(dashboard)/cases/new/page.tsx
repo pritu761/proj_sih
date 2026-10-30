@@ -175,7 +175,7 @@ export default function NewCasePage() {
             <PlusCircle className="h-5 w-5" />
           </div>
           <div>
-            <p className="eyebrow mb-1 text-saffron-600">Registry intake</p>
+            <p className="eyebrow mb-1 text-amber-700">Registry intake</p>
             <h1 className="font-display text-[25px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 sm:text-[28px]">
               Register a new institutional complaint
             </h1>
@@ -267,9 +267,9 @@ export default function NewCasePage() {
                           <MapPin className="h-2.5 w-2.5 text-slate-400" />
                           {selectedInstitution.city}, {selectedInstitution.state}
                         </span>
-                        <span className="text-slate-300">·</span>
+                        <span className="text-slate-400">·</span>
                         <span>{selectedInstitution.region} region</span>
-                        <span className="text-slate-300">·</span>
+                        <span className="text-slate-400">·</span>
                         <span className="font-semibold text-slate-600">
                           {selectedInstitution.institution_type}
                         </span>

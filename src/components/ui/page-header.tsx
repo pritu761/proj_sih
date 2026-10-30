@@ -20,7 +20,7 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
     <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[11.5px]">
       {items.map((item, i) => (
         <span key={`${item.label}-${i}`} className="flex items-center gap-1.5">
-          {i > 0 && <ChevronRight className="h-3 w-3 text-slate-300" aria-hidden />}
+          {i > 0 && <ChevronRight className="h-3 w-3 text-slate-400" aria-hidden />}
           {item.href ? (
             <Link
               href={item.href}

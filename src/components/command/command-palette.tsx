@@ -23,9 +23,11 @@ import {
   History,
   ArrowUpRight,
   Sparkles,
+  Keyboard,
 } from "lucide-react";
 import { cn, getBureauShortName } from "@/lib/utils";
 import { useTheme } from "@/components/theme/theme-provider";
+import { useToast } from "@/components/ui/toast";
 import type { SessionUser } from "@/lib/rbac";
 
 type Group = "Recent" | "Actions" | "Navigate" | "Cases" | "Institutions";
@@ -118,6 +120,7 @@ function saveRecent(item: PaletteItem) {
 export function CommandPalette({ user }: { user: SessionUser }) {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -248,7 +251,10 @@ export function CommandPalette({ user }: { user: SessionUser }) {
         title: "Export case register (CSV)",
         subtitle: "Download the current grievance register",
         icon: Download,
-        run: () => window.open("/api/reports/csv", "_blank"),
+        run: () => {
+          window.open("/api/reports/csv", "_blank");
+          toast.success("Export started", "The grievance register is downloading now.");
+        },
         tone: "border-emerald-200 bg-emerald-50 text-emerald-600",
       },
       {
@@ -260,10 +266,19 @@ export function CommandPalette({ user }: { user: SessionUser }) {
         href: "/alerts?status=OPEN",
         tone: "border-rose-200 bg-rose-50 text-rose-600",
       },
+      {
+        key: "action-shortcuts",
+        group: "Actions",
+        title: "Keyboard shortcuts",
+        subtitle: "See every way to command Sentinel",
+        icon: Keyboard,
+        run: () => window.dispatchEvent(new Event("sentinel:shortcuts")),
+        tone: "border-slate-200 bg-slate-50 text-slate-600",
+      },
     ];
 
     return [...navItems, ...actionItems];
-  }, [theme, toggleTheme, user.role]);
+  }, [theme, toggleTheme, user.role, toast]);
 
   const items = useMemo<PaletteItem[]>(() => {
     const q = query.trim().toLowerCase();
@@ -356,6 +371,7 @@ export function CommandPalette({ user }: { user: SessionUser }) {
     <div
       className="fixed inset-0 z-[80] flex items-start justify-center bg-ink-950/50 px-3 pt-[8vh] backdrop-blur-sm sm:px-4 sm:pt-[10vh]"
       role="presentation"
+      data-sentinel-dialog="open"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) close();
       }}
@@ -402,7 +418,7 @@ export function CommandPalette({ user }: { user: SessionUser }) {
         <div ref={listRef} id="sentinel-command-list" role="listbox" className="max-h-[min(58vh,430px)] overflow-y-auto p-2">
           {items.length === 0 ? (
             <div className="px-4 py-10 text-center">
-              <Sparkles className="mx-auto h-6 w-6 text-slate-200" />
+              <Sparkles className="mx-auto h-6 w-6 text-slate-400" />
               <p className="mt-2 text-[12.5px] font-semibold text-slate-600">
                 No matches for &quot;{query}&quot;
               </p>
@@ -462,7 +478,7 @@ export function CommandPalette({ user }: { user: SessionUser }) {
                           Enter
                         </span>
                       ) : (
-                        <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-slate-300" />
+                        <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                       )}
                     </button>
                   );
@@ -486,6 +502,10 @@ export function CommandPalette({ user }: { user: SessionUser }) {
             <span className="hidden items-center gap-1 sm:flex">
               <kbd className="rounded border border-slate-200 bg-white px-1 py-px font-mono text-[8.5px]">esc</kbd>
               close
+            </span>
+            <span className="hidden items-center gap-1 md:flex">
+              <kbd className="rounded border border-slate-200 bg-white px-1 py-px font-mono text-[8.5px]">?</kbd>
+              shortcuts
             </span>
           </div>
           <span className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">

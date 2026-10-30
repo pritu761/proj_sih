@@ -33,6 +33,17 @@
   --color-saffron-500: #f59e0b;
   --color-saffron-600: #d97706;
 
+  /* Slate — darkened 400/500 steps keep muted text legible on light surfaces */
+  --color-slate-400: #5f6c80;
+  --color-slate-500: #526073;
+
+  /* Accent text — use the 700 step as the light-surface default so small
+     labels, counters, and badges clear WCAG AA on white and on their own
+     50-step tint. Dark mode remaps .text-*-600 back to brighter hues. */
+  --color-rose-600: #be123c;
+  --color-amber-600: #b45309;
+  --color-emerald-600: #047857;
+
   /* Surfaces */
   --color-mist-50: #f7f9fd;
   --color-mist-100: #f1f4fa;
@@ -78,7 +89,7 @@
 
     --text-primary: #0b1324;
     --text-secondary: #475569;
-    --text-muted: #8b97ab;
+    --text-muted: #5f6c80;
 
     --success: #059669;
     --success-light: #d9f7ea;
@@ -256,6 +267,14 @@
   h1, h2, h3, h4, h5 {
     font-family: var(--font-manrope), var(--font-inter), sans-serif;
     letter-spacing: -0.02em;
+  }
+
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 
   ::selection {
@@ -951,16 +970,41 @@ textarea.input {
   --color-slate-200: #e2e8f0;
   --color-slate-300: #cbd5e1;
   --color-slate-400: #94a3b8;
-  --color-slate-500: #64748b;
+  --color-slate-500: #8294b2;
   --color-slate-600: #475569;
   --color-slate-700: #334155;
   --color-slate-800: #1e293b;
   --color-slate-900: #0f172a;
   --color-slate-950: #020617;
+
+  /* Tinted text on permanently dark surfaces must stay light, even when the
+     global accent tints are inverted for the dark theme. */
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-200: #a7f3d0;
+  --color-amber-100: #fef3c7;
+  --color-amber-200: #fde68a;
+  --color-sky-100: #e0f2fe;
+  --color-sky-200: #bae6fd;
+  --color-brand-100: #dbe8fe;
+  --color-brand-200: #bfd6fe;
+  --color-violet-100: #ede9fe;
+  --color-violet-200: #ddd6fe;
+  --color-indigo-100: #e0e7ff;
+  --color-indigo-200: #c7d2fe;
+  --color-teal-100: #ccfbf1;
+  --color-teal-200: #99f6e4;
+
+  /* Keep the original vivid 600-step accents on permanently dark artwork. */
+  --color-rose-600: #e11d48;
+  --color-amber-600: #d97706;
+  --color-emerald-600: #059669;
 }
 
 /* White surfaces and translucent variants */
 .dark .bg-white { background-color: var(--surface-card); }
+.dark .bg-white\/90 { background-color: color-mix(in oklab, var(--surface-card) 90%, transparent); }
 .dark .bg-white\/80 { background-color: color-mix(in oklab, var(--surface-card) 84%, transparent); }
 .dark .bg-white\/70 { background-color: color-mix(in oklab, var(--surface-card) 76%, transparent); }
 .dark .hover\:bg-white:hover,
@@ -1342,6 +1386,83 @@ textarea.input {
   }
 }
 
+/* ─── Operations wire ─── */
+.wire-viewport {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 16px,
+    #000 calc(100% - 36px),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 16px,
+    #000 calc(100% - 36px),
+    transparent 100%
+  );
+}
+@media (min-width: 640px) {
+  .wire-viewport {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 22px,
+      #000 calc(100% - 64px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      #000 22px,
+      #000 calc(100% - 64px),
+      transparent 100%
+    );
+  }
+}
+.wire-track {
+  animation: wire-scroll 44s linear infinite;
+  will-change: transform;
+}
+.wire-viewport:hover .wire-track,
+.wire-viewport:focus-within .wire-track {
+  animation-play-state: paused;
+}
+@keyframes wire-scroll {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/* ─── Toasts ─── */
+.toast-card {
+  animation: toast-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.toast-progress {
+  animation-name: toast-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-mesh::before,
   .hero-scan,
@@ -1358,6 +1479,17 @@ textarea.input {
   .animate-verified-pop {
     animation: none !important;
     transition: none !important;
+  }
+  .wire-track {
+    animation: none !important;
+    transform: none !important;
+  }
+  .toast-card {
+    animation: none !important;
+  }
+  .toast-progress {
+    animation: none !important;
+    opacity: 0;
   }
   .topology-link {
     stroke-dashoffset: 0;

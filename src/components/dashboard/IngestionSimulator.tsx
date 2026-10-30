@@ -99,7 +99,7 @@ const PRIORITY_TONE: Record<string, string> = {
 };
 
 const darkInput =
-  "w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-[12px] font-medium text-slate-100 outline-none transition-colors placeholder:text-slate-600 hover:border-white/20 focus:border-amber-400/60 focus:ring-2 focus:ring-amber-400/20";
+  "dark-surface w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-2.5 text-[12px] font-medium text-slate-100 outline-none transition-colors placeholder:text-slate-400 hover:border-white/20 focus:border-amber-400/60 focus:ring-2 focus:ring-amber-400/20";
 
 export function IngestionSimulator({
   userRole,
@@ -337,7 +337,7 @@ export function IngestionSimulator({
         }
       >
         {step === "PROCESSING" ? (
-          <div className="rounded-2xl border border-white/10 bg-slate-950 p-5">
+          <div className="dark-surface rounded-2xl border border-white/10 bg-slate-950 p-5">
             <div className="flex items-center gap-3">
               <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-400/30 bg-amber-400/10">
                 <Radio className="h-5 w-5 text-amber-300" />
@@ -366,7 +366,7 @@ export function IngestionSimulator({
                           ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-300"
                           : active
                             ? "border-amber-400/60 bg-amber-400/15 text-amber-300"
-                            : "border-white/10 bg-white/[0.03] text-slate-600"
+                            : "border-white/10 bg-white/[0.03] text-slate-400"
                       )}
                     >
                       {done ? <CheckCircle2 className="h-3 w-3" /> : index + 1}
@@ -375,7 +375,7 @@ export function IngestionSimulator({
                       <p
                         className={cn(
                           "text-[11.5px] font-semibold",
-                          done ? "text-slate-300" : active ? "text-amber-200" : "text-slate-600"
+                          done ? "text-slate-300" : active ? "text-amber-200" : "text-slate-400"
                         )}
                       >
                         {label}
@@ -393,7 +393,7 @@ export function IngestionSimulator({
           </div>
         ) : step === "RESULT" && result ? (
           <div className="space-y-4">
-            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-4">
+            <div className="dark-surface relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 p-4">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -534,7 +534,7 @@ export function IngestionSimulator({
         ) : (
           <div className="space-y-4">
             {readOnly && (
-              <div className="flex items-start gap-2 rounded-xl border border-amber-400/30 bg-amber-400/[0.08] p-2.5 text-[10.5px] leading-relaxed text-amber-200">
+              <div className="flex items-start gap-2 rounded-xl border border-amber-400/30 bg-amber-400/[0.08] p-2.5 text-[10.5px] leading-relaxed text-amber-800">
                 <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <p>
                   This account is a <strong>Regional Officer (read-only observer)</strong>. You can inspect
@@ -563,7 +563,7 @@ export function IngestionSimulator({
                         "rounded-xl border p-2.5 text-left transition-all",
                         active
                           ? "border-amber-400/50 bg-amber-400/[0.08] shadow-[0_0_0_1px_rgba(251,191,36,0.15)]"
-                          : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
+                          : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/20 dark:hover:bg-white/[0.04]"
                       )}
                     >
                       <div className="flex items-center justify-between">
@@ -571,11 +571,11 @@ export function IngestionSimulator({
                           className="h-3.5 w-3.5"
                           style={{ color: active ? item.accent : "#64748b" }}
                         />
-                        <span className="font-mono text-[8px] font-bold text-slate-600">
+                        <span className="font-mono text-[8px] font-bold text-slate-400">
                           {item.short}
                         </span>
                       </div>
-                      <p className={cn("mt-1.5 text-[10.5px] font-bold", active ? "text-slate-100" : "text-slate-400")}>
+                      <p className={cn("mt-1.5 text-[10.5px] font-bold", active ? "text-slate-900" : "text-slate-400")}>
                         {item.label}
                       </p>
                       <p className="mt-0.5 line-clamp-2 text-[8.5px] leading-snug text-slate-500">
@@ -594,7 +594,7 @@ export function IngestionSimulator({
                   2 · Institution
                 </label>
                 <div className="relative">
-                  <Search className="pointer-events-none absolute left-2.5 top-3 h-3.5 w-3.5 text-slate-600" />
+                  <Search className="pointer-events-none absolute left-2.5 top-3 h-3.5 w-3.5 text-slate-400" />
                   <input
                     value={institutionSearch}
                     onChange={(e) => setInstitutionSearch(e.target.value)}
@@ -621,11 +621,11 @@ export function IngestionSimulator({
                   ))}
                 </select>
                 {institutionError && (
-                  <p className="mt-1 text-[10px] font-medium text-rose-300">{institutionError}</p>
+                  <p className="mt-1 text-[10px] font-medium text-rose-700">{institutionError}</p>
                 )}
                 {selectedInstitution && (
-                  <div className="mt-1.5 rounded-lg border border-white/10 bg-white/[0.02] px-2.5 py-2">
-                    <p className="flex items-center gap-1 text-[9.5px] font-semibold text-slate-300">
+                  <div className="mt-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 dark:border-white/10 dark:bg-white/[0.02]">
+                    <p className="flex items-center gap-1 text-[9.5px] font-semibold text-slate-700">
                       <MapPin className="h-2.5 w-2.5 text-slate-500" />
                       {selectedInstitution.city}, {selectedInstitution.state} · {selectedInstitution.region} RO
                     </p>
@@ -695,7 +695,7 @@ export function IngestionSimulator({
                 <button
                   type="button"
                   onClick={loadSample}
-                  className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[9px] font-bold text-slate-300 transition-colors hover:border-amber-400/40 hover:text-amber-200"
+                  className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] font-bold text-slate-700 transition-colors hover:border-amber-400/60 hover:text-amber-700 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-amber-400/40 dark:hover:text-amber-300"
                 >
                   <Sparkles className="h-2.5 w-2.5 text-amber-400" />
                   Load realistic sample
@@ -714,7 +714,7 @@ export function IngestionSimulator({
               </p>
             </div>
 
-            <div className="rounded-xl border border-white/10 bg-slate-950 p-3.5">
+            <div className="dark-surface rounded-xl border border-white/10 bg-slate-950 p-3.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
                   <Siren className="h-3 w-3 text-amber-400" />
@@ -750,7 +750,7 @@ export function IngestionSimulator({
             {errorMsg && (
               <p
                 role="alert"
-                className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[10.5px] font-medium text-rose-200"
+                className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[10.5px] font-medium text-rose-700"
               >
                 {errorMsg}
               </p>

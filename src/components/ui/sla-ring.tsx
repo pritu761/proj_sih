@@ -24,6 +24,11 @@ export function SlaRing({
   const offset = c - (safe / 100) * c;
 
   const color = breached ? "#dc2626" : approaching ? "#d97706" : "#059669";
+  const textTone = breached
+    ? "text-rose-600"
+    : approaching
+      ? "text-amber-600"
+      : "text-emerald-600";
   const id = breached ? "sla-rose" : approaching ? "sla-amber" : "sla-emerald";
 
   return (
@@ -63,8 +68,10 @@ export function SlaRing({
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span
-          className="font-display text-[21px] font-extrabold leading-none tracking-tight"
-          style={{ color }}
+          className={cn(
+            "font-display text-[21px] font-extrabold leading-none tracking-tight",
+            textTone
+          )}
         >
           {breached ? "−" : ""}
           {Math.abs(days)}
@@ -72,7 +79,7 @@ export function SlaRing({
         <span className="mt-0.5 text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-400">
           {days < 0 ? "days over" : label}
         </span>
-        <span className="mt-px text-[8.5px] font-semibold" style={{ color }}>
+        <span className={cn("mt-px text-[8.5px] font-semibold", textTone)}>
           {safe.toFixed(0)}% elapsed
         </span>
       </div>

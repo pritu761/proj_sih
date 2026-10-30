@@ -106,7 +106,7 @@ export function EnforcementPanel({
   ];
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-[0_24px_60px_-34px_rgba(0,0,0,0.9)]">
+    <section className="dark-surface relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950 shadow-[0_24px_60px_-34px_rgba(0,0,0,0.9)]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-500/60 to-transparent" />
       <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-amber-400/[0.06] blur-3xl" />
 
