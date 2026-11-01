@@ -56,7 +56,7 @@ This prototype provides an authorized, role-guarded platform that unifies all gr
 | **Scheduled Jobs** | Vercel Cron Jobs (`vercel.json`) | Automated SLA breach scan, reminder dispatch, batch overlap scan |
 | **Live Polling** | SWR / React Client Polling (30s) | Serverless-compatible real-time dashboard updates without WebSockets |
 | **Reporting** | `pdf-lib` + Streaming CSV | Native serverless PDF & CSV report generation (no Puppeteer bloat) |
-| **Testing** | Vitest | 38 unit tests across 6 suites covering Overlap Detection, SLA Engine, RBAC, Risk Engine, Audit Chain, and Sentinel Features |
+| **Testing** | Vitest | 57 unit tests across 9 suites covering Overlap Detection, SLA Engine, RBAC, Risk Engine, Audit Chain, Sentinel Features, Language Detection, Complainant Engine, and Bureau Scorecard |
 
 ---
 
@@ -317,6 +317,57 @@ Follow this 12-step script to demonstrate all system capabilities during evaluat
     Navigate to `/audit`. Inspect the chronological ledger with chained block hashes. Click **"Verify ledger integrity"** — the server recomputes every SHA-256 block from genesis and confirms full chain validity with a copyable cryptographic head hash.
 13. **Export Official Reports:**
     Navigate to `/reports`. Click **"Download Official PDF Report"** to generate the executive report via `pdf-lib`, or click **"Export CSV Dataset"** for the full data grid.
+
+---
+
+## 10. Recently implemented (no external API keys required)
+
+The following capabilities ship out of the box with a clean `npm run dev` and Postgres-optional persistence (JSONB write-behind snapshot, silent fallback to the in-memory seed when no database is attached).
+
+### Officer work assignment & personal queue
+- `/workqueue` — every officer gets a personal queue plus the unassigned bureau backlog, sorted by SLA urgency.
+- `assignOfficerAction` with bureau-jurisdiction enforcement and an instant notification to the assignee.
+- Self-assign / reassign from the queue or the case workspace.
+
+### Admin user management console
+- `/users` (Administrator only) — register, edit postings, suspend/activate and reset passwords; last-admin guard prevents lockout.
+- Accounts persist to the `User` table when Postgres is attached.
+
+### Regional Officer field channel
+- `canAddFieldVerification` permission — Regional Officers remain read-only for bureau case state, but can record on-site verification findings, which flow into the owning bureau's notification stream and the immutable audit trail.
+- Field verification modal on the case workspace.
+
+### Public grievance tracker
+- `/track` — no sign-in, CPGRAMS-style status disclosure: registry number, status, SLA standing, key dates, hearing sitting and a citizen-safe timeline.
+- Rate-limited per registry number to blunt enumeration; officer identities and internal notes are deliberately excluded.
+
+### Recurring complainant detection
+- `complainant-engine.ts` — normalises complainant identities and flags Watch (2 filings) / Repeat (3+) / Prolific (5+) identities, including cross-bureau and cross-institution patterns.
+- Complainant card on the case workspace with linked registry numbers; recurring-complainant chips on the institution profile.
+
+### Institution document vault
+- Statutory records (approval letters, compliance reports, audit statements, show-cause notices, court orders, financial records) archived per institution, linkable to a case registry number.
+- Uploads go through the existing Vercel Blob pipeline; owners or administrators can remove records.
+
+### Bureau scorecard & weekly PDF digest
+- `scorecard.ts` — per-bureau A/B/C/D grading blending on-time disposals with open breach load.
+- Reports workspace now renders the scorecard table; `/api/reports/weekly` ships a downloadable weekly executive digest (scorecard + hearing board + recurrence watch).
+
+### Inter-bureau comment threads
+- COORDINATION (all involved bureaus) and INTERNAL (own bureau only) notes on every case, with regional observers restricted to the coordination scope.
+- `CaseThreadPanel` mounted on the case workspace; optimistic append with audit logging.
+
+### Hearing calendar
+- `/calendar` — grouped board (this week / later / past) with rescheduling from the calendar or the case workspace.
+- Hearings propagate to the public tracker and the weekly digest.
+
+### Offline multilingual intake
+- `language-detect.ts` — Unicode-script detection for 12 Indian languages plus a curated statutory keyword lexicon (Hindi, Tamil, Telugu, Bengali, etc.) with no API keys or network calls.
+- Language badge on case headers; live language chip + suggested category in the ingestion simulator; multilingual sample grievances seeded in the demo data.
+
+### Guided onboarding tour & durable persistence
+- First-run product tour (localStorage-gated) walking new officers through command centre, work queue, hearing calendar, case explorer and reports.
+- Postgres-backed JSONB snapshot (`AppStateSnapshot`, SNAPSHOT_VERSION=4) with write-behind debounce and silent fallback to the seeded demo data.
 
 ---
 

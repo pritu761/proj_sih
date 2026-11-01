@@ -38,6 +38,14 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       )
     : null;
 
+  const [comments, complainant, officers] = await Promise.all([
+    Promise.resolve(
+      repository.getVisibleCaseComments(data.caseItem.case_id, user)
+    ),
+    Promise.resolve(repository.getComplainantProfileForCase(data.caseItem.id)),
+    repository.getAssignableOfficers(user),
+  ]);
+
   return (
     <CaseDetailClient
       caseItem={data.caseItem}
@@ -47,6 +55,9 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       currentUser={user}
       insight={insight}
       compliance={compliance}
+      comments={comments}
+      complainant={complainant}
+      officers={officers}
     />
   );
 }

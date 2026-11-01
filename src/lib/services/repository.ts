@@ -1,10 +1,20 @@
-import { generateSeedData, SeedInstitution, SeedCase, SeedOverlapAlert } from "@/lib/mock-data-generator";
-import { SLA_CONFIGS } from "@/lib/demo-data";
+import { generateSeedData, SeedCase, SeedComment, SeedDocument, SeedInstitution, SeedOverlapAlert } from "@/lib/mock-data-generator";
+import { ALL_KNOWN_USERS, DEMO_PASSWORD_HASHES, SLA_CONFIGS } from "@/lib/demo-data";
+import bcrypt from "bcryptjs";
+import prisma from "@/lib/prisma";
 import { calculateCaseSla, computeAgeingBuckets } from "./sla-engine";
 import { buildRiskRadar, buildCaseInsight } from "./risk-engine";
 import { overlapDetector, deriveTrilayerFromCases } from "./overlap-detector";
 import { logAuditEvent, inMemoryAuditLogs } from "./audit";
-import { SessionUser, assertCanActOnCase, canCoordinateOverlap, canViewCase } from "@/lib/rbac";
+import { analyzeComplainants, ComplainantProfile, ComplainantCaseInput, RECURRENCE_META } from "./complainant-engine";
+import {
+  hydrateFromSnapshot,
+  markStoreDirty,
+  registerSnapshotSource,
+  StoreState,
+  StoreUser,
+} from "./persistence";
+import { SessionUser, assertCanActOnCase, canCoordinateOverlap, canViewCase, canActOnCase } from "@/lib/rbac";
 
 export interface CaseFilterOptions {
   q?: string;
@@ -17,6 +27,8 @@ export interface CaseFilterOptions {
   status?: string;
   priority?: string;
   sla_status?: "NORMAL" | "APPROACHING" | "BREACHED";
+  officer?: string;
+  unassigned?: boolean;
   date_from?: string;
   date_to?: string;
   page?: number;
@@ -25,34 +37,17 @@ export interface CaseFilterOptions {
   sortOrder?: "asc" | "desc";
 }
 
+function uid(prefix: string): string {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+const PASSWORD_HASH_FALLBACK = DEMO_PASSWORD_HASHES["Officer@123"];
+
 // Global In-Memory Cache to support instant preview and seamless unit/UI flows
 const globalRepo = globalThis as unknown as {
   auditLedgerSeeded?: boolean;
-  inMemoryData?: {
-    institutions: SeedInstitution[];
-    cases: SeedCase[];
-    overlapAlerts: SeedOverlapAlert[];
-    notifications: {
-      id: string;
-      type: string;
-      case_id?: string;
-      target_bureau?: string;
-      target_user?: string;
-      title: string;
-      message: string;
-      read: boolean;
-      created_at: Date;
-    }[];
-    caseLinks: {
-      id: string;
-      case_a_id: string;
-      case_b_id: string;
-      link_type: string;
-      created_by: string;
-      created_at: Date;
-      note?: string;
-    }[];
-  };
+  snapshotWired?: boolean;
+  inMemoryData?: StoreState;
 };
 
 function seedAuditLedger(cases: SeedCase[]) {
@@ -88,52 +83,84 @@ function seedAuditLedger(cases: SeedCase[]) {
   inMemoryAuditLogs.push(...seededLogs);
 }
 
-function getInMemoryStore() {
-  if (!globalRepo.inMemoryData) {
-    const seed = generateSeedData();
-    globalRepo.inMemoryData = {
-      institutions: [...seed.institutions],
-      cases: [...seed.cases],
-      overlapAlerts: [...seed.overlapAlerts],
-      caseLinks: [],
-      notifications: [
-        {
-          id: "notif_001",
-          type: "OVERLAP",
-          case_id: "case_00101",
-          target_bureau: "PGRC",
-          title: "Potential Overlapping Cases – Coordination Required",
-          message: "Collision detected with Case AICTE/RB/2026/00042 regarding Apex Institute of Engineering & Technology.",
-          read: false,
-          created_at: new Date("2026-10-05T10:00:00Z"),
-        },
-        {
-          id: "notif_002",
-          type: "OVERLAP",
-          case_id: "case_00042",
-          target_bureau: "REGULATION_BUREAU",
-          title: "Potential Overlapping Cases – Coordination Required",
-          message: "Collision detected with Case AICTE/PGRC/2026/00101 regarding Apex Institute of Engineering & Technology.",
-          read: false,
-          created_at: new Date("2026-10-05T10:00:00Z"),
-        },
-        {
-          id: "notif_003",
-          type: "SLA_BREACHED",
-          case_id: "case_00101",
-          target_bureau: "PGRC",
-          title: "SLA Breached: Case AICTE/PGRC/2026/00101",
-          message: "Case has exceeded the 30-day resolution timeline. Immediate action or escalation required.",
-          read: false,
-          created_at: new Date("2026-10-21T09:00:00Z"),
-        },
-      ],
-    };
+function seedUsers(): StoreUser[] {
+  return ALL_KNOWN_USERS.map((u, idx) => ({
+    id: u.id,
+    name: u.name,
+    email: u.email.toLowerCase(),
+    password_hash:
+      DEMO_PASSWORD_HASHES[u.password] ?? PASSWORD_HASH_FALLBACK,
+    role: u.role,
+    bureau: u.bureau,
+    region: u.region ?? null,
+    designation: u.designation,
+    active: true,
+    created_at: new Date(Date.parse("2026-01-05T09:00:00Z") + idx * 86400000),
+  }));
+}
 
-    // Seed an initial tamper-evident audit ledger from the generated case actions
-    seedAuditLedger(seed.cases);
+function getInMemoryStore() {
+  const store: StoreState = (globalRepo.inMemoryData ??= buildSeedStore());
+  if (!globalRepo.snapshotWired) {
+    globalRepo.snapshotWired = true;
+    // One-shot hydration + write-behind persistence (no-op without a DB).
+    void hydrateFromSnapshot(store, inMemoryAuditLogs);
+    registerSnapshotSource(() =>
+      globalRepo.inMemoryData
+        ? { store: globalRepo.inMemoryData, auditLogs: inMemoryAuditLogs }
+        : null
+    );
   }
-  return globalRepo.inMemoryData;
+  return store;
+}
+
+function buildSeedStore(): StoreState {
+  const seed = generateSeedData();
+  const store: StoreState = {
+    institutions: [...seed.institutions],
+    cases: [...seed.cases],
+    overlapAlerts: [...seed.overlapAlerts],
+    caseLinks: [],
+    notifications: [
+      {
+        id: "notif_001",
+        type: "OVERLAP",
+        case_id: "case_00101",
+        target_bureau: "PGRC",
+        title: "Potential Overlapping Cases – Coordination Required",
+        message: "Collision detected with Case AICTE/RB/2026/00042 regarding Apex Institute of Engineering & Technology.",
+        read: false,
+        created_at: new Date("2026-10-05T10:00:00Z"),
+      },
+      {
+        id: "notif_002",
+        type: "OVERLAP",
+        case_id: "case_00042",
+        target_bureau: "REGULATION_BUREAU",
+        title: "Potential Overlapping Cases – Coordination Required",
+        message: "Collision detected with Case AICTE/PGRC/2026/00101 regarding Apex Institute of Engineering & Technology.",
+        read: false,
+        created_at: new Date("2026-10-05T10:00:00Z"),
+      },
+      {
+        id: "notif_003",
+        type: "SLA_BREACHED",
+        case_id: "case_00101",
+        target_bureau: "PGRC",
+        title: "SLA Breached: Case AICTE/PGRC/2026/00101",
+        message: "Case has exceeded the 30-day resolution timeline. Immediate action or escalation required.",
+        read: false,
+        created_at: new Date("2026-10-21T09:00:00Z"),
+      },
+    ],
+    comments: [...seed.comments],
+    documents: [...seed.documents],
+    users: seedUsers(),
+  };
+
+  // Seed an initial tamper-evident audit ledger from the generated case actions
+  seedAuditLedger(seed.cases);
+  return store;
 }
 
 export class ComplaintRepository {
@@ -524,6 +551,17 @@ export class ComplaintRepository {
       list = list.filter((c) => c.priority === filters.priority);
     }
 
+    if (filters.officer) {
+      const target = filters.officer.toLowerCase();
+      list = list.filter(
+        (c) => (c.assigned_officer ?? "").toLowerCase() === target
+      );
+    }
+
+    if (filters.unassigned) {
+      list = list.filter((c) => !c.assigned_officer);
+    }
+
     if (filters.sla_status) {
       if (filters.sla_status === "BREACHED") {
         list = list.filter((c) => c.sla.isBreached && c.status !== "DISPOSED");
@@ -760,6 +798,8 @@ export class ComplaintRepository {
 
     c.actions.unshift(action);
 
+    markStoreDirty();
+
     await logAuditEvent({
       user: actor.email,
       action: "UPDATE_CASE_STATUS",
@@ -819,6 +859,8 @@ export class ComplaintRepository {
       created_at: new Date(),
     });
 
+    markStoreDirty();
+
     await logAuditEvent({
       user: actor.email,
       action: "TRANSFER_CASE",
@@ -876,6 +918,8 @@ export class ComplaintRepository {
       created_at: new Date(),
     });
 
+    markStoreDirty();
+
     await logAuditEvent({
       user: actor.email,
       action: "ESCALATE_CASE",
@@ -916,6 +960,8 @@ export class ComplaintRepository {
     };
 
     c.actions.unshift(action);
+
+    markStoreDirty();
 
     await logAuditEvent({
       user: actor.email,
@@ -960,6 +1006,8 @@ export class ComplaintRepository {
         note,
       });
     }
+
+    markStoreDirty();
 
     return { caseAId: c1, caseBId: c2 };
   }
@@ -1024,6 +1072,9 @@ export class ComplaintRepository {
       description: string;
       assigned_bureau: "REGULATION_BUREAU" | "PGRC" | "APPROVAL_BUREAU" | "SKILL_CELL";
       priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+      complainant_name?: string;
+      complainant_contact?: string;
+      language?: string;
       attachments?: string[];
     },
     actor: SessionUser
@@ -1081,6 +1132,9 @@ export class ComplaintRepository {
         Date.now() + slaConfig.timeline_days * 86400000
       ),
       priority: data.priority || "MEDIUM",
+      complainant_name: data.complainant_name?.trim() || undefined,
+      complainant_contact: data.complainant_contact?.trim() || undefined,
+      language: data.language || undefined,
       actions: [
         {
           actor_user: actor.email,
@@ -1094,6 +1148,8 @@ export class ComplaintRepository {
     };
 
     store.cases.unshift(newCase);
+
+    markStoreDirty();
 
     // RUN REAL-TIME OVERLAP DETECTOR!
     const activeCasesForOverlap = store.cases.map((c) => {
@@ -1197,6 +1253,8 @@ export class ComplaintRepository {
         actor.email
       );
     }
+
+    markStoreDirty();
 
     await logAuditEvent({
       user: actor.email,
@@ -1310,6 +1368,8 @@ export class ComplaintRepository {
       created_at: now,
     });
 
+    markStoreDirty();
+
     await logAuditEvent({
       user: actor.email,
       action: "MERGE_OVERLAP",
@@ -1349,6 +1409,8 @@ export class ComplaintRepository {
 
     alert.status = "DISMISSED";
     alert.dismissed_reason = dismissedReason;
+
+    markStoreDirty();
 
     await logAuditEvent({
       user: actor.email,
@@ -1481,7 +1543,883 @@ export class ComplaintRepository {
     }
 
     notification.read = true;
+    markStoreDirty();
     return true;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Officer work assignment & personal queue
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /** Active registered officers available as assignment targets. */
+  public async getAssignableOfficers(user?: SessionUser) {
+    const store = getInMemoryStore();
+    if (user?.role === "REGIONAL_OFFICER") {
+      return []; // read-only observers cannot re-assign
+    }
+    return store.users
+      .filter((u) => u.active)
+      .map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        bureau: u.bureau,
+        region: u.region ?? null,
+        designation: u.designation ?? "",
+      }));
+  }
+
+  /**
+   * Assigns a case to a named officer. Bureau officers may only delegate within
+   * their own bureau; the target must be an active user whose jurisdiction
+   * covers the case (bureau match, or regional officer posted to the
+   * institution's region).
+   */
+  public async assignOfficer(
+    caseId: string,
+    officerEmail: string,
+    note: string,
+    actor: SessionUser
+  ) {
+    const store = getInMemoryStore();
+    const c = store.cases.find((item) => item.id === caseId || item.case_id === caseId);
+    if (!c) throw new Error(`Case ${caseId} not found.`);
+
+    assertCanActOnCase(actor, c);
+
+    const target = store.users.find(
+      (u) => u.email.toLowerCase() === officerEmail.toLowerCase() && u.active
+    );
+    if (!target) {
+      throw new Error("Assigned officer could not be found among active registered officers.");
+    }
+
+    if (target.role === "REGIONAL_OFFICER") {
+      const inst = store.institutions.find((i) => i.id === c.institution_id);
+      if (target.region && inst?.region !== target.region) {
+        throw new Error(
+          `${target.name} is posted to the ${target.region} region and cannot hold this file (institution is in ${inst?.region ?? "an unknown region"}).`
+        );
+      }
+    } else if (target.bureau !== "ALL" && target.bureau !== c.assigned_bureau) {
+      throw new Error(
+        `${target.name} belongs to ${target.bureau}, which does not own this case (${c.assigned_bureau}).`
+      );
+    }
+
+    const previousOfficer = c.assigned_officer;
+    c.assigned_officer = target.email;
+    c.last_action = `Assigned to ${target.name} (${target.designation || target.role})`;
+    c.last_action_date = new Date();
+
+    c.actions.unshift({
+      actor_user: actor.email,
+      actor_bureau: actor.bureau,
+      action_type: "ASSIGNED",
+      remarks: note
+        ? `${previousOfficer ? `Reassigned from ${previousOfficer} to ${target.email}. ` : `Assigned to ${target.email}. `}Instruction: ${note}`
+        : previousOfficer
+        ? `Reassigned from ${previousOfficer} to ${target.email}.`
+        : `Assigned to ${target.email}.`,
+      timestamp: new Date(),
+      attachments: [],
+    });
+
+    store.notifications.unshift({
+      id: uid("notif"),
+      type: "ASSIGNMENT",
+      case_id: c.case_id,
+      target_user: target.email,
+      title: `New file in your queue: ${c.case_id}`,
+      message: `${actor.name} assigned ${c.case_id} (${c.category}) to ${target.name}. ${note ? "Instruction: " + note : ""}`.trim(),
+      read: false,
+      created_at: new Date(),
+    });
+
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "ASSIGN_OFFICER",
+      entity: "Case",
+      entity_id: c.case_id,
+      before: { assigned_officer: previousOfficer },
+      after: { assigned_officer: target.email, note },
+    });
+
+    return c;
+  }
+
+  /**
+   * The officer's personal workbench: files directly assigned to the officer,
+   * plus open unassigned files in the officer's bureau for pick-up.
+   */
+  public async getMyQueue(user: SessionUser) {
+    const store = getInMemoryStore();
+    const instLookup = new Map(store.institutions.map((i) => [i.id, i]));
+    const email = user.email.toLowerCase();
+
+    const enrich = (c: SeedCase) => {
+      const inst = instLookup.get(c.institution_id);
+      const sla = calculateCaseSla(c.category, c.date_received, c.status);
+      return {
+        id: c.id,
+        case_id: c.case_id,
+        category: c.category,
+        status: c.status,
+        priority: c.priority,
+        assigned_bureau: c.assigned_bureau,
+        assigned_officer: c.assigned_officer || null,
+        assigned_to_me: (c.assigned_officer ?? "").toLowerCase() === email,
+        complainant_name: c.complainant_name ?? null,
+        institution_name: inst?.name ?? "Unknown institution",
+        institution_city: inst?.city ?? "",
+        region: inst?.region ?? "",
+        date_received: c.date_received,
+        last_action: c.last_action,
+        last_action_date: c.last_action_date,
+        expected_disposal_date: c.expected_disposal_date,
+        hearing_date: c.hearing_date ?? null,
+        sla,
+      };
+    };
+
+    const mine = store.cases
+      .filter((c) => (c.assigned_officer ?? "").toLowerCase() === email && c.status !== "DISPOSED")
+      .map(enrich);
+
+    const unassigned =
+      user.bureau !== "ALL"
+        ? store.cases
+            .filter(
+              (c) =>
+                !c.assigned_officer &&
+                c.assigned_bureau === user.bureau &&
+                c.status !== "DISPOSED" &&
+                c.status !== "TRANSFERRED"
+            )
+            .map(enrich)
+        : store.cases
+            .filter(
+              (c) =>
+                !c.assigned_officer &&
+                c.status !== "DISPOSED" &&
+                c.status !== "TRANSFERRED"
+            )
+            .map(enrich);
+
+    const recency = (c: ReturnType<typeof enrich>) =>
+      new Date(c.last_action_date).getTime();
+
+    const grade: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+    const byUrgency = (a: ReturnType<typeof enrich>, b: ReturnType<typeof enrich>) => {
+      if (a.sla.isBreached !== b.sla.isBreached) return a.sla.isBreached ? -1 : 1;
+      const ga = grade[a.priority] ?? 9;
+      const gb = grade[b.priority] ?? 9;
+      if (ga !== gb) return ga - gb;
+      return recency(a) - recency(b);
+    };
+
+    if (user.role === "REGIONAL_OFFICER" && user.region) {
+      const scoped = (c: ReturnType<typeof enrich>) => c.region === user.region;
+      return {
+        mine: mine.filter(scoped).sort(byUrgency),
+        unassigned: unassigned.filter(scoped).sort(byUrgency),
+      };
+    }
+
+    return {
+      mine: mine.sort(byUrgency),
+      unassigned: unassigned.sort(byUrgency),
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Regional Officer field actions
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Regional officers record on-site/facts verification remarks without
+   * mutating bureau case state (they stay read-only for status/transfer).
+   */
+  public async addFieldVerification(
+    caseId: string,
+    findings: string,
+    actor: SessionUser,
+    attachments: string[] = []
+  ) {
+    const store = getInMemoryStore();
+    const c = store.cases.find((item) => item.id === caseId || item.case_id === caseId);
+    if (!c) throw new Error(`Case ${caseId} not found.`);
+
+    if (actor.role !== "REGIONAL_OFFICER") {
+      throw new Error(
+        "This is the Regional Officer field channel. Bureau officers should use Add Remark on the case workspace."
+      );
+    }
+
+    const inst = store.institutions.find((i) => i.id === c.institution_id);
+    if (actor.region && inst?.region !== actor.region) {
+      throw new Error(
+        `File outside your regional jurisdiction (${inst?.region ?? "unknown"} vs ${actor.region}).`
+      );
+    }
+
+    c.last_action = `Field verification recorded by ${actor.region} Regional Office`;
+    c.last_action_date = new Date();
+
+    c.actions.unshift({
+      actor_user: actor.email,
+      actor_bureau: `REGIONAL_OFFICE_${(actor.region ?? "").toUpperCase().replace(/[^A-Z]/g, "_")}`.replace(/_+$/, ""),
+      action_type: "FIELD_VERIFICATION",
+      remarks: findings,
+      timestamp: new Date(),
+      attachments,
+    });
+
+    // Regional intelligence goes straight to the owning bureau.
+    store.notifications.unshift({
+      id: uid("notif"),
+      type: "FIELD_VERIFICATION",
+      case_id: c.case_id,
+      target_bureau: c.assigned_bureau,
+      title: `Field verification filed on ${c.case_id}`,
+      message: `${actor.name} (${actor.region} Regional Office) recorded field findings: ${findings.slice(0, 140)}...`,
+      read: false,
+      created_at: new Date(),
+    });
+
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "FIELD_VERIFICATION",
+      entity: "Case",
+      entity_id: c.case_id,
+      after: { findings, region: actor.region ?? null },
+    });
+
+    return c;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Inter-bureau comment threads
+  // ───────────────────────────────────────────────────────────────────────────
+
+  public async addCaseComment(
+    caseId: string,
+    body: string,
+    scope: "COORDINATION" | "INTERNAL",
+    actor: SessionUser
+  ) {
+    const store = getInMemoryStore();
+    const c = store.cases.find((item) => item.id === caseId || item.case_id === caseId);
+    if (!c) throw new Error(`Case ${caseId} not found.`);
+
+    // Regional officers may join coordination threads; they cannot post
+    // bureau-internal desk notes.
+    if (
+      scope === "INTERNAL" &&
+      !canActOnCase(actor, c)
+    ) {
+      throw new Error(
+        "Internal notes are restricted to the owning bureau (and senior management)."
+      );
+    }
+    if (actor.role === "REGIONAL_OFFICER" && actor.region) {
+      const inst = store.institutions.find((i) => i.id === c.institution_id);
+      if (inst && inst.region !== actor.region) {
+        throw new Error("Comment outside your regional jurisdiction.");
+      }
+    }
+
+    const comment = {
+      id: uid("cm"),
+      case_id: c.case_id,
+      author_email: actor.email,
+      author_name: actor.name,
+      author_bureau: actor.bureau,
+      body,
+      scope,
+      created_at: new Date(),
+    };
+    store.comments.push(comment);
+
+    // Ping the other involved bureaus when coordination crosses boundaries.
+    if (scope === "COORDINATION" && actor.bureau !== c.assigned_bureau) {
+      store.notifications.unshift({
+        id: uid("notif"),
+        type: "OVERLAP",
+        case_id: c.case_id,
+        target_bureau: c.assigned_bureau,
+        title: `New coordination note on ${c.case_id}`,
+        message: `${actor.name} (${actor.bureau}) posted a coordination note. Open the case workspace to reply.`,
+        read: false,
+        created_at: new Date(),
+      });
+    }
+
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "ADD_CASE_COMMENT",
+      entity: "CaseComment",
+      entity_id: `${c.case_id}:${comment.id}`,
+      after: { scope, body },
+    });
+
+    return comment;
+  }
+
+  /** Comments visible to the current user for a case (COORDINATION + own bureau INTERNAL). */
+  public getVisibleCaseComments(caseRegistryId: string, user?: SessionUser) {
+    const store = getInMemoryStore();
+    const all = store.comments.filter((cm) => cm.case_id === caseRegistryId);
+    if (!user) return all.filter((cm) => cm.scope === "COORDINATION");
+
+    const canSeeAllInternal =
+      user.role === "ADMIN" ||
+      user.role === "COMPETENT_AUTHORITY" ||
+      user.bureau === "ALL";
+
+    return all
+      .filter((cm) => {
+        if (cm.scope === "COORDINATION") return true;
+        return canSeeAllInternal || cm.author_bureau === user.bureau;
+      })
+      .sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Hearing calendar
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Schedules (or reschedules) the statutory committee hearing on a case.
+   * Officers of the owning bureau / senior management only.
+   */
+  public async scheduleHearing(
+    caseId: string,
+    hearingDate: Date,
+    actor: SessionUser
+  ) {
+    const store = getInMemoryStore();
+    const c = store.cases.find((item) => item.id === caseId || item.case_id === caseId);
+    if (!c) throw new Error(`Case ${caseId} not found.`);
+
+    assertCanActOnCase(actor, c);
+
+    const previousHearing = c.hearing_date;
+    c.hearing_date = hearingDate;
+    c.last_action = `Hearing scheduled for ${hearingDate.toDateString().slice(4)}`;
+    c.last_action_date = new Date();
+
+    c.actions.unshift({
+      actor_user: actor.email,
+      actor_bureau: actor.bureau,
+      action_type: "HEARING_SCHEDULED",
+      remarks: `Statutory hearing scheduled on ${hearingDate.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })}.`,
+      timestamp: new Date(),
+      attachments: [],
+    });
+
+    if (previousHearing) {
+      store.notifications.unshift({
+        id: uid("notif"),
+        type: "HEARING",
+        case_id: c.case_id,
+        target_bureau: c.assigned_bureau,
+        title: `Hearing rescheduled: ${c.case_id}`,
+        message: `${actor.name} moved the hearing from ${previousHearing.toDateString().slice(4)} to ${hearingDate.toDateString().slice(4)}.`,
+        read: false,
+        created_at: new Date(),
+      });
+    }
+
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "SCHEDULE_HEARING",
+      entity: "Case",
+      entity_id: c.case_id,
+      before: { hearing_date: previousHearing ?? null },
+      after: { hearing_date: hearingDate },
+    });
+
+    return c;
+  }
+
+  /** Hearing board data for the calendar (region-scoped for Regional Officers). */
+  public async getUpcomingHearings(user?: SessionUser, daysAhead = 45) {
+    const store = getInMemoryStore();
+    const instLookup = new Map(store.institutions.map((i) => [i.id, i]));
+    const now = Date.now();
+    const horizon = now + daysAhead * 86400000;
+
+    let hearings = store.cases
+      .filter((c) => c.hearing_date && c.status !== "DISPOSED")
+      .map((c) => {
+        const inst = instLookup.get(c.institution_id);
+        const hearingTime = new Date(c.hearing_date!).getTime();
+        return {
+          id: c.id,
+          case_id: c.case_id,
+          internal_id: c.id,
+          category: c.category,
+          status: c.status,
+          priority: c.priority,
+          assigned_bureau: c.assigned_bureau,
+          institution_name: inst?.name ?? "Unknown institution",
+          city: inst?.city ?? "",
+          state: inst?.state ?? "",
+          region: inst?.region ?? "",
+          sla_status: calculateCaseSla(c.category, c.date_received, c.status),
+          hearing_date: new Date(c.hearing_date!),
+          daysUntil: Math.floor((hearingTime - now) / 86400000),
+          isPast: hearingTime < now,
+          isThisWeek: hearingTime >= now && hearingTime <= now + 7 * 86400000,
+        };
+      })
+      .filter((h) => h.hearing_date.getTime() <= horizon);
+
+    if (user?.role === "REGIONAL_OFFICER" && user.region) {
+      hearings = hearings.filter((h) => h.region === user.region);
+    }
+
+    hearings.sort(
+      (a, b) => a.hearing_date.getTime() - b.hearing_date.getTime()
+    );
+
+    return hearings;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Recurring complainant intelligence
+  // ───────────────────────────────────────────────────────────────────────────
+
+  private complainantInputs(user?: SessionUser): ComplainantCaseInput[] {
+    const store = getInMemoryStore();
+    const instMap = new Map(store.institutions.map((i) => [i.id, i]));
+    let cases = store.cases;
+    if (user?.role === "REGIONAL_OFFICER" && user.region) {
+      cases = cases.filter(
+        (c) => instMap.get(c.institution_id)?.region === user.region
+      );
+    }
+    return cases.map((c) => ({
+      case_id: c.case_id,
+      complainant_name: c.complainant_name,
+      complainant_contact: c.complainant_contact,
+      status: c.status,
+      category: c.category,
+      assigned_bureau: c.assigned_bureau,
+      date_received: c.date_received,
+      institution_name: instMap.get(c.institution_id)?.name ?? null,
+    }));
+  }
+
+  /** Complainant watchlist across the user's visible portfolio. */
+  public getComplainantInsights(user?: SessionUser): ComplainantProfile[] {
+    return analyzeComplainants(this.complainantInputs(user)).profiles;
+  }
+
+  /** Recurrence profile for a specific case's complainant (used on case pages). */
+  public getComplainantProfileForCase(caseId: string) {
+    const store = getInMemoryStore();
+    const c = store.cases.find((item) => item.id === caseId || item.case_id === caseId);
+    if (!c || !c.complainant_name) return null;
+    const summary = analyzeComplainants(this.complainantInputs(undefined));
+    const profile = summary.byKey.get(
+      c.complainant_name
+        .toLowerCase()
+        .replace(/\(.*?\)/g, " ")
+        .replace(/[^a-z0-9\u0900-\u097f]+/g, " ")
+        .split(/\s+/)
+        .filter(Boolean)
+        .join(" ")
+    );
+    if (!profile) return null;
+    return {
+      profile,
+      meta: RECURRENCE_META[profile.level],
+      isCurrentCase: profile.caseIds.includes(c.case_id),
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Institution document vault
+  // ───────────────────────────────────────────────────────────────────────────
+
+  public async getInstitutionDocuments(institutionId: string) {
+    const store = getInMemoryStore();
+    const inst = store.institutions.find(
+      (i) => i.id === institutionId || i.aicte_permanent_id === institutionId
+    );
+    if (!inst) return [];
+    return store.documents
+      .filter((d) => d.institution_id === inst.id)
+      .sort(
+        (a, b) =>
+          new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime()
+      );
+  }
+
+  public async addInstitutionDocument(
+    data: {
+      institution_id: string;
+      title: string;
+      doc_type: string;
+      blob_url: string;
+      file_name: string;
+      file_size: number;
+      notes?: string;
+      case_id?: string;
+    },
+    actor: SessionUser
+  ) {
+    const store = getInMemoryStore();
+    const inst = store.institutions.find((i) => i.id === data.institution_id);
+    if (!inst) throw new Error("Institution not found.");
+
+    if (
+      data.case_id &&
+      !store.cases.some((c) => c.case_id === data.case_id)
+    ) {
+      throw new Error(`Linked case registry number ${data.case_id} was not found.`);
+    }
+
+    const document: SeedDocument = {
+      id: uid("doc"),
+      institution_id: inst.id,
+      title: data.title,
+      doc_type: data.doc_type as SeedDocument["doc_type"],
+      blob_url: data.blob_url,
+      file_name: data.file_name,
+      file_size: data.file_size,
+      uploaded_by: actor.email,
+      notes: data.notes || undefined,
+      case_id: data.case_id || undefined,
+      uploaded_at: new Date(),
+    };
+    store.documents.unshift(document);
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "ADD_INSTITUTION_DOCUMENT",
+      entity: "InstitutionDocument",
+      entity_id: document.id,
+      after: {
+        title: data.title,
+        doc_type: data.doc_type,
+        institution: inst.aicte_permanent_id,
+        linked_case: data.case_id ?? null,
+      },
+    });
+
+    return document;
+  }
+
+  public async removeInstitutionDocument(documentId: string, actor: SessionUser) {
+    const store = getInMemoryStore();
+    const idx = store.documents.findIndex((d) => d.id === documentId);
+    if (idx === -1) throw new Error("Document not found.");
+
+    const doc = store.documents[idx];
+    const isOwner = doc.uploaded_by.toLowerCase() === actor.email.toLowerCase();
+    if (!isOwner && actor.role !== "ADMIN") {
+      throw new Error("Only the uploading officer or an administrator can remove a vault record.");
+    }
+
+    store.documents.splice(idx, 1);
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "REMOVE_INSTITUTION_DOCUMENT",
+      entity: "InstitutionDocument",
+      entity_id: documentId,
+      before: { title: doc.title, doc_type: doc.doc_type },
+    });
+
+    return true;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Team & user management (Admin console)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  private requireAdmin(user: SessionUser) {
+    if (user.role !== "ADMIN") {
+      throw new Error("Only the system administrator can manage team accounts.");
+    }
+  }
+
+  public async getUsers(user: SessionUser) {
+    this.requireAdmin(user);
+    const store = getInMemoryStore();
+    const openByOfficer = new Map<string, number>();
+    for (const c of store.cases) {
+      if (c.status !== "DISPOSED" && c.assigned_officer) {
+        const key = c.assigned_officer.toLowerCase();
+        openByOfficer.set(key, (openByOfficer.get(key) ?? 0) + 1);
+      }
+    }
+    return store.users
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        bureau: u.bureau,
+        region: u.region ?? null,
+        designation: u.designation ?? "",
+        active: u.active,
+        createdAt: u.created_at,
+        openCases: openByOfficer.get(u.email.toLowerCase()) ?? 0,
+      }));
+  }
+
+  public async createUser(
+    data: {
+      name: string;
+      email: string;
+      password: string;
+      role: string;
+      bureau: string;
+      region?: string | null;
+      designation?: string | null;
+    },
+    actor: SessionUser
+  ) {
+    this.requireAdmin(actor);
+    const store = getInMemoryStore();
+
+    const email = data.email.toLowerCase().trim();
+    if (store.users.some((u) => u.email.toLowerCase() === email)) {
+      throw new Error("An account with this email already exists.");
+    }
+
+    const bcryptHash = bcrypt.hashSync(data.password, 10);
+
+    const newUser: StoreUser = {
+      id: uid("usr"),
+      name: data.name.trim(),
+      email,
+      password_hash: bcryptHash,
+      role: data.role,
+      bureau: data.bureau,
+      region: data.region ?? null,
+      designation: data.designation ?? "",
+      active: true,
+      created_at: new Date(),
+    };
+    store.users.push(newUser);
+    markStoreDirty();
+
+    // Best-effort persistence into the real User table when a DB is attached.
+    void prisma.user
+      .upsert({
+        where: { email },
+        update: {
+          name: newUser.name,
+          password_hash: bcryptHash,
+          role: newUser.role,
+          bureau: newUser.bureau,
+          region: newUser.region,
+          designation: newUser.designation,
+          active: true,
+        },
+        create: {
+          name: newUser.name,
+          email,
+          password_hash: bcryptHash,
+          role: newUser.role,
+          bureau: newUser.bureau,
+          region: newUser.region,
+          designation: newUser.designation,
+          active: true,
+        },
+      })
+      .catch(() =>
+        console.debug("User persistence skipped (database unreachable).")
+      );
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "CREATE_USER",
+      entity: "User",
+      entity_id: email,
+      after: { role: newUser.role, bureau: newUser.bureau, region: newUser.region },
+    });
+
+    return { ...newUser, password_hash: undefined };
+  }
+
+  public async updateUser(
+    userId: string,
+    patch: {
+      role?: string;
+      bureau?: string;
+      region?: string | null;
+      designation?: string | null;
+      active?: boolean;
+    },
+    actor: SessionUser
+  ) {
+    this.requireAdmin(actor);
+    const store = getInMemoryStore();
+    const target = store.users.find((u) => u.id === userId);
+    if (!target) throw new Error("User not found.");
+
+    const adminDowngrade =
+      target.role === "ADMIN" &&
+      target.active &&
+      ((patch.role !== undefined && patch.role !== "ADMIN") || patch.active === false);
+    const otherActiveAdmins = store.users.filter(
+      (u) => u.id !== userId && u.role === "ADMIN" && u.active
+    ).length;
+    if (adminDowngrade && otherActiveAdmins === 0) {
+      throw new Error("At least one active administrator account must remain.");
+    }
+
+    const before = {
+      role: target.role,
+      bureau: target.bureau,
+      region: target.region,
+      active: target.active,
+    };
+
+    if (patch.role !== undefined) target.role = patch.role;
+    if (patch.bureau !== undefined) target.bureau = patch.bureau;
+    if ("region" in patch) target.region = patch.region ?? null;
+    if ("designation" in patch) target.designation = patch.designation ?? "";
+    if (patch.active !== undefined) target.active = patch.active;
+
+    markStoreDirty();
+
+    void prisma.user
+      .update({
+        where: { email: target.email },
+        data: {
+          role: target.role,
+          bureau: target.bureau,
+          region: target.region,
+          designation: target.designation,
+          active: target.active,
+        },
+      })
+      .catch(() =>
+        console.debug("User update skipped (database unreachable).")
+      );
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "UPDATE_USER",
+      entity: "User",
+      entity_id: target.email,
+      before,
+      after: { role: target.role, bureau: target.bureau, region: target.region, active: target.active },
+    });
+
+    return { ...target, password_hash: undefined };
+  }
+
+  public async resetUserPassword(
+    userId: string,
+    newPassword: string,
+    actor: SessionUser
+  ) {
+    this.requireAdmin(actor);
+    const store = getInMemoryStore();
+    const target = store.users.find((u) => u.id === userId);
+    if (!target) throw new Error("User not found.");
+
+    const bcryptHash = bcrypt.hashSync(newPassword, 10);
+    target.password_hash = bcryptHash;
+    markStoreDirty();
+
+    void prisma.user
+      .update({
+        where: { email: target.email },
+        data: { password_hash: bcryptHash },
+      })
+      .catch(() =>
+        console.debug("Password persistence skipped (database unreachable).")
+      );
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "RESET_USER_PASSWORD",
+      entity: "User",
+      entity_id: target.email,
+    });
+
+    return true;
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Public complaint status tracking (no-auth)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Citizen-facing status profile. Deliberately restricted: no internal desk
+   * notes, no attachments, no officer identities, no comment threads.
+   */
+  public getPublicCaseStatus(registryNo: string) {
+    const store = getInMemoryStore();
+    const key = registryNo.trim().toUpperCase();
+    const c = store.cases.find(
+      (item) => item.case_id.toUpperCase() === key
+    );
+    if (!c) return null;
+
+    const inst = store.institutions.find((i) => i.id === c.institution_id);
+    const sla = calculateCaseSla(c.category, c.date_received, c.status);
+    // Public timeline: only event classes whose remarks are citizen-safe.
+    const timeline = c.actions
+      .filter((a) =>
+        ["RECEIVED", "STATUS_CHANGED", "HEARING_SCHEDULED", "DISPOSED", "ESCALATED"].includes(
+          a.action_type
+        )
+      )
+      .map((a) => ({
+        action_type: a.action_type,
+        remarks: a.remarks,
+        timestamp: a.timestamp,
+      }))
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+    return {
+      registry_no: c.case_id,
+      category: c.category,
+      status: c.status,
+      assigned_bureau: c.assigned_bureau,
+      institution_name: inst?.name ?? "Institution on record",
+      institution_city: inst?.city ?? "",
+      institution_state: inst?.state ?? "",
+      date_received: c.date_received,
+      expected_disposal_date: c.expected_disposal_date,
+      hearing_date: c.hearing_date ?? null,
+      sla_status: sla.statusText,
+      last_action: c.last_action,
+      timeline,
+    };
   }
 
   public async getAuditLogs() {

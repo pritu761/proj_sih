@@ -27,8 +27,11 @@ import { formatDate, formatDateTime } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
 import { BureauPill, PriorityPill, StatusPill } from "@/components/ui/badges";
 import { ComplianceRiskCard } from "@/components/institutions/ComplianceRiskCard";
+import { DocumentVault } from "@/components/institutions/DocumentVault";
 import { assessInstitutionCompliance } from "@/lib/services/aph-engine";
+import { analyzeComplainants, RECURRENCE_META } from "@/lib/services/complainant-engine";
 import { cn } from "@/lib/utils";
+import { Repeat2 } from "lucide-react";
 
 interface InstitutionProfileProps {
   params: Promise<{ id: string }>;
@@ -105,6 +108,30 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
     activeCases.find((c: any) => c.priority === "CRITICAL") ??
     activeCases.find((c: any) => c.priority === "HIGH") ??
     activeCases[0];
+
+  // Document vault + recurrence intelligence for this institution.
+  const [documents, complainantProfiles] = await Promise.all([
+    repository.getInstitutionDocuments(institution.id),
+    Promise.resolve(
+      analyzeComplainants(
+        cases.map((c: any) => ({
+          case_id: c.case_id,
+          complainant_name: c.complainant_name,
+          complainant_contact: null,
+          status: c.status,
+          category: c.category,
+          assigned_bureau: c.assigned_bureau,
+          date_received: c.date_received,
+          institution_name: institution.name,
+        }))
+      ).profiles
+    ),
+  ]);
+
+  const linkedCases = cases.map((c: any) => ({
+    caseId: c.case_id,
+    label: `${c.case_id} · ${c.category}`,
+  }));
 
   return (
     <div className="space-y-5">
@@ -296,6 +323,61 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
         showCauseCaseId={enforcementCase?.id}
       />
 
+      {/* Statutory document vault */}
+      <DocumentVault
+        institutionId={institution.id}
+        initialDocuments={documents}
+        linkedCases={linkedCases}
+        currentUser={user}
+      />
+
+      {/* Recurring complainants at this institution */}
+      {complainantProfiles.length > 0 && (
+        <div className="panel">
+          <div className="panel-head">
+            <div>
+              <h2 className="panel-title flex items-center gap-2">
+                <Repeat2 className="h-3.5 w-3.5 text-amber-600" />
+                Recurring complainants at this institution
+              </h2>
+              <p className="panel-sub">
+                Identities with multiple filings — coordinate responses to avoid contradictory
+                orders
+              </p>
+            </div>
+            <span className="badge border-amber-200 bg-amber-50 text-amber-700">
+              {complainantProfiles.length} with history
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2 p-4">
+            {complainantProfiles.map((p) => {
+              const meta = RECURRENCE_META[p.level];
+              return (
+                <div
+                  key={p.key}
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-[11.5px] font-bold text-slate-900">{p.name}</p>
+                    <p className="text-[9.5px] text-slate-500">
+                      {p.totalCases} filings · {p.openCases} open · {p.bureaus.length} bureau(s)
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide",
+                      meta.chip
+                    )}
+                  >
+                    {meta.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Cases + timeline */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="space-y-3 xl:col-span-2">
@@ -376,7 +458,7 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9.5px] text-slate-400">
                       <span className="inline-flex items-center gap-1">
                         <UserCheck className="h-3 w-3" />
-                        {c.assigned_officer}
+                        {c.assigned_officer || "Unassigned"}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <History className="h-3 w-3" />

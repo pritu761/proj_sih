@@ -20,7 +20,9 @@ import { SessionUser } from "@/lib/rbac";
 import { PageHeader } from "@/components/ui/page-header";
 import { BureauPill } from "@/components/ui/badges";
 import { ReportsClient, RegionBars } from "@/components/reports/ReportsClient";
+import { computeBureauScorecard } from "@/lib/services/scorecard";
 import { cn } from "@/lib/utils";
+import { CalendarClock } from "lucide-react";
 
 export default async function ReportsPage() {
   const session = await auth();
@@ -29,6 +31,19 @@ export default async function ReportsPage() {
   }
   const user = session.user as unknown as SessionUser;
   const metrics = await repository.getDashboardMetrics(user);
+
+  // Bureau scorecard input — same region-safe view the weekly digest uses.
+  const casePage = await repository.getCases({ limit: 1000, page: 1 }, user);
+  const scorecard = computeBureauScorecard(
+    casePage.cases.map((c) => ({
+      case_id: c.case_id,
+      status: c.status,
+      assigned_bureau: c.assigned_bureau,
+      date_received: c.date_received,
+      last_action_date: c.last_action_date,
+      category: c.category,
+    }))
+  );
 
   const kpi = metrics.kpi;
   const total = Math.max(1, kpi.totalReceived);
@@ -90,6 +105,14 @@ export default async function ReportsPage() {
             <a href="/api/reports/csv" download="aicte_complaints.csv" className="btn btn-secondary">
               <Download className="h-3.5 w-3.5" />
               Export CSV
+            </a>
+            <a
+              href="/api/reports/weekly"
+              download="aicte_weekly_digest.pdf"
+              className="btn btn-secondary"
+            >
+              <CalendarClock className="h-3.5 w-3.5" />
+              Weekly digest
             </a>
             <a
               href="/api/reports/pdf"
@@ -183,6 +206,97 @@ export default async function ReportsPage() {
 
       {/* Charts */}
       <ReportsClient metrics={metrics} />
+
+      {/* Bureau scorecard — statutory performance grading */}
+      <div className="panel overflow-hidden">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">Bureau scorecard</h2>
+            <p className="panel-sub">
+              Statutory discipline grading — blends on-time disposals with open breach load
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-700">
+            <Gauge className="h-3 w-3" />
+            {scorecard.filter((s) => s.grade === "A").length}/{scorecard.length} graded A
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Bureau / cell</th>
+                <th>Open stock</th>
+                <th>Disposal rate</th>
+                <th>On-time disposal</th>
+                <th>SLA-breached</th>
+                <th>Avg age</th>
+                <th>Oldest open</th>
+                <th>Grade</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scorecard.map((row) => {
+                const open = row.pending + row.underProcess + row.escalated;
+                const gradeTone =
+                  row.grade === "A"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                    : row.grade === "B"
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : row.grade === "C"
+                        ? "bg-orange-50 text-orange-700 border-orange-200"
+                        : "bg-rose-50 text-rose-700 border-rose-200";
+                return (
+                  <tr key={row.bureau}>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <BureauPill bureau={row.bureau} />
+                        <span className="text-[11.5px] font-semibold text-slate-800">
+                          {{
+                            REGULATION_BUREAU: "Regulation Bureau",
+                            PGRC: "Public Grievance Redressal Cell",
+                            APPROVAL_BUREAU: "Approval Bureau",
+                            SKILL_CELL: "Skill Development Cell",
+                          }[row.bureau] ?? row.bureau}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="font-bold tabular-nums text-slate-900">{open}</td>
+                    <td className="font-bold tabular-nums text-brand-600">{row.disposalRatePercent}%</td>
+                    <td className="font-bold tabular-nums text-emerald-600">{row.onTimeRatePercent}%</td>
+                    <td
+                      className={cn(
+                        "font-bold tabular-nums",
+                        row.beyondTimeline > 0 ? "text-rose-600" : "text-emerald-600"
+                      )}
+                    >
+                      {row.beyondTimeline}
+                    </td>
+                    <td className="font-bold tabular-nums text-slate-700">{row.avgAgeDays}d</td>
+                    <td className="font-bold tabular-nums text-slate-700">{row.oldestActiveDays}d</td>
+                    <td>
+                      <span
+                        className={cn(
+                          "inline-flex rounded-md border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide",
+                          gradeTone
+                        )}
+                      >
+                        {row.grade}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <p className="border-t border-slate-100 bg-slate-50/60 px-5 py-2.5 text-[10px] text-slate-500">
+          Grading rule: A ≥ 85% on-time disposals and ≤ 5 open files breached · B ≥ 70% / ≤ 10 ·
+          C ≥ 50% on-time · D otherwise. Figures recomputed live from the SLA engine.
+        </p>
+      </div>
 
       {/* Bureau table */}
       <div className="panel overflow-hidden">
@@ -309,6 +423,25 @@ export default async function ReportsPage() {
                   </span>
                 </span>
                 <Download className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-brand-600" />
+              </a>
+
+              <a
+                href="/api/reports/weekly"
+                download="aicte_weekly_digest.pdf"
+                className="group flex items-center gap-2.5 rounded-xl border border-slate-200 p-2.5 transition-colors hover:border-fuchsia-300 hover:bg-fuchsia-50/40"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-fuchsia-200 bg-fuchsia-50 text-fuchsia-600">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-bold text-slate-800">
+                    Weekly executive digest
+                  </span>
+                  <span className="block text-[9.5px] text-slate-400">
+                    PDF · scorecard + hearing board + recurrence watch
+                  </span>
+                </span>
+                <Download className="h-3.5 w-3.5 shrink-0 text-slate-400 transition-colors group-hover:text-fuchsia-600" />
               </a>
             </div>
           </div>

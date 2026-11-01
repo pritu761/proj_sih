@@ -32,6 +32,10 @@ export interface SeedCase {
   next_action_required: string | null;
   expected_disposal_date: Date;
   priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  complainant_name?: string;
+  complainant_contact?: string;
+  language?: string;
+  hearing_date?: Date | null;
   actions: {
     actor_user: string;
     actor_bureau: string;
@@ -42,6 +46,40 @@ export interface SeedCase {
     from_bureau?: string;
     to_bureau?: string;
   }[];
+}
+
+export interface SeedComment {
+  id: string;
+  case_id: string; // registry number
+  author_email: string;
+  author_name: string;
+  author_bureau: string;
+  body: string;
+  scope: "COORDINATION" | "INTERNAL";
+  created_at: Date;
+}
+
+export type SeedDocType =
+  | "APPROVAL_LETTER"
+  | "COMPLIANCE_REPORT"
+  | "AUDIT_STATEMENT"
+  | "SHOW_CAUSE_NOTICE"
+  | "COURT_ORDER"
+  | "FINANCIAL_RECORD"
+  | "OTHER";
+
+export interface SeedDocument {
+  id: string;
+  institution_id: string;
+  title: string;
+  doc_type: SeedDocType;
+  blob_url: string;
+  file_name: string;
+  file_size: number;
+  uploaded_by: string;
+  notes?: string;
+  case_id?: string;
+  uploaded_at: Date;
 }
 
 export interface SeedOverlapAlert {
@@ -66,6 +104,8 @@ export function generateSeedData() {
   const institutions: SeedInstitution[] = [];
   const cases: SeedCase[] = [];
   const overlapAlerts: SeedOverlapAlert[] = [];
+  const comments: SeedComment[] = [];
+  const documents: SeedDocument[] = [];
 
   // Pre-defined realistic institutions across regions
   const rawInstitutions = [
@@ -189,6 +229,9 @@ export function generateSeedData() {
     next_action_required: "Hearing before Standing Grievance Committee",
     expected_disposal_date: new Date("2026-10-20T18:00:00Z"), // SLA breached!
     priority: "HIGH",
+    complainant_name: "Rohit Sharma (Student Union President)",
+    complainant_contact: "+91 9811712233",
+    hearing_date: new Date("2026-10-28T11:00:00Z"),
     actions: [
       {
         actor_user: "pgrc.officer@aicte.gov.in",
@@ -233,6 +276,8 @@ export function generateSeedData() {
     next_action_required: "Expert Visit Committee (EVC) Inspection appointment",
     expected_disposal_date: new Date("2026-11-01T18:00:00Z"),
     priority: "CRITICAL",
+    complainant_name: "Rohit Sharma (Student Union President)",
+    complainant_contact: "+91 9811712233",
     actions: [
       {
         actor_user: "rb.officer@aicte.gov.in",
@@ -372,6 +417,18 @@ export function generateSeedData() {
     "PENDING", "UNDER_PROCESS", "UNDER_PROCESS", "DISPOSED", "DISPOSED", "TRANSFERRED", "ESCALATED"
   ];
 
+  // Deterministic complainant pool. Most grievances come from ordinary
+  // single-filing complainants; a fixed minority of identities file repeatedly
+  // across institutions and Bureaus so the recurrence engine has real signal.
+  const REPEAT_COMPLAINANTS = [
+    { name: "Devika Menon", contact: "+91 9447033055" },
+    { name: "Hiteshbhai Patel", contact: "+91 9825004412" },
+    { name: "Sanjana Das", contact: "+91 9830011788" },
+    { name: "Farhan Qureshi", contact: "+91 9900041145" },
+  ];
+  const UNIQUE_FIRST = ["Neha", "Arun", "Priyanka", "Kabir", "Lakshmi", "Imran", "Meera", "Sanjay", "Anita", "Vikram", "Deepa", "Rakesh", "Farah", "Naveen", "Swati", "Joseph", "Bindiya", "Tarun", "Shreya", "Mohan"];
+  const UNIQUE_LAST = ["Gupta", "Nair", "Kulkarni", "Reddy", "Chatterjee", "Saini", "Pillai", "Khan", "Joshi", "Rao"];
+
   let currentCaseNum = 1000;
   institutions.forEach((inst, iIdx) => {
     // Generate 4 to 6 cases per institution to reach ~300 total
@@ -400,6 +457,30 @@ export function generateSeedData() {
       const bureauCode = assigned.bureau === "REGULATION_BUREAU" ? "RB" : assigned.bureau === "APPROVAL_BUREAU" ? "AB" : assigned.bureau === "SKILL_CELL" ? "SDC" : "PGRC";
       const caseCode = `AICTE/${bureauCode}/2026/${String(currentCaseNum).padStart(5, "0")}`;
 
+      // Complainant identity: ~30% of generated files reuse one of four repeat
+      // complainants so recurrence analytics have demonstrable signal; the
+      // remainder draw from a rotating unique-name pool.
+      const isRepeatFiling = currentCaseNum % 13 < 4;
+      const repeat = REPEAT_COMPLAINANTS[currentCaseNum % REPEAT_COMPLAINANTS.length];
+      const firstName = UNIQUE_FIRST[(currentCaseNum * 7 + iIdx) % UNIQUE_FIRST.length];
+      const lastName = UNIQUE_LAST[(currentCaseNum + iIdx * 3) % UNIQUE_LAST.length];
+      const complainantName = isRepeatFiling ? repeat.name : `${firstName} ${lastName}`;
+      const complainantContact = isRepeatFiling
+        ? repeat.contact
+        : `+91 97${String(10000000 + ((currentCaseNum * 137 + iIdx * 31) % 89999999)).slice(0, 8)}`;
+
+      // Statutory hearings are scheduled on a slice of live files spread over
+      // the next 28 days to populate the hearing calendar.
+      const isActive = status !== "DISPOSED" && status !== "TRANSFERRED";
+      const hearingDate =
+        isActive && currentCaseNum % 11 === 2
+          ? new Date(now.getTime() + (2 + (currentCaseNum % 26)) * 86400000)
+          : null;
+
+      // Every fifth live file lands at the bureau desk without a named officer
+      // yet, so the officer work-queue has a genuine allocation backlog.
+      const isUnassigned = isActive && currentCaseNum % 5 === 0;
+
       const generatedCase: SeedCase = {
         id: `case_${currentCaseNum}`,
         case_id: caseCode,
@@ -410,12 +491,17 @@ export function generateSeedData() {
         description: `Grievance submitted regarding ${category.toLowerCase()} at ${inst.name}. Comprehensive documentation submitted by complainant.`,
         status,
         assigned_bureau: assigned.bureau as any,
-        assigned_officer: assigned.email,
-        last_action: status === "DISPOSED" ? "Final Disposal Order uploaded to AICTE portal" : status === "ESCALATED" ? "Escalated to Member Secretary" : "Notice issued to Head of Institution",
+        assigned_officer: isUnassigned ? "" : assigned.email,
+        last_action: isUnassigned
+          ? "Received at Bureau desk — awaiting officer allocation"
+          : status === "DISPOSED" ? "Final Disposal Order uploaded to AICTE portal" : status === "ESCALATED" ? "Escalated to Member Secretary" : "Notice issued to Head of Institution",
         last_action_date: new Date(dateReceived.getTime() + 4 * 86400000),
-        next_action_required: status === "DISPOSED" ? null : "Verification of compliance report",
+        next_action_required: isUnassigned ? "Assign investigating officer" : status === "DISPOSED" ? null : "Verification of compliance report",
         expected_disposal_date: expectedDisposal,
         priority,
+        complainant_name: complainantName,
+        complainant_contact: complainantContact,
+        hearing_date: hearingDate,
         actions: [
           {
             actor_user: assigned.email,
@@ -444,5 +530,197 @@ export function generateSeedData() {
     }
   });
 
-  return { institutions, cases, overlapAlerts };
+  // Post-pass: guarantee a handful of regional-language grievances so the
+  // offline multilingual intake layer has demo material on a clean install.
+  const HINDI_CAPITATION =
+    "संस्थान से प्रथम वर्ष के छात्रों से प्रवेश के समय रु. 38,500 अतिरिक्त शुल्क के रूप में वसूले गए हैं, जो स्वीकृत शुल्क संरचना से परे हैं। रसीदें एक अपंजीकृत ट्रस्ट खाते में जमा हो रही हैं।";
+  const HINDI_CERTIFICATES =
+    "संस्थान छात्रों के मूल प्रमाण पत्र और मार्कशीट रोककर रखा है और इन्हें जारी करने के लिए अनुचित रूप से रु. 7,500 के 'प्रबंधन शुल्क' की मांग कर रहा है। समय पर जारी न होने से छात्रों की नियुक्ति प्रक्रिया प्रभावित हो रही है।";
+  const TAMIL_CERTIFICATES =
+    "நிறுவனம் மாணவர்களின் அசல் சான்றிதழ்களையும் மதிப்பெண் சான்றிதழ்களையும் வைத்திருந்து, அவற்றை வெளியிட நிர்வாகக் கட்டணமாக ரூ. 7,500 அந்நியமாகக் கேட்கிறது. இதனால் மாணவர்களின் வேலைவாய்ப்பு ஒப்படைப்பு தடைபடுகிறது.";
+
+  const localizeCases = (match: (c: SeedCase) => boolean, limit: number, text: string, lang: string) => {
+    let applied = 0;
+    for (const c of cases) {
+      if (applied >= limit) break;
+      if (match(c)) {
+        c.description = text;
+        c.language = lang;
+        applied++;
+      }
+    }
+  };
+  localizeCases(
+    (c) => c.category === "Capitation Fee & Overcharging" && c.status !== "DISPOSED" &&
+      ["Northern", "Central", "North-Western"].includes(institutions.find((i) => i.id === c.institution_id)!.region),
+    2,
+    HINDI_CAPITATION,
+    "hi"
+  );
+  localizeCases(
+    (c) => c.category === "Withholding Certificates" && c.status !== "DISPOSED" &&
+      ["Southern", "South-Western"].includes(institutions.find((i) => i.id === c.institution_id)!.region),
+    2,
+    TAMIL_CERTIFICATES,
+    "ta"
+  );
+  localizeCases(
+    (c) => c.category === "Withholding Certificates" && c.language !== "ta" && c.status !== "DISPOSED" &&
+      ["Northern", "Central", "Eastern"].includes(institutions.find((i) => i.id === c.institution_id)!.region),
+    1,
+    HINDI_CERTIFICATES,
+    "hi"
+  );
+
+  // ── Inter-bureau coordination threads (comments) ────────────────────────────
+  comments.push(
+    {
+      id: "cm_001",
+      case_id: "AICTE/PGRC/2026/00101",
+      author_email: "rb.officer@aicte.gov.in",
+      author_name: "Dr. Ramesh Unnikrishnan",
+      author_bureau: "REGULATION_BUREAU",
+      body: "Regulation Bureau has an active parallel file on capitation collection at the same institution. Requesting PGRC to share the show-cause response so both files can proceed as one record and the institution does not face contradictory notices.",
+      scope: "COORDINATION",
+      created_at: new Date("2026-10-08T09:30:00Z"),
+    },
+    {
+      id: "cm_002",
+      case_id: "AICTE/PGRC/2026/00101",
+      author_email: "pgrc.officer@aicte.gov.in",
+      author_name: "Smt. Sunita Chhibba",
+      author_bureau: "PGRC",
+      body: "Shared. Institution response is due by the Standing Grievance Committee hearing; joint agenda item is proposed so the master docket can be established in that sitting.",
+      scope: "COORDINATION",
+      created_at: new Date("2026-10-09T12:10:00Z"),
+    },
+    {
+      id: "cm_003",
+      case_id: "AICTE/PGRC/2026/00101",
+      author_email: "pgrc.officer@aicte.gov.in",
+      author_name: "Smt. Sunita Chhibba",
+      author_bureau: "PGRC",
+      body: "Internal desk note: hearing panel composition confirmed; complainant representation (Student Union) verified on record before the sitting.",
+      scope: "INTERNAL",
+      created_at: new Date("2026-10-12T15:45:00Z"),
+    },
+    {
+      id: "cm_004",
+      case_id: "AICTE/RB/2026/00042",
+      author_email: "rb.officer@aicte.gov.in",
+      author_name: "Dr. Ramesh Unnikrishnan",
+      author_bureau: "REGULATION_BUREAU",
+      body: "Noted PGRC's parallel proceeding. Holding the surprise EVC inspection until a master docket is established to avoid two committees landing on campus in the same week.",
+      scope: "COORDINATION",
+      created_at: new Date("2026-10-10T10:00:00Z"),
+    },
+    {
+      id: "cm_005",
+      case_id: "AICTE/RB/2026/00042",
+      author_email: "rb.senior@aicte.gov.in",
+      author_name: "Smt. Meera Iyer",
+      author_bureau: "REGULATION_BUREAU",
+      body: "Desk level: compiled the fee-committee register extracts for the last two academic years; will be tabled when the committee sitting is fixed.",
+      scope: "INTERNAL",
+      created_at: new Date("2026-10-14T11:20:00Z"),
+    }
+  );
+
+  // ── Institution document vault (statutory records) ─────────────────────────
+  documents.push(
+    {
+      id: "doc_001",
+      institution_id: "inst_1",
+      title: "Extension of Approval 2026-27 (60 seats, CSE)",
+      doc_type: "APPROVAL_LETTER",
+      blob_url: "https://blob.vercel-storage.com/vault/apinst_eoa_2026_27.pdf",
+      file_name: "apinst_eoa_2026_27.pdf",
+      file_size: 428_610,
+      uploaded_by: "ab.officer@aicte.gov.in",
+      notes: "Sanctioned intake letter for Computer Science & Engineering with standard pre-approval conditions.",
+      uploaded_at: new Date("2026-07-14T10:00:00Z"),
+    },
+    {
+      id: "doc_002",
+      institution_id: "inst_1",
+      title: "Approved Fee Structure 2026-27 (Fee Committee)",
+      doc_type: "FINANCIAL_RECORD",
+      blob_url: "https://blob.vercel-storage.com/vault/apinst_fee_structure.pdf",
+      file_name: "apinst_fee_structure.pdf",
+      file_size: 233_418,
+      uploaded_by: "rb.officer@aicte.gov.in",
+      case_id: "AICTE/PGRC/2026/00101",
+      notes: "Referenced in the capitation enquiry as the statutory fee ceiling.",
+      uploaded_at: new Date("2026-09-24T09:15:00Z"),
+    },
+    {
+      id: "doc_003",
+      institution_id: "inst_1",
+      title: "Internal Accounts Extract (Defense & Training Fund Head)",
+      doc_type: "AUDIT_STATEMENT",
+      blob_url: "https://blob.vercel-storage.com/vault/apinst_internal_accounts.pdf",
+      file_name: "apinst_internal_accounts.pdf",
+      file_size: 512_904,
+      uploaded_by: "rb.officer@aicte.gov.in",
+      case_id: "AICTE/RB/2026/00042",
+      uploaded_at: new Date("2026-10-06T14:40:00Z"),
+    },
+    {
+      id: "doc_004",
+      institution_id: "inst_2",
+      title: "Compliance Report on 2025 Disposal Order",
+      doc_type: "COMPLIANCE_REPORT",
+      blob_url: "https://blob.vercel-storage.com/vault/stxavier_compliance.pdf",
+      file_name: "stxavier_compliance.pdf",
+      file_size: 188_212,
+      uploaded_by: "pgrc.officer@aicte.gov.in",
+      uploaded_at: new Date("2026-08-02T12:30:00Z"),
+    },
+    {
+      id: "doc_005",
+      institution_id: "inst_3",
+      title: "Show-Cause Notice Copy (SCN/KANPUR/2026/011)",
+      doc_type: "SHOW_CAUSE_NOTICE",
+      blob_url: "https://blob.vercel-storage.com/vault/hbtu_sln_copy.pdf",
+      file_name: "hbtu_sln_copy.pdf",
+      file_size: 119_942,
+      uploaded_by: "rb.officer@aicte.gov.in",
+      uploaded_at: new Date("2026-09-12T16:05:00Z"),
+    },
+    {
+      id: "doc_006",
+      institution_id: "inst_4",
+      title: "Land & Building Ownership Deed (Campus)",
+      doc_type: "OTHER",
+      blob_url: "https://blob.vercel-storage.com/vault/dehradun_deed.pdf",
+      file_name: "dehradun_deed.pdf",
+      file_size: 764_331,
+      uploaded_by: "ab.officer@aicte.gov.in",
+      uploaded_at: new Date("2026-06-21T11:00:00Z"),
+    },
+    {
+      id: "doc_007",
+      institution_id: "inst_26",
+      title: "Anti-Ragging Committee Constitution (2026-27)",
+      doc_type: "COMPLIANCE_REPORT",
+      blob_url: "https://blob.vercel-storage.com/vault/coimbatore_arc.pdf",
+      file_name: "coimbatore_arc.pdf",
+      file_size: 97_500,
+      uploaded_by: "pgrc.officer@aicte.gov.in",
+      uploaded_at: new Date("2026-07-30T15:20:00Z"),
+    },
+    {
+      id: "doc_008",
+      institution_id: "inst_37",
+      title: "Court Direction on Certificate Withholding (WP 8412/2026)",
+      doc_type: "COURT_ORDER",
+      blob_url: "https://blob.vercel-storage.com/vault/kolkata_wp_8412.pdf",
+      file_name: "kolkata_wp_8412.pdf",
+      file_size: 301_760,
+      uploaded_by: "ro.north@aicte.gov.in",
+      uploaded_at: new Date("2026-09-19T10:10:00Z"),
+    }
+  );
+
+  return { institutions, cases, overlapAlerts, comments, documents };
 }

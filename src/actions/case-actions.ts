@@ -10,6 +10,10 @@ import {
   AddRemarkSchema,
   LinkCasesSchema,
   CreateCaseSchema,
+  AssignOfficerSchema,
+  ScheduleHearingSchema,
+  AddCaseCommentSchema,
+  FieldVerificationSchema,
 } from "@/lib/validations";
 import { SessionUser } from "@/lib/rbac";
 
@@ -188,6 +192,9 @@ export async function createCaseAction(data: {
   description: string;
   assigned_bureau: "REGULATION_BUREAU" | "PGRC" | "APPROVAL_BUREAU" | "SKILL_CELL";
   priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  complainant_name?: string;
+  complainant_contact?: string;
+  language?: string;
   attachments?: string[];
 }) {
   const session = await auth();
@@ -210,5 +217,144 @@ export async function createCaseAction(data: {
     return { success: true, caseId: created.id, caseCode: created.case_id };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to create case." };
+  }
+}
+
+export async function assignOfficerAction(data: {
+  caseId: string;
+  officerEmail: string;
+  note?: string;
+}) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  const parsed = AssignOfficerSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const actor = session.user as unknown as SessionUser;
+    const updated = await repository.assignOfficer(
+      parsed.data.caseId,
+      parsed.data.officerEmail,
+      parsed.data.note || "",
+      actor
+    );
+
+    revalidatePath("/");
+    revalidatePath("/cases");
+    revalidatePath(`/cases/${parsed.data.caseId}`);
+    revalidatePath("/workqueue");
+    return {
+      success: true,
+      assignedOfficer: updated.assigned_officer,
+      caseCode: updated.case_id,
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to assign officer." };
+  }
+}
+
+export async function scheduleHearingAction(data: {
+  caseId: string;
+  hearingDate: string | Date;
+}) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  const parsed = ScheduleHearingSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const actor = session.user as unknown as SessionUser;
+    const updated = await repository.scheduleHearing(
+      parsed.data.caseId,
+      parsed.data.hearingDate,
+      actor
+    );
+
+    revalidatePath("/calendar");
+    revalidatePath(`/cases/${parsed.data.caseId}`);
+    revalidatePath("/cases");
+    return {
+      success: true,
+      hearingDate: updated.hearing_date,
+      caseCode: updated.case_id,
+    };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to schedule hearing." };
+  }
+}
+
+export async function addCaseCommentAction(data: {
+  caseId: string;
+  body: string;
+  scope?: "COORDINATION" | "INTERNAL";
+}) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  const parsed = AddCaseCommentSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const actor = session.user as unknown as SessionUser;
+    const comment = await repository.addCaseComment(
+      parsed.data.caseId,
+      parsed.data.body,
+      parsed.data.scope ?? "COORDINATION",
+      actor
+    );
+
+    revalidatePath(`/cases/${parsed.data.caseId}`);
+    return { success: true, commentId: comment.id };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to post comment." };
+  }
+}
+
+export async function fieldVerificationAction(data: {
+  caseId: string;
+  findings: string;
+  attachments?: string[];
+}) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  const parsed = FieldVerificationSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const actor = session.user as unknown as SessionUser;
+    const updated = await repository.addFieldVerification(
+      parsed.data.caseId,
+      parsed.data.findings,
+      actor,
+      parsed.data.attachments || []
+    );
+
+    revalidatePath(`/cases/${parsed.data.caseId}`);
+    revalidatePath("/cases");
+    return { success: true, caseCode: updated.case_id };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err.message || "Failed to record field verification.",
+    };
   }
 }

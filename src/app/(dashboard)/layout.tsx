@@ -16,13 +16,19 @@ export default async function DashboardLayout({
   }
 
   const user = session.user as unknown as SessionUser;
-  const [notifications, metrics] = await Promise.all([
+  const [notifications, metrics, queue] = await Promise.all([
     repository.getNotifications(user),
     repository.getDashboardMetrics(user),
+    repository.getMyQueue(user),
   ]);
 
   return (
-    <AppShell user={user} notifications={notifications} openOverlapCount={metrics.kpi.openOverlapAlerts}>
+    <AppShell
+      user={user}
+      notifications={notifications}
+      openOverlapCount={metrics.kpi.openOverlapAlerts}
+      unassignedQueueCount={queue.unassigned.length}
+    >
       {children}
     </AppShell>
   );

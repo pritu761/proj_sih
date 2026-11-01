@@ -8,6 +8,7 @@ import { Navbar } from "./Navbar";
 import { MobileNav } from "./mobile-nav";
 import { ShortcutsDialog } from "./shortcuts-dialog";
 import { CommandPalette } from "@/components/command/command-palette";
+import { OnboardingTour } from "./OnboardingTour";
 import { ToastProvider } from "@/components/ui/toast";
 import { useTheme } from "@/components/theme/theme-provider";
 import { SessionUser } from "@/lib/rbac";
@@ -15,6 +16,7 @@ import { SessionUser } from "@/lib/rbac";
 interface AppShellProps {
   user: SessionUser;
   openOverlapCount: number;
+  unassignedQueueCount?: number;
   notifications: {
     id: string;
     type: string;
@@ -48,7 +50,7 @@ function isTypingTarget(target: EventTarget | null) {
   );
 }
 
-export function AppShell({ user, openOverlapCount, notifications, children }: AppShellProps) {
+export function AppShell({ user, openOverlapCount, unassignedQueueCount = 0, notifications, children }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -165,6 +167,7 @@ export function AppShell({ user, openOverlapCount, notifications, children }: Ap
         <Sidebar
           user={user}
           openOverlapCount={openOverlapCount}
+          unassignedQueueCount={unassignedQueueCount}
           mobileOpen={mobileOpen}
           onClose={() => setMobileOpen(false)}
           collapsed={collapsed}
@@ -204,6 +207,7 @@ export function AppShell({ user, openOverlapCount, notifications, children }: Ap
         />
         <CommandPalette user={user} />
         <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+        <OnboardingTour />
       </div>
     </ToastProvider>
   );

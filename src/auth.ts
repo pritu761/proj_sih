@@ -64,6 +64,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
 
           if (dbUser) {
+            // Deactivated accounts must not authenticate, even with valid
+            // credentials (Administrator can suspend access from the console).
+            if (!dbUser.active) {
+              console.warn(`Sign-in blocked: account ${email} is deactivated.`);
+              return null;
+            }
+
             const isValid = await bcrypt.compare(password, dbUser.password_hash);
             if (isValid) {
               clearLoginFailures(rateLimitKey);

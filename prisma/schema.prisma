@@ -25,6 +25,7 @@ model Institution {
 
   cases              Case[]
   overlap_alerts     OverlapAlert[]
+  documents          InstitutionDocument[]
 
   @@index([normalized_name])
   @@index([region])
@@ -49,6 +50,10 @@ model Case {
   next_action_required   String?
   expected_disposal_date DateTime
   priority               String          // LOW, MEDIUM, HIGH, CRITICAL
+  complainant_name       String?
+  complainant_contact    String?
+  language               String?         // BCP-47 style tag detected at intake: en, hi, ta, te, bn, mr, gu, kn, ml, or, pa, ur
+  hearing_date           DateTime?       // Scheduled statutory hearing / committee sitting
   created_at             DateTime        @default(now())
   updated_at             DateTime        @updatedAt
 
@@ -56,12 +61,52 @@ model Case {
   links_as_a             CaseLink[]      @relation("CaseLinksA")
   links_as_b             CaseLink[]      @relation("CaseLinksB")
   notifications          Notification[]
+  comments               CaseComment[]
 
   @@index([institution_id])
   @@index([status])
   @@index([assigned_bureau])
   @@index([date_received])
   @@index([priority])
+  @@index([assigned_officer])
+  @@index([hearing_date])
+}
+
+model CaseComment {
+  id            String   @id @default(cuid())
+  case_id       String
+  case          Case     @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  author_email  String
+  author_name   String
+  author_bureau String
+  body          String   @db.Text
+  scope         String   @default("COORDINATION") // COORDINATION (every involved bureau), INTERNAL (own bureau only)
+  created_at    DateTime @default(now())
+
+  @@index([case_id])
+}
+
+model InstitutionDocument {
+  id             String   @id @default(cuid())
+  institution_id String
+  institution    Institution @relation(fields: [institution_id], references: [id], onDelete: Cascade)
+  title          String
+  doc_type       String   // APPROVAL_LETTER, COMPLIANCE_REPORT, AUDIT_STATEMENT, SHOW_CAUSE_NOTICE, COURT_ORDER, FINANCIAL_RECORD, OTHER
+  blob_url       String
+  file_name      String
+  file_size      Int
+  uploaded_by    String
+  notes          String?  @db.Text
+  case_id        String?  // Optional statutory linkage to a case registry number
+  uploaded_at    DateTime @default(now())
+
+  @@index([institution_id])
+}
+
+model AppStateSnapshot {
+  id        String   @id @default("singleton")
+  data      Json
+  updated_at DateTime @updatedAt
 }
 
 model ActionHistory {
@@ -166,6 +211,7 @@ model User {
   bureau        String   // REGULATION_BUREAU, PGRC, APPROVAL_BUREAU, SKILL_CELL, ALL
   region        String?  // Northern, Western, Southern, Eastern, Central
   designation   String?
+  active        Boolean  @default(true)
   created_at    DateTime @default(now())
   updated_at    DateTime @updatedAt
 

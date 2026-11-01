@@ -96,3 +96,42 @@ export function assertCanActOnCase(user: SessionUser | null | undefined, caseIte
     throw new Error(`Unauthorized: User ${user?.email || "Anonymous"} with role ${user?.role} cannot perform actions on cases assigned to ${caseItem.assigned_bureau}.`);
   }
 }
+
+/**
+ * Regional-officer field channel. Regional officers stay read-only for bureau
+ * case state, but are the statutory field verification authority for the
+ * institutions inside their region.
+ */
+export function canAddFieldVerification(
+  user: SessionUser | null | undefined,
+  caseItem: { institution?: { region?: string } | null }
+): boolean {
+  if (!user || user.role !== "REGIONAL_OFFICER") return false;
+  if (!user.region) return true; // un-scoped ROs are unrestricted
+  return caseItem.institution?.region === user.region;
+}
+
+/**
+ * Regional officers may participate in COORDINATION threads for cases in their
+ * region but never in bureau-internal notes.
+ */
+export function canJoinCoordination(
+  user: SessionUser | null | undefined,
+  caseItem: { institution?: { region?: string } | null }
+): boolean {
+  if (!user) return false;
+  if (user.role !== "REGIONAL_OFFICER") return true;
+  if (!user.region) return true;
+  return caseItem.institution?.region === user.region;
+}
+
+export function canManageUsers(user: SessionUser | null | undefined): boolean {
+  return user?.role === "ADMIN";
+}
+
+/** Officers who hold files individually can see their personal work queue. */
+export function canUseWorkQueue(user: SessionUser | null | undefined): boolean {
+  if (!user) return false;
+  return user.role !== "REGIONAL_OFFICER" || Boolean(user.region);
+}
+

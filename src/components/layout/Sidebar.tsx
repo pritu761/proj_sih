@@ -18,6 +18,10 @@ import {
   BadgeCheck,
   Sparkles,
   Keyboard,
+  ClipboardList,
+  CalendarDays,
+  UsersRound,
+  Landmark,
 } from "lucide-react";
 import { SessionUser } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -25,6 +29,7 @@ import { cn } from "@/lib/utils";
 interface SidebarProps {
   user: SessionUser;
   openOverlapCount: number;
+  unassignedQueueCount?: number;
   mobileOpen?: boolean;
   onClose?: () => void;
   collapsed?: boolean;
@@ -44,6 +49,7 @@ interface NavItem {
 export function Sidebar({
   user,
   openOverlapCount,
+  unassignedQueueCount = 0,
   mobileOpen = false,
   onClose,
   collapsed = false,
@@ -69,6 +75,34 @@ export function Sidebar({
           active: pathname.startsWith("/alerts"),
           badge: openOverlapCount,
         },
+      ],
+    },
+    {
+      label: "Work",
+      items: [
+        {
+          name: "Work Queue",
+          href: "/workqueue",
+          icon: ClipboardList,
+          active: pathname.startsWith("/workqueue"),
+          badge: unassignedQueueCount,
+        },
+        {
+          name: "Hearing Calendar",
+          href: "/calendar",
+          icon: CalendarDays,
+          active: pathname.startsWith("/calendar"),
+        },
+        ...(user.role === "ADMIN" || user.role === "COMPETENT_AUTHORITY"
+          ? [
+              {
+                name: "Team & Access",
+                href: "/users",
+                icon: UsersRound,
+                active: pathname.startsWith("/users"),
+              },
+            ]
+          : []),
       ],
     },
     {

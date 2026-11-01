@@ -7,6 +7,10 @@ import {
   Clock,
   Building2,
   User,
+  UserPlus,
+  CalendarPlus,
+  ClipboardCheck,
+  Languages,
   ArrowRightLeft,
   Flame,
   MessageSquare,
@@ -35,15 +39,21 @@ import {
   escalateCaseAction,
   addRemarkAction,
   linkCasesAction,
+  assignOfficerAction,
+  scheduleHearingAction,
+  fieldVerificationAction,
 } from "@/actions/case-actions";
 import { coordinateOverlapAction } from "@/actions/overlap-actions";
-import { canActOnCase, SessionUser } from "@/lib/rbac";
+import { canActOnCase, canAddFieldVerification, SessionUser } from "@/lib/rbac";
+import { LANGUAGE_BADGE } from "@/lib/services/language-detect";
 import { Breadcrumbs } from "@/components/ui/page-header";
 import { BureauPill, ConfidencePill, PriorityPill, StatusPill } from "@/components/ui/badges";
 import { SlaRing } from "@/components/ui/sla-ring";
 import { Modal } from "@/components/ui/modal";
 import { CaseBrief } from "./CaseBrief";
 import { EnforcementPanel } from "./EnforcementPanel";
+import { ComplainantCard } from "./ComplainantCard";
+import { CaseThreadPanel, CaseCommentView } from "./CaseThreadPanel";
 import type { CaseInsight } from "@/lib/services/risk-engine";
 import type { ComplianceAssessment } from "@/lib/services/aph-engine";
 import { cn } from "@/lib/utils";
@@ -56,6 +66,31 @@ interface CaseDetailClientProps {
   currentUser: SessionUser;
   insight?: CaseInsight | null;
   compliance?: ComplianceAssessment | null;
+  comments: CaseCommentView[];
+  complainant: {
+    profile: any;
+    meta: { label: string; chip: string; note: string } | null;
+    isCurrentCase: boolean;
+  } | null;
+  officers: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    bureau: string;
+    region?: string | null;
+    designation: string;
+  }[];
+}
+
+interface AssignableOfficer {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  bureau: string;
+  region?: string | null;
+  designation: string;
 }
 
 const actionIcon: Record<string, typeof Inbox> = {
@@ -67,6 +102,9 @@ const actionIcon: Record<string, typeof Inbox> = {
   DISPOSED: CheckCircle2,
   LINKED: Link2,
   STATUS_CHANGED: RefreshCw,
+  FIELD_VERIFICATION: ClipboardCheck,
+  HEARING_SCHEDULED: Gavel,
+  HEARING: Gavel,
 };
 
 const actionTone: Record<string, string> = {
@@ -78,6 +116,9 @@ const actionTone: Record<string, string> = {
   DISPOSED: "bg-emerald-50 text-emerald-600 border-emerald-100",
   LINKED: "bg-amber-50 text-amber-600 border-amber-100",
   STATUS_CHANGED: "bg-indigo-50 text-indigo-600 border-indigo-100",
+  FIELD_VERIFICATION: "bg-teal-50 text-teal-600 border-teal-100",
+  HEARING_SCHEDULED: "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100",
+  HEARING: "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100",
 };
 
 const bureauOptions = [
@@ -95,11 +136,14 @@ export function CaseDetailClient({
   currentUser,
   insight,
   compliance,
+  comments,
+  complainant,
+  officers,
 }: CaseDetailClientProps) {
   const router = useRouter();
 
   const [activeModal, setActiveModal] = useState<
-    "STATUS" | "TRANSFER" | "ESCALATE" | "REMARK" | "LINK" | "OVERLAP_COMPARE" | null
+    "STATUS" | "TRANSFER" | "ESCALATE" | "REMARK" | "LINK" | "ASSIGN" | "HEARING" | "FIELD" | "OVERLAP_COMPARE" | null
   >(null);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -115,8 +159,27 @@ export function CaseDetailClient({
   const [uploadedUrl, setUploadedUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
+  // Assignment
+  const [assignOfficerEmail, setAssignOfficerEmail] = useState(
+    caseItem.assigned_officer || ""
+  );
+  const [assignNote, setAssignNote] = useState("");
+  // Hearing
+  const [hearingInput, setHearingInput] = useState(
+    caseItem.hearing_date
+      ? new Date(caseItem.hearing_date).toISOString().slice(0, 16)
+      : ""
+  );
+  // Regional field verification
+  const [fieldFindings, setFieldFindings] = useState("");
+
   const isAuthorizedToAct = canActOnCase(currentUser, caseItem);
+  const canFieldVerify = canAddFieldVerification(currentUser, caseItem);
   const closed = caseItem.status === "DISPOSED";
+  const assignedOfficerDisplay = caseItem.assigned_officer || "Unassigned";
+  const languageBadge = caseItem.language
+    ? LANGUAGE_BADGE[caseItem.language as string]
+    : null;
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -168,6 +231,58 @@ export function CaseDetailClient({
       setErrorMsg(res.error || "Failed to update status.");
     } else {
       resetModals();
+      router.refresh();
+    }
+  };
+
+  const handleAssign = async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    const res = await assignOfficerAction({
+      caseId: caseItem.id,
+      officerEmail: assignOfficerEmail,
+      note: assignNote,
+    });
+    setIsLoading(false);
+    if (!res.success) {
+      setErrorMsg(res.error || "Failed to assign officer.");
+    } else {
+      resetModals();
+      setAssignNote("");
+      router.refresh();
+    }
+  };
+
+  const handleScheduleHearing = async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    const res = await scheduleHearingAction({
+      caseId: caseItem.id,
+      hearingDate: hearingInput,
+    });
+    setIsLoading(false);
+    if (!res.success) {
+      setErrorMsg(res.error || "Failed to schedule hearing.");
+    } else {
+      resetModals();
+      router.refresh();
+    }
+  };
+
+  const handleFieldVerification = async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    const res = await fieldVerificationAction({
+      caseId: caseItem.id,
+      findings: fieldFindings,
+      attachments: uploadedUrl ? [uploadedUrl] : [],
+    });
+    setIsLoading(false);
+    if (!res.success) {
+      setErrorMsg(res.error || "Failed to record field verification.");
+    } else {
+      resetModals();
+      setFieldFindings("");
       router.refresh();
     }
   };
@@ -381,6 +496,24 @@ export function CaseDetailClient({
                   <CheckCircle2 className="h-2.5 w-2.5" /> Closed
                 </span>
               )}
+              {languageBadge && (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9.5px] font-bold",
+                    languageBadge.color
+                  )}
+                  title={`Multilingual intake — narrative preserved in original script`}
+                >
+                  <Languages className="h-2.5 w-2.5" />
+                  {languageBadge.label}
+                </span>
+              )}
+              {caseItem.hearing_date && !closed && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-2 py-0.5 text-[9.5px] font-bold text-fuchsia-700">
+                  <Gavel className="h-2.5 w-2.5" />
+                  Hearing {formatDate(caseItem.hearing_date)}
+                </span>
+              )}
             </div>
 
             <h1 className="mt-3 font-display text-[22px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 sm:text-[26px]">
@@ -410,7 +543,13 @@ export function CaseDetailClient({
               <span className="inline-flex items-center gap-1.5 text-slate-500">
                 <User className="h-3.5 w-3.5 text-slate-400" />
                 Officer
-                <strong className="font-bold text-slate-800">{caseItem.assigned_officer}</strong>
+                {caseItem.assigned_officer ? (
+                  <strong className="font-bold text-slate-800">{caseItem.assigned_officer}</strong>
+                ) : (
+                  <strong className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 font-bold text-rose-700">
+                    <Inbox className="h-2.5 w-2.5" /> Unassigned
+                  </strong>
+                )}
               </span>
               <span className="hidden h-3 w-px bg-slate-200 sm:block" />
               <span className="inline-flex items-center gap-1.5 text-slate-500">
@@ -504,6 +643,14 @@ export function CaseDetailClient({
                   <RefreshCw className="h-3.5 w-3.5" />
                   Change status
                 </button>
+                <button onClick={() => setActiveModal("ASSIGN")} className="btn btn-secondary btn-sm">
+                  <UserPlus className="h-3.5 w-3.5" />
+                  {caseItem.assigned_officer ? "Reassign" : "Assign officer"}
+                </button>
+                <button onClick={() => setActiveModal("HEARING")} className="btn btn-secondary btn-sm">
+                  <CalendarPlus className="h-3.5 w-3.5" />
+                  {caseItem.hearing_date ? "Reschedule hearing" : "Schedule hearing"}
+                </button>
                 <button onClick={() => setActiveModal("TRANSFER")} className="btn btn-secondary btn-sm">
                   <ArrowRightLeft className="h-3.5 w-3.5" />
                   Transfer
@@ -533,6 +680,17 @@ export function CaseDetailClient({
                   : ` · Assigned to ${caseItem.assigned_bureau.replaceAll("_", " ")}`}
               </span>
             )}
+
+            {/* Regional Officer field channel — independent of bureau case state */}
+            {canFieldVerify && !closed && (
+              <button
+                onClick={() => setActiveModal("FIELD")}
+                className="btn btn-sm border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100"
+              >
+                <ClipboardCheck className="h-3.5 w-3.5" />
+                Field verification
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -554,6 +712,17 @@ export function CaseDetailClient({
       {/* Main grid */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="space-y-4">
+          {/* Complainant identity & recurrence */}
+          <ComplainantCard
+            caseItem={{
+              complainant_name: caseItem.complainant_name,
+              complainant_contact: caseItem.complainant_contact,
+            }}
+            profile={complainant?.profile ?? null}
+            meta={complainant?.meta ?? null}
+            isCurrentCase={complainant?.isCurrentCase ?? false}
+          />
+
           {/* Representation */}
           <div className="panel">
             <div className="panel-head">
@@ -597,7 +766,9 @@ export function CaseDetailClient({
                   value:
                     caseItem.next_action_required ||
                     "Awaiting verification / compliance response",
-                  note: "Owner: " + caseItem.assigned_officer,
+                  note: caseItem.assigned_officer
+                    ? "Owner: " + caseItem.assigned_officer
+                    : "Owner: awaiting allocation at bureau desk",
                 },
                 {
                   icon: CalendarDays,
@@ -794,6 +965,14 @@ export function CaseDetailClient({
           </div>
         </div>
       </div>
+
+      {/* Inter-bureau coordination thread */}
+      <CaseThreadPanel
+        caseInternalId={caseItem.id}
+        currentUser={currentUser}
+        initialComments={comments}
+        canPostInternal={isAuthorizedToAct}
+      />
 
       {/* Overlap compare modal */}
       <Modal
@@ -1257,6 +1436,190 @@ export function CaseDetailClient({
               className="input"
             />
           </div>
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      {/* Assign modal */}
+      <Modal
+        open={activeModal === "ASSIGN"}
+        onClose={resetModals}
+        title={caseItem.assigned_officer ? "Reassign case to another officer" : "Assign case to officer"}
+        description="The selected officer receives the file in their personal work queue instantly."
+        icon={<UserPlus className="h-4 w-4" />}
+        tone="blue"
+        footer={
+          <>
+            <button onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleAssign}
+              disabled={isLoading || !assignOfficerEmail}
+              className="btn btn-primary btn-sm"
+            >
+              {isLoading ? "Assigning…" : "Confirm assignment"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="assign-officer" className="field-label">
+              Registered officer <span className="text-rose-600">*</span>
+            </label>
+            <select
+              id="assign-officer"
+              value={assignOfficerEmail}
+              onChange={(e) => setAssignOfficerEmail(e.target.value)}
+              className="input"
+            >
+              <option value="">Select an officer…</option>
+              {officers.map((o: AssignableOfficer) => (
+                <option key={o.id} value={o.email}>
+                  {o.name} — {o.designation || o.role}
+                  {o.region ? ` (${o.region} RO)` : ""}
+                </option>
+              ))}
+            </select>
+            {officers.length > 0 && (
+              <p className="field-hint">
+                Only active officers whose bureau or regional posting covers this case can be selected by the server.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="assign-note" className="field-label">
+              Handling instruction <span className="font-normal text-slate-400">(optional)</span>
+            </label>
+            <textarea
+              id="assign-note"
+              rows={2}
+              value={assignNote}
+              maxLength={500}
+              onChange={(e) => setAssignNote(e.target.value)}
+              placeholder="e.g. Complete the surprise EVC inspection before the next hearing…"
+              className="input"
+            />
+            <p className="field-hint">Included in the assignee's queue notification and the audit ledger.</p>
+          </div>
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      {/* Hearing modal */}
+      <Modal
+        open={activeModal === "HEARING"}
+        onClose={resetModals}
+        title={caseItem.hearing_date ? "Reschedule statutory hearing" : "Schedule statutory hearing"}
+        description="Committee sittings appear on the bureau hearing calendar and the public tracker."
+        icon={<CalendarPlus className="h-4 w-4" />}
+        tone="violet"
+        footer={
+          <>
+            <button onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleScheduleHearing}
+              disabled={isLoading || !hearingInput}
+              className="btn btn-primary btn-sm"
+            >
+              {isLoading ? "Saving…" : "Confirm hearing"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="hearing-date" className="field-label">
+              Hearing date & time <span className="text-rose-600">*</span>
+            </label>
+            <input
+              id="hearing-date"
+              type="datetime-local"
+              value={hearingInput}
+              onChange={(e) => setHearingInput(e.target.value)}
+              className="input"
+            />
+            <p className="field-hint">
+              {caseItem.hearing_date
+                ? `Current sitting: ${formatDateTime(caseItem.hearing_date)}`
+                : "Standing Grievance Committee sits per the 2016 Grievance Redressal Regulations."}
+            </p>
+          </div>
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      {/* Regional field verification modal */}
+      <Modal
+        open={activeModal === "FIELD"}
+        onClose={resetModals}
+        title="Regional Officer field verification"
+        description="On-site factual findings feed the owning bureau without altering its case state."
+        icon={<ClipboardCheck className="h-4 w-4" />}
+        tone="emerald"
+        footer={
+          <>
+            <button onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleFieldVerification}
+              disabled={isLoading || fieldFindings.trim().length < 20}
+              className="btn btn-primary btn-sm"
+            >
+              {isLoading ? "Recording…" : "Submit field findings"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-2.5 rounded-xl border border-teal-200 bg-teal-50/70 p-3">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
+            <p className="text-[11px] leading-relaxed text-teal-900">
+              Recording as <strong>{currentUser.name}</strong>
+              {currentUser.region ? ` (${currentUser.region} Regional Office)` : ""} — findings are
+              shared with the <strong>{caseItem.assigned_bureau.replaceAll("_", " ")}</strong>, which retains
+              sole authority over status changes.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="field-findings" className="field-label">
+              Verified field observations <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              id="field-findings"
+              rows={5}
+              value={fieldFindings}
+              onChange={(e) => setFieldFindings(e.target.value)}
+              placeholder="Record inspection facts: attendance verify, infrastructure condition, account heads inspected, staff statements, photographs referenced…"
+              className="input"
+            />
+            <p className="field-hint">
+              Minimum 20 characters for audit quality. Append-only — it cannot be edited after submission.
+            </p>
+          </div>
+
+          {uploadField}
 
           {errorMsg && (
             <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">

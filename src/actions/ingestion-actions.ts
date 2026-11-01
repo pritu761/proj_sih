@@ -11,6 +11,7 @@ import {
   type IngestionChannel,
   type RoutedBureau,
 } from "@/lib/services/ingestion-engine";
+import { detectLanguage } from "@/lib/services/language-detect";
 
 const BUREAU_LABEL: Record<RoutedBureau, string> = {
   REGULATION_BUREAU: "Regulation Bureau",
@@ -27,6 +28,8 @@ export async function simulateIngestionAction(data: {
   priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   assigned_bureau?: RoutedBureau;
   complainant_reference?: string;
+  complainant_name?: string;
+  complainant_contact?: string;
 }) {
   const session = await auth();
   if (!session?.user) {
@@ -82,6 +85,10 @@ export async function simulateIngestionAction(data: {
     "public";
 
   try {
+    // Offline multilingual layer: detect the written script/language and any
+    // statutory-category keyword signals before the record is persisted.
+    const language = detectLanguage(parsed.data.description);
+
     const created = await repository.createCase(
       {
         aicte_permanent_id: parsed.data.aicte_permanent_id,
@@ -90,6 +97,9 @@ export async function simulateIngestionAction(data: {
         description: parsed.data.description,
         assigned_bureau: assignedBureau,
         priority: parsed.data.priority ?? decision.priority,
+        complainant_name: parsed.data.complainant_name,
+        complainant_contact: parsed.data.complainant_contact,
+        language: language.code !== "en" ? language.code : undefined,
       },
       actor
     );
@@ -131,6 +141,13 @@ export async function simulateIngestionAction(data: {
       regulatory: decision.regulatory,
       rationale: [...decision.rationale, ...(ownershipNote ? [ownershipNote] : [])],
       expectedDisposal: created.expected_disposal_date.toISOString(),
+      language: {
+        code: language.code,
+        name: language.name,
+        confidence: language.confidence,
+        suggestedCategory: language.suggestedCategory,
+        suggestionReason: language.suggestionReason,
+      },
       alerts: alerts.map((alert) => ({
         id: alert.id,
         confidence: alert.confidence,

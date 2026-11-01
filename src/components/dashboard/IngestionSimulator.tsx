@@ -34,6 +34,7 @@ import {
   type IngestionChannel,
 } from "@/lib/services/ingestion-engine";
 import { simulateIngestionAction } from "@/actions/ingestion-actions";
+import { detectLanguage, LANGUAGE_BADGE } from "@/lib/services/language-detect";
 
 interface InstitutionOption {
   id: string;
@@ -72,6 +73,13 @@ interface SimulationResult {
   regulatory: boolean;
   rationale: string[];
   expectedDisposal: string;
+  language: {
+    code: string;
+    name: string;
+    confidence: string;
+    suggestedCategory: string | null;
+    suggestionReason: string | null;
+  };
   alerts: DetectedAlert[];
 }
 
@@ -125,10 +133,18 @@ export function IngestionSimulator({
   const [priority, setPriority] = useState<"LOW" | "MEDIUM" | "HIGH" | "CRITICAL">("CRITICAL");
   const [description, setDescription] = useState("");
   const [reference, setReference] = useState("");
+  const [complainantName, setComplainantName] = useState("");
+  const [complainantContact, setComplainantContact] = useState("");
   const [result, setResult] = useState<SimulationResult | null>(null);
 
-  const readOnly = userRole === "REGIONAL_OFFICER";
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
+
+  const detectedLanguage = useMemo(
+    () => detectLanguage(description, selectedInstitution?.state),
+    [description, selectedInstitution]
+  );
+
+  const readOnly = userRole === "REGIONAL_OFFICER";
 
   const routing = useMemo(
     () => routeComplaint({ category, channel }),
@@ -197,6 +213,8 @@ export function IngestionSimulator({
     setProcessStep(0);
     setDescription("");
     setReference("");
+    setComplainantName("");
+    setComplainantContact("");
     setPriority(routing.priority);
   };
 
@@ -242,6 +260,8 @@ export function IngestionSimulator({
         description: description.trim(),
         priority,
         complainant_reference: reference.trim() || undefined,
+        complainant_name: complainantName.trim() || undefined,
+        complainant_contact: complainantContact.trim() || undefined,
       }),
       new Promise((resolve) => window.setTimeout(resolve, 1500)),
     ]);
@@ -448,6 +468,20 @@ export function IngestionSimulator({
                   );
                 })}
               </div>
+
+              <p className="mt-2.5 flex items-start gap-2 rounded-lg border border-sky-400/20 bg-sky-400/[0.05] px-2.5 py-1.5 text-[9.5px] leading-relaxed text-sky-200/80">
+                <Globe2 className="mt-0.5 h-3 w-3 shrink-0" />
+                <span>
+                  Offline intake layer detected <strong>{result.language.name}</strong> ({result.language.code}) at{" "}
+                  {result.language.confidence.toLowerCase()} confidence
+                  {result.language.suggestedCategory && (
+                    <>
+                      {" "}and suggested the statutory category <strong>{result.language.suggestedCategory}</strong> (
+                      {result.language.suggestionReason}).
+                    </>
+                  )}
+                </span>
+              </p>
 
               {result.routedBureau !== result.bureau && (
                 <p className="mt-2.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-1.5 text-[9.5px] leading-relaxed text-amber-200/80">
@@ -712,6 +746,56 @@ export function IngestionSimulator({
               <p className="mt-1 text-[9.5px] text-slate-500">
                 {description.trim().length} characters · minimum 30 · stored in the immutable case trail.
               </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide",
+                    LANGUAGE_BADGE[detectedLanguage.code]?.color ??
+                      "bg-slate-100 text-slate-600 border-slate-200"
+                  )}
+                  title={detectedLanguage.note}
+                >
+                  {LANGUAGE_BADGE[detectedLanguage.code]?.label ?? detectedLanguage.code.toUpperCase()}
+                  {" · "}
+                  {detectedLanguage.name}
+                </span>
+                <span className="text-[9.5px] text-slate-500">
+                  Confidence: {detectedLanguage.confidence}
+                  {detectedLanguage.suggestedCategory && (
+                    <>
+                      {" · suggested category: "}
+                      <span className="font-bold text-slate-300">{detectedLanguage.suggestedCategory}</span>
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div>
+                <label htmlFor="ingest-complainant-name" className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-500">
+                  Complainant name
+                </label>
+                <input
+                  id="ingest-complainant-name"
+                  value={complainantName}
+                  onChange={(e) => setComplainantName(e.target.value)}
+                  placeholder="e.g. Devika Menon"
+                  className={darkInput}
+                />
+              </div>
+              <div>
+                <label htmlFor="ingest-complainant-contact" className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-500">
+                  Complainant contact
+                </label>
+                <input
+                  id="ingest-complainant-contact"
+                  value={complainantContact}
+                  onChange={(e) => setComplainantContact(e.target.value)}
+                  placeholder="+91 9447033055"
+                  className={darkInput}
+                />
+              </div>
             </div>
 
             <div className="dark-surface rounded-xl border border-white/10 bg-slate-950 p-3.5">
