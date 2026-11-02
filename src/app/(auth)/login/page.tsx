@@ -16,7 +16,6 @@ import {
   ScanLine,
   Network,
   Timer,
-  Fingerprint,
   ArrowUpRight,
 } from "lucide-react";
 
@@ -98,24 +97,15 @@ function LoginForm() {
             <p className="font-display text-[16px] font-extrabold tracking-tight text-slate-900">
               AICTE <span className="text-saffron-600">Sentinel</span>
             </p>
-            <p className="text-[9.5px] font-bold uppercase tracking-[0.14em] text-slate-400">
-              Complaint Intelligence
-            </p>
           </div>
         </div>
       </div>
 
       <div className="rounded-[26px] border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] sm:p-8">
         <div className="mb-6">
-          <span className="eyebrow text-brand-600">
-            <Fingerprint className="h-3 w-3" /> Official access
-          </span>
-          <h1 className="mt-2 font-display text-[26px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950">
+          <h1 className="font-display text-[26px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950">
             Sign in to the command center
           </h1>
-          <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500">
-            Authorized AICTE officials only. All sessions are audited.
-          </p>
         </div>
 
         {errorMessage && (

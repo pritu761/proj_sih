@@ -93,7 +93,7 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
       return;
     }
     setRescheduleTarget(null);
-    toast.success("Hearing updated", `${rescheduleTarget.case_id} — calendar refreshed.`);
+    toast.success("Hearing updated", `${rescheduleTarget.case_id}`);
     router.refresh();
   };
 
@@ -210,13 +210,7 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
     );
   };
 
-  const section = (
-    title: string,
-    sub: string,
-    items: HearingItem[],
-    accent: string,
-    badge: string
-  ) => (
+  const section = (title: string, items: HearingItem[], accent: string, badge: string) => (
     <div className="panel">
       <div className="panel-head">
         <div>
@@ -224,7 +218,6 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
             <Gavel className={cn("h-3.5 w-3.5", accent)} />
             {title}
           </h2>
-          <p className="panel-sub">{sub}</p>
         </div>
         <span className={badge}>{items.length} sittings</span>
       </div>
@@ -243,9 +236,7 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Statutory coordination"
         title="Hearing Calendar"
-        description="Standing Grievance Committee sittings across bureaus — reschedule from here and the case workspace, public tracker and weekly digest all stay in sync."
         icon={CalendarDays}
         actions={
           regionNote ? (
@@ -278,7 +269,6 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
 
       {section(
         "This week",
-        "Committee sittings in the next seven days",
         groups.thisWeek,
         "text-fuchsia-600",
         "badge border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700"
@@ -286,7 +276,6 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
 
       {section(
         "Later hearings",
-        "Scheduled beyond seven days (next 45-day horizon)",
         groups.later,
         "text-brand-600",
         "badge border-brand-200 bg-brand-50 text-brand-700"
@@ -294,7 +283,6 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
 
       {section(
         "Past sittings",
-        "Concluded — verify minutes and outcomes in the case workspace",
         groups.overdue,
         "text-slate-400",
         "badge border-slate-200 bg-slate-50 text-slate-600"
@@ -343,9 +331,6 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
                 onChange={(e) => setHearingInput(e.target.value)}
                 className="input"
               />
-              <p className="field-hint">
-                The change is appended to the case timeline; the weekly digest hearing board rebuilds automatically.
-              </p>
             </div>
 
             {error && (

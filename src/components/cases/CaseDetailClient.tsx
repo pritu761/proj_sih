@@ -569,7 +569,7 @@ export function CaseDetailClient({
           {/* SLA gauge */}
           <div className={cn("shrink-0 rounded-2xl border p-4 lg:w-[268px]", slaTone)}>
             <div className="flex items-center justify-between">
-              <span className="eyebrow text-slate-500">
+              <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700">
                 <Clock className="h-3 w-3" /> SLA countdown
               </span>
               <span
@@ -731,7 +731,6 @@ export function CaseDetailClient({
                   <FileText className="h-3.5 w-3.5 text-brand-600" />
                   Grievance representation
                 </h2>
-                <p className="panel-sub">Original submission as received</p>
               </div>
             </div>
             <div className="px-5 py-4">
@@ -749,7 +748,6 @@ export function CaseDetailClient({
                   <Target className="h-3.5 w-3.5 text-brand-600" />
                   Next action & milestones
                 </h2>
-                <p className="panel-sub">Statutory workflow checkpoints</p>
               </div>
             </div>
             <div className="divide-y divide-slate-100">
@@ -808,7 +806,6 @@ export function CaseDetailClient({
                   <Link2 className="h-3.5 w-3.5 text-brand-600" />
                   Linked & related cases
                 </h2>
-                <p className="panel-sub">Cross-reference map</p>
               </div>
               <span className="badge border-slate-200 bg-slate-50 text-slate-600">
                 {linkedCases.length}
@@ -858,9 +855,6 @@ export function CaseDetailClient({
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Action history & verification trail</h2>
-              <p className="panel-sub">
-                Immutable, append-only log of bureau movements, remarks and speaking orders
-              </p>
             </div>
             <div className="flex items-center gap-2">
               <span className="badge border-slate-200 bg-slate-50 text-slate-600">
@@ -1120,9 +1114,6 @@ export function CaseDetailClient({
               placeholder="Record the joint decision between bureaus, e.g. 'Regulation Bureau leads the inspection; PGRC grievance merged under AICTE/RB/2026/00042.'"
               className="input"
             />
-            <p className="field-hint">
-              This note is written to both case timelines and the audit ledger.
-            </p>
           </div>
 
           {errorMsg && (
@@ -1186,7 +1177,6 @@ export function CaseDetailClient({
               placeholder="Explain the rationale for this status transition…"
               className="input"
             />
-            <p className="field-hint">Minimum 5 characters. Visible to all authorized bureaus.</p>
           </div>
 
           {uploadField}
@@ -1253,7 +1243,6 @@ export function CaseDetailClient({
               placeholder="Explain why this matter falls under the recipient bureau's mandate…"
               className="input"
             />
-            <p className="field-hint">Minimum 10 characters.</p>
           </div>
 
           {uploadField}
@@ -1293,9 +1282,8 @@ export function CaseDetailClient({
           <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
             <p className="text-[11px] leading-relaxed text-rose-800">
-              Priority is automatically set to <strong>CRITICAL</strong> and an escalation
-              notification is dispatched. Use only for non-compliance, severe student impact, or SLA
-              breach.
+              Sets priority to <strong>CRITICAL</strong>. Use only for non-compliance, severe student
+              impact, or SLA breach.
             </p>
           </div>
 
@@ -1311,7 +1299,6 @@ export function CaseDetailClient({
               placeholder="Specify non-compliance, severe student impact, or SLA breach…"
               className="input"
             />
-            <p className="field-hint">Minimum 10 characters.</p>
           </div>
 
           {errorMsg && (
@@ -1327,7 +1314,6 @@ export function CaseDetailClient({
         open={activeModal === "REMARK"}
         onClose={resetModals}
         title="Add remark / upload document"
-        description="Appends a dated note to the case verification trail."
         icon={<MessageSquare className="h-4 w-4" />}
         footer={
           <>
@@ -1487,11 +1473,6 @@ export function CaseDetailClient({
                 </option>
               ))}
             </select>
-            {officers.length > 0 && (
-              <p className="field-hint">
-                Only active officers whose bureau or regional posting covers this case can be selected by the server.
-              </p>
-            )}
           </div>
 
           <div>
@@ -1507,7 +1488,6 @@ export function CaseDetailClient({
               placeholder="e.g. Complete the surprise EVC inspection before the next hearing…"
               className="input"
             />
-            <p className="field-hint">Included in the assignee's queue notification and the audit ledger.</p>
           </div>
 
           {errorMsg && (
@@ -1523,7 +1503,6 @@ export function CaseDetailClient({
         open={activeModal === "HEARING"}
         onClose={resetModals}
         title={caseItem.hearing_date ? "Reschedule statutory hearing" : "Schedule statutory hearing"}
-        description="Committee sittings appear on the bureau hearing calendar and the public tracker."
         icon={<CalendarPlus className="h-4 w-4" />}
         tone="violet"
         footer={
@@ -1553,11 +1532,11 @@ export function CaseDetailClient({
               onChange={(e) => setHearingInput(e.target.value)}
               className="input"
             />
-            <p className="field-hint">
-              {caseItem.hearing_date
-                ? `Current sitting: ${formatDateTime(caseItem.hearing_date)}`
-                : "Standing Grievance Committee sits per the 2016 Grievance Redressal Regulations."}
-            </p>
+            {caseItem.hearing_date && (
+              <p className="field-hint">
+                Current sitting: {formatDateTime(caseItem.hearing_date)}
+              </p>
+            )}
           </div>
 
           {errorMsg && (
@@ -1573,7 +1552,6 @@ export function CaseDetailClient({
         open={activeModal === "FIELD"}
         onClose={resetModals}
         title="Regional Officer field verification"
-        description="On-site factual findings feed the owning bureau without altering its case state."
         icon={<ClipboardCheck className="h-4 w-4" />}
         tone="emerald"
         footer={
@@ -1595,10 +1573,8 @@ export function CaseDetailClient({
           <div className="flex items-start gap-2.5 rounded-xl border border-teal-200 bg-teal-50/70 p-3">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-teal-600" />
             <p className="text-[11px] leading-relaxed text-teal-900">
-              Recording as <strong>{currentUser.name}</strong>
-              {currentUser.region ? ` (${currentUser.region} Regional Office)` : ""} — findings are
-              shared with the <strong>{caseItem.assigned_bureau.replaceAll("_", " ")}</strong>, which retains
-              sole authority over status changes.
+              Findings are shared with the <strong>{caseItem.assigned_bureau.replaceAll("_", " ")}</strong>,
+              which retains sole authority over status changes.
             </p>
           </div>
 
@@ -1614,9 +1590,7 @@ export function CaseDetailClient({
               placeholder="Record inspection facts: attendance verify, infrastructure condition, account heads inspected, staff statements, photographs referenced…"
               className="input"
             />
-            <p className="field-hint">
-              Minimum 20 characters for audit quality. Append-only — it cannot be edited after submission.
-            </p>
+            <p className="field-hint">Append-only — cannot be edited after submission.</p>
           </div>
 
           {uploadField}

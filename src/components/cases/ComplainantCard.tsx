@@ -32,7 +32,6 @@ export function ComplainantCard({ caseItem, profile, isCurrentCase }: Complainan
               <UserSearch className="h-3.5 w-3.5 text-brand-600" />
               Complainant identity
             </h2>
-            <p className="panel-sub">Attribution & recurrence analysis</p>
           </div>
         </div>
         <div className="px-5 py-6 text-center">
@@ -55,7 +54,6 @@ export function ComplainantCard({ caseItem, profile, isCurrentCase }: Complainan
             <UserSearch className="h-3.5 w-3.5 text-brand-600" />
             Complainant identity
           </h2>
-          <p className="panel-sub">Attribution & recurrence analysis</p>
         </div>
         {meta && !isFirstFiling && (
           <span

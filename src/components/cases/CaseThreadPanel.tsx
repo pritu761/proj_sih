@@ -74,7 +74,7 @@ export function CaseThreadPanel({
         created_at: new Date(),
       },
     ]);
-    toast.success("Note posted to the thread", "Bureaus subscribed to this record will see it on their next view.");
+    toast.success("Note posted to the thread");
     router.refresh();
   };
 
@@ -86,9 +86,6 @@ export function CaseThreadPanel({
             <MessagesSquare className="h-3.5 w-3.5 text-brand-600" />
             Inter-bureau coordination thread
           </h2>
-          <p className="panel-sub">
-            Discussion notes between Bureaus on this file · append-only
-          </p>
         </div>
         <span className="badge border-slate-200 bg-slate-50 text-slate-600">
           {comments.length} notes

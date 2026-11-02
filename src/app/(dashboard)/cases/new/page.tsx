@@ -150,8 +150,6 @@ export default function NewCasePage() {
     return d;
   }, [today, slaConfig.timeline_days]);
 
-  const selectedBureauMeta = bureaus.find((b) => b.value === assignedBureau);
-
   const checks = [
     { label: "Institution selected", done: Boolean(selectedInstId) },
     { label: "Category & SLA assigned", done: Boolean(category) },
@@ -174,16 +172,9 @@ export default function NewCasePage() {
           <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-saffron-200 bg-gradient-to-br from-saffron-100 to-saffron-50 text-saffron-600 shadow-sm sm:flex">
             <PlusCircle className="h-5 w-5" />
           </div>
-          <div>
-            <p className="eyebrow mb-1 text-amber-700">Registry intake</p>
-            <h1 className="font-display text-[25px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 sm:text-[28px]">
-              Register a new institutional complaint
-            </h1>
-            <p className="mt-1.5 max-w-2xl text-[12.5px] font-medium leading-relaxed text-slate-500">
-              The cross-bureau overlap engine evaluates every submission for duplicate or parallel
-              jurisdiction cases before it enters the registry.
-            </p>
-          </div>
+          <h1 className="font-display text-[25px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 sm:text-[28px]">
+            Register a new institutional complaint
+          </h1>
         </div>
 
         <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 shadow-sm">
@@ -294,7 +285,6 @@ export default function NewCasePage() {
                           </option>
                         ))}
                       </select>
-                      <p className="field-hint">{selectedBureauMeta?.note}</p>
                     </div>
 
                     <div>
@@ -313,7 +303,6 @@ export default function NewCasePage() {
                           </option>
                         ))}
                       </select>
-                      <p className="field-hint">Used for routing and audit attribution.</p>
                     </div>
                   </div>
                 </div>
@@ -403,9 +392,6 @@ export default function NewCasePage() {
                     <h2 className="font-display text-[13px] font-bold text-slate-900">
                       Grievance representation
                     </h2>
-                    <p className="text-[10.5px] text-slate-400">
-                      Factual particulars as received — at least 15 characters
-                    </p>
                   </div>
                 </div>
 
@@ -477,7 +463,6 @@ export default function NewCasePage() {
                   <Timer className="h-3.5 w-3.5 text-brand-600" />
                   Live SLA projection
                 </h2>
-                <p className="panel-sub">Calculated from the selected category</p>
               </div>
             </div>
 
@@ -542,7 +527,6 @@ export default function NewCasePage() {
                   <ScanLine className="h-3.5 w-3.5 text-saffron-600" />
                   Overlap scan
                 </h2>
-                <p className="panel-sub">Runs automatically on submission</p>
               </div>
               <span className="badge border-emerald-200 bg-emerald-50 text-emerald-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />

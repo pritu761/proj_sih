@@ -70,7 +70,6 @@ export function ReportsClient({ metrics }: { metrics: any }) {
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Disposal velocity</h2>
-              <p className="panel-sub">Received vs disposed · rolling six-month window</p>
             </div>
             <div className="flex items-center gap-3">
               <span className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
@@ -139,7 +138,6 @@ export function ReportsClient({ metrics }: { metrics: any }) {
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Lifecycle mix</h2>
-              <p className="panel-sub">Case status distribution</p>
             </div>
           </div>
           <div className="relative h-[190px] px-4 pt-3">
@@ -195,7 +193,6 @@ export function ReportsClient({ metrics }: { metrics: any }) {
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Bureau workload composition</h2>
-              <p className="panel-sub">Pending, in-process, and disposed split by division</p>
             </div>
             <div className="hidden items-center gap-3 sm:flex">
               {[
@@ -237,7 +234,6 @@ export function ReportsClient({ metrics }: { metrics: any }) {
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Pending ageing</h2>
-              <p className="panel-sub">Days since receipt</p>
             </div>
             <span className="badge border-rose-200 bg-rose-50 text-rose-600">SLA watch</span>
           </div>

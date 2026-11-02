@@ -23,13 +23,11 @@ export default function DashboardError({
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600">
             <AlertOctagon className="h-6 w-6" />
           </div>
-          <p className="eyebrow mt-5 text-rose-600">Runtime exception</p>
-          <h1 className="mt-1.5 font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">
+          <h1 className="mt-5 font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">
             Something interrupted this view
           </h1>
           <p className="mx-auto mt-2 max-w-sm text-[12px] leading-relaxed text-slate-500">
-            The command center could not complete the last request. Your session is intact and no
-            data was modified.
+            Your session is intact and no data was modified.
           </p>
 
           {error?.digest && (

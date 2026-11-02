@@ -19,9 +19,7 @@ export function ExportCsvButton({
       href={href}
       download={filename}
       className="btn btn-secondary"
-      onClick={() =>
-        toast.success("Preparing export", "Your CSV register will download automatically.")
-      }
+      onClick={() => toast.success("Preparing export")}
     >
       <Download className="h-3.5 w-3.5" />
       {label}

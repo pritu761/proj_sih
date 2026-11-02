@@ -92,11 +92,11 @@ const CHANNEL_ICON = {
 } as const;
 
 const PROCESS_STAGES = [
-  "Normalising channel payload",
-  "Resolving AICTE entity & aliases",
-  "Scoring entity / semantic / temporal layers",
-  "Routing to bureau and starting SLA clock",
-  "Scanning parallel bureau inquiries",
+  "Normalising payload",
+  "Resolving AICTE entity",
+  "Scoring tri-layers",
+  "Routing & SLA clock",
+  "Scanning parallel inquiries",
 ];
 
 const PRIORITY_TONE: Record<string, string> = {
@@ -307,11 +307,6 @@ export function IngestionSimulator({
               ? "Scanning incoming grievance"
               : "Inject a live multi-channel grievance"
         }
-        description={
-          step === "RESULT"
-            ? "The complaint is now in the single source of truth. Review the routing and collision verdict."
-            : "Watch trilayer matching, bureau routing and the statutory SLA clock execute in real time."
-        }
         icon={
           step === "RESULT" ? (
             <CheckCircle2 className="h-4 w-4" />
@@ -335,9 +330,7 @@ export function IngestionSimulator({
               </button>
             </>
           ) : step === "PROCESSING" ? (
-            <span className="text-[10.5px] font-semibold text-slate-500">
-              Running deterministic AICTE rules — no external AI service called.
-            </span>
+            <span />
           ) : (
             <>
               <button type="button" onClick={() => setOpen(false)} className="btn btn-secondary btn-sm">
@@ -368,7 +361,7 @@ export function IngestionSimulator({
                   {selectedInstitution?.name ?? "Institution"} · {routing.channelLabel}
                 </p>
                 <p className="mt-0.5 text-[10.5px] text-slate-400">
-                  {category} · deterministic pipeline executing
+                  {category}
                 </p>
               </div>
             </div>
@@ -419,7 +412,7 @@ export function IngestionSimulator({
                 <div>
                   <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-300">
                     <CheckCircle2 className="h-3 w-3" />
-                    Ingested into single source of truth
+                    Ingested
                   </p>
                   <p className="mt-1.5 font-mono text-[13px] font-bold text-white">
                     {result.caseCode}
@@ -744,7 +737,7 @@ export function IngestionSimulator({
                 className={darkInput}
               />
               <p className="mt-1 text-[9.5px] text-slate-500">
-                {description.trim().length} characters · minimum 30 · stored in the immutable case trail.
+                {description.trim().length} characters · minimum 30
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span
@@ -802,7 +795,7 @@ export function IngestionSimulator({
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
                   <Siren className="h-3 w-3 text-amber-400" />
-                  Live routing decision
+                  Routing decision
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   <span className="rounded border border-sky-400/30 bg-sky-400/10 px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase text-sky-300">

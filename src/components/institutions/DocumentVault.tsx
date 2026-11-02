@@ -163,7 +163,7 @@ export function DocumentVault({
       ...prev,
     ]);
     setAddOpen(false);
-    toast.success("Document archived", "The record is visible to every authorized bureau working this institution.");
+    toast.success("Document archived");
     router.refresh();
   };
 
@@ -179,7 +179,7 @@ export function DocumentVault({
       return;
     }
     setDocuments((prev) => prev.filter((d) => d.id !== doc.id));
-    toast.info("Vault record removed", "The removal is recorded in the audit ledger.");
+    toast.info("Vault record removed");
     router.refresh();
   };
 
@@ -191,7 +191,6 @@ export function DocumentVault({
             <Archive className="h-3.5 w-3.5 text-violet-600" />
             Institution document vault
           </h2>
-          <p className="panel-sub">Statutory records preserved across bureaus — single evidence shelf</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="badge border-slate-200 bg-slate-50 text-slate-600">
@@ -208,10 +207,6 @@ export function DocumentVault({
         <div className="px-5 py-10 text-center">
           <Archive className="mx-auto h-6 w-6 text-slate-300" />
           <p className="mt-2 text-[11.5px] font-semibold text-slate-500">Vault is empty</p>
-          <p className="text-[10.5px] text-slate-400">
-            Approval letters, compliance reports, notices and court orders for this institution will
-            appear here.
-          </p>
         </div>
       ) : (
         <div className="divide-y divide-slate-100">

@@ -38,18 +38,14 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
 }
 
 export function PageHeader({
-  eyebrow,
   title,
-  description,
   icon: Icon,
   tone = "blue",
   actions,
   crumbs,
   className,
 }: {
-  eyebrow?: string;
   title: string;
-  description?: string;
   icon?: LucideIcon;
   tone?: keyof typeof toneStyles;
   actions?: React.ReactNode;
@@ -60,8 +56,8 @@ export function PageHeader({
     <div className={cn("space-y-3.5", className)}>
       {crumbs && <Breadcrumbs items={crumbs} />}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="flex items-start gap-3.5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3.5">
           {Icon && (
             <div
               className={cn(
@@ -72,17 +68,9 @@ export function PageHeader({
               <Icon className="h-5 w-5" strokeWidth={2.1} aria-hidden />
             </div>
           )}
-          <div className="min-w-0">
-            {eyebrow && <p className="eyebrow mb-1">{eyebrow}</p>}
-            <h1 className="font-display text-[25px] font-extrabold leading-[1.12] tracking-[-0.025em] text-slate-950 sm:text-[28px]">
-              {title}
-            </h1>
-            {description && (
-              <p className="mt-1.5 max-w-2xl text-[12.5px] font-medium leading-relaxed text-slate-500">
-                {description}
-              </p>
-            )}
-          </div>
+          <h1 className="font-display text-[25px] font-extrabold leading-[1.12] tracking-[-0.025em] text-slate-950 sm:text-[28px]">
+            {title}
+          </h1>
         </div>
 
         {actions && (

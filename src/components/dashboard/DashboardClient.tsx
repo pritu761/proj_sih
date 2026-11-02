@@ -131,7 +131,7 @@ export function DashboardClient({
       if (!res.ok) throw new Error("Metrics endpoint unavailable");
       setMetrics(await res.json());
       setLastUpdated(new Date());
-      toast.success("Command picture refreshed", "Live registry metrics are up to date.");
+      toast.success("Metrics refreshed");
     } catch {
       toast.error(
         "Refresh failed",
@@ -472,7 +472,6 @@ export function DashboardClient({
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Bureau caseload distribution</h2>
-              <p className="panel-sub">Active workload split by processing stage · click a bar to drill down</p>
             </div>
             <div className="flex items-center gap-3">
               {[
@@ -514,7 +513,6 @@ export function DashboardClient({
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Status mix</h2>
-              <p className="panel-sub">Resolution lifecycle distribution</p>
             </div>
           </div>
           <div className="relative h-[196px] px-4 pt-3">
@@ -588,7 +586,6 @@ export function DashboardClient({
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Pending ageing</h2>
-              <p className="panel-sub">Duration since receipt</p>
             </div>
             <span className="badge border-rose-200 bg-rose-50 text-rose-600">SLA watch</span>
           </div>
@@ -613,7 +610,6 @@ export function DashboardClient({
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Disposal velocity</h2>
-              <p className="panel-sub">Received vs disposed · last 6 months</p>
             </div>
             <span className="badge border-emerald-200 bg-emerald-50 text-emerald-700">
               {disposalRate}% closed
@@ -655,7 +651,6 @@ export function DashboardClient({
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Regional volume</h2>
-              <p className="panel-sub">Jurisdictional spread</p>
             </div>
             <Link href="/institutions" className="text-[10.5px] font-bold text-brand-600 hover:text-brand-700">
               Directory →
@@ -693,7 +688,6 @@ export function DashboardClient({
               </div>
               <div>
                 <h2 className="panel-title">Requires attention</h2>
-                <p className="panel-sub">Breached, approaching, or critical cases across all bureaus</p>
               </div>
             </div>
             <Link href="/cases?sla_status=BREACHED" className="btn btn-secondary btn-sm">
@@ -705,7 +699,6 @@ export function DashboardClient({
             <div className="px-6 py-12 text-center">
               <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-400" />
               <p className="mt-2 text-[12px] font-semibold text-slate-600">No urgent cases right now</p>
-              <p className="mt-0.5 text-[10.5px] text-slate-400">Every active case is comfortably within its timeline.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -776,7 +769,6 @@ export function DashboardClient({
               </div>
               <div>
                 <h2 className="panel-title">Open collisions</h2>
-                <p className="panel-sub">Institutions with parallel bureau action</p>
               </div>
             </div>
           </div>
@@ -785,7 +777,6 @@ export function DashboardClient({
             <div className="px-6 py-12 text-center">
               <ShieldAlert className="mx-auto h-8 w-8 text-emerald-300" />
               <p className="mt-2 text-[12px] font-semibold text-slate-600">No uncoordinated overlaps</p>
-              <p className="mt-0.5 text-[10.5px] text-slate-400">Bureau actions are aligned.</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-100">

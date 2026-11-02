@@ -253,7 +253,7 @@ export function CommandPalette({ user }: { user: SessionUser }) {
         icon: Download,
         run: () => {
           window.open("/api/reports/csv", "_blank");
-          toast.success("Export started", "The grievance register is downloading now.");
+                toast.success("Export started");
         },
         tone: "border-emerald-200 bg-emerald-50 text-emerald-600",
       },

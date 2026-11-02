@@ -136,9 +136,7 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Institution profile"
         title={institution.name}
-        description={`${institution.institution_type} · ${institution.city}, ${institution.state} · AICTE ${institution.aicte_permanent_id}`}
         icon={Building2}
         tone="violet"
         crumbs={[
@@ -275,7 +273,6 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
           <div className="flex items-center justify-between">
             <div>
               <h2 className="panel-title">Bureau exposure</h2>
-              <p className="panel-sub">Cases by owning bureau</p>
             </div>
             <span className="badge border-slate-200 bg-slate-50 text-slate-600">
               {activeBureaus.length} active
@@ -340,10 +337,6 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                 <Repeat2 className="h-3.5 w-3.5 text-amber-600" />
                 Recurring complainants at this institution
               </h2>
-              <p className="panel-sub">
-                Identities with multiple filings — coordinate responses to avoid contradictory
-                orders
-              </p>
             </div>
             <span className="badge border-amber-200 bg-amber-50 text-amber-700">
               {complainantProfiles.length} with history
@@ -487,7 +480,6 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Cross-bureau activity</h2>
-              <p className="panel-sub">Consolidated audit trail</p>
             </div>
             <span className="badge border-slate-200 bg-slate-50 text-slate-600">
               {timeline.length}
@@ -562,8 +554,8 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
           {
             icon: MapPin,
             label: "Registered address",
-            value: `${institution.city} – ${institution.pincode}`,
-            note: institution.address,
+            value: institution.address,
+            note: `${institution.city} – ${institution.pincode}`,
           },
         ].map((f) => {
           const Icon = f.icon;

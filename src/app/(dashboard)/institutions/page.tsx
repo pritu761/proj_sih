@@ -94,9 +94,7 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Registry"
         title="Institution directory"
-        description="AICTE-approved institutions with a consolidated, cross-bureau grievance history."
         icon={Building2}
         tone="violet"
         actions={

@@ -151,9 +151,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Registry"
         title="Case Explorer"
-        description="Search, filter, and act on every cross-bureau institutional complaint from one auditable registry."
         icon={FolderSearch}
         tone="blue"
         actions={
@@ -176,9 +174,6 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
             </div>
             <div>
               <p className="font-display text-[12.5px] font-bold text-slate-900">Query builder</p>
-              <p className="text-[10.5px] text-slate-400">
-                Combine any filters — every view is URL-shareable
-              </p>
             </div>
           </div>
           <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-700">

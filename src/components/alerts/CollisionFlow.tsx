@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Network, ArrowRight, MousePointerClick } from "lucide-react";
+import { Network, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FlowAlert {
@@ -200,21 +200,13 @@ export function CollisionFlow({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="panel-title">Collision topology</h2>
-              <span className="badge border-slate-200 bg-slate-50 text-slate-500">
-                Live map
-              </span>
             </div>
-            <p className="panel-sub">
-              {model.institutionTotal > model.institutions.length
-                ? `${model.institutionTotal} institutions in collision - top ${model.institutions.length} plotted`
-                : `${model.institutions.length} institutions`}{" "}
-              - {model.bureauCount} bureaus - {model.totalCases} parallel cases
-            </p>
           </div>
         </div>
-        <span className="hidden items-center gap-1 text-[9.5px] font-semibold text-slate-400 sm:flex">
-          <MousePointerClick className="h-3 w-3" />
-          Select a link to inspect the case
+        <span className="hidden items-center gap-1.5 text-[10px] font-semibold text-slate-500 sm:flex">
+          {model.institutions.length}
+          {model.institutionTotal > model.institutions.length && "+"} institutions ·{" "}
+          {model.bureauCount} bureaus · {model.totalCases} cases
         </span>
       </div>
 

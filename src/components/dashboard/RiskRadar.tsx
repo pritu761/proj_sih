@@ -8,7 +8,6 @@ import {
   Flame,
   Clock3,
   ShieldAlert,
-  Sparkles,
   Info,
 } from "lucide-react";
 import { cn, getBureauShortName } from "@/lib/utils";
@@ -62,14 +61,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="panel-title">Sentinel Risk Radar</h2>
-              <span className="badge border-slate-200 bg-slate-50 text-slate-500">
-                <Sparkles className="h-2.5 w-2.5" />
-                Explainable model
-              </span>
             </div>
-            <p className="panel-sub">
-              Predicted statutory breaches across {risk.scored} active files - every score shows its drivers
-            </p>
           </div>
         </div>
 

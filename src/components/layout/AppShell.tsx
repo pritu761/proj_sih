@@ -191,13 +191,9 @@ export function AppShell({ user, openOverlapCount, unassignedQueueCount = 0, not
           </main>
 
           <footer className="mx-auto w-full max-w-[1440px] px-4 pb-6 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center justify-between gap-2 border-t border-slate-200/80 pt-4 text-[10px] font-medium text-slate-400 sm:flex-row">
-              <p>© 2026 All India Council for Technical Education · Integrated Grievance Intelligence</p>
-              <p className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                All systems operational · Data refreshed every 30 seconds
-              </p>
-            </div>
+            <p className="border-t border-slate-200/80 pt-4 text-[10px] font-medium text-slate-400">
+              © 2026 All India Council for Technical Education
+            </p>
           </footer>
         </div>
 

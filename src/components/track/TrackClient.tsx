@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  ShieldCheck,
   Search,
   ScrollText,
   Building2,
@@ -118,17 +117,12 @@ export function TrackClient() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-5 pb-16 pt-10">
         {/* Hero */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.14em] text-emerald-300">
-            <ShieldCheck className="h-3 w-3" />
-            CPGRAMS-style public disclosure
-          </span>
-          <h1 className="mt-4 font-display text-[30px] font-extrabold leading-tight tracking-[-0.03em] sm:text-[38px]">
+          <h1 className="font-display text-[30px] font-extrabold leading-tight tracking-[-0.03em] sm:text-[38px]">
             Grievance Status Tracker
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-[12.5px] leading-relaxed text-white/60">
-            Track any grievance you filed with the All India Council for Technical Education using
-            the registry number issued at submission. No account or personal data is required —
-            <span className="text-white/80"> officer identities and internal working notes are never disclosed here.</span>
+            Track any grievance you filed with AICTE using the registry number on your acknowledgement
+            slip. No account or personal data is needed.
           </p>
         </div>
 
@@ -168,7 +162,7 @@ export function TrackClient() {
 
           <div className="mt-4 border-t border-white/10 pt-3.5">
             <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-white/40">
-              Evaluation registry numbers (demo data)
+              Demo registry numbers
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
               {DEMO_REGISTRIES.map((d) => (
@@ -298,41 +292,17 @@ export function TrackClient() {
                 })}
               </div>
               <p className="mt-5 border-t border-white/10 pt-3 text-[9.5px] leading-relaxed text-white/30">
-                This is a statutory status disclosure. Inter-bureau coordination notes, officer
-                attributions and evidence documents are internal working records and are not part
-                of public disclosure. For correspondence, use the sealed contact printed on your
-                acknowledgement slip.
+                Coordination notes, officer attributions and evidence documents are internal records
+                and are not part of public disclosure.
               </p>
             </div>
           </div>
         )}
-
-        {/* What is disclosed */}
-        <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5">
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/50">
-            What this tracker discloses
-          </p>
-          <ul className="mt-3 grid gap-2.5 text-[11.5px] text-white/65 sm:grid-cols-2">
-            {[
-              "Grievance category and registry number",
-              "Current redressal status with SLA standing",
-              "Responsible AICTE wing (bureau)",
-              "Key statutory dates and hearing sitting",
-              "Citizen-safe status timeline",
-            ].map((item) => (
-              <li key={item} className="flex items-start gap-2">
-                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
       </main>
 
       <footer className="border-t border-white/10 py-5">
         <p className="mx-auto max-w-3xl px-5 text-center text-[10px] leading-relaxed text-white/35">
-          AICTE Integrated Complaint Monitoring Dashboard · Public Grievance Redress and Disclosure
-          Layer · Demonstration deployment seeded with synthetic data.
+          AICTE public grievance disclosure · Demonstration deployment seeded with synthetic data.
         </p>
       </footer>
     </div>

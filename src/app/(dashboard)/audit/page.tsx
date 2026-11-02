@@ -25,9 +25,7 @@ export default async function AuditPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Governance"
         title="System security & audit trail"
-        description="Immutable record of every login, grievance creation, status change, bureau transfer, and overlap coordination across the platform."
         icon={ScrollText}
         tone="emerald"
         actions={

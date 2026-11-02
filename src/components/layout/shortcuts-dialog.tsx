@@ -97,16 +97,12 @@ export function ShortcutsDialog({
                 <Keyboard className="h-[18px] w-[18px]" />
               </div>
               <div>
-                <p className="eyebrow mb-1">Keyboard</p>
                 <h2
                   id="shortcuts-title"
                   className="font-display text-[18px] font-extrabold tracking-tight text-slate-950"
                 >
-                  Command your workspace
+                  Keyboard shortcuts
                 </h2>
-                <p className="mt-1 text-[11.5px] font-medium text-slate-500">
-                  Move through Sentinel without lifting your hands from the keys.
-                </p>
               </div>
             </div>
             <button

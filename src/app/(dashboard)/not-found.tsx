@@ -10,13 +10,11 @@ export default function DashboardNotFound() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">
             <FileQuestion className="h-6 w-6" />
           </div>
-          <p className="eyebrow mt-5">404 · Record not found</p>
-          <h1 className="mt-1.5 font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">
+          <h1 className="mt-5 font-display text-[22px] font-extrabold tracking-[-0.03em] text-slate-950">
             This record is not in the registry
           </h1>
           <p className="mx-auto mt-2 max-w-sm text-[12px] leading-relaxed text-slate-500">
-            The case or institution you requested may have been merged, transferred, or the link is
-            incomplete.
+            The case or institution may have been merged, transferred, or the link is incomplete.
           </p>
 
           <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">

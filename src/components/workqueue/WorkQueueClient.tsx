@@ -305,9 +305,7 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Officer workbench"
-        title="Officer Work Queue"
-        description="Personal allocation plus the unassigned bureau backlog — assignable files land here the moment they are routed."
+        title="Work Queue"
         icon={ClipboardList}
         actions={
           <span className="badge border-brand-200 bg-brand-50 text-brand-700">
@@ -350,9 +348,6 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
               <Inbox className="h-3.5 w-3.5 text-amber-600" />
               Unassigned backlog
             </h2>
-            <p className="panel-sub">
-              Open files without a named officer{currentUser.bureau === "ALL" ? " across all bureaus" : ` in ${currentUser.bureau.replaceAll("_", " ")}`}
-            </p>
           </div>
           <span className="badge border-amber-200 bg-amber-50 text-amber-700">
             {unassigned.length} files
@@ -360,7 +355,7 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
         </div>
         <div className="space-y-3 p-4">
           {unassigned.length === 0
-            ? emptyState("Backlog is clear", "Every open file in your scope has an allocated officer.")
+            ? emptyState("Backlog is clear", "Every open file in scope has an allocated officer.")
             : unassigned.map((item) => renderCard(item, true))}
         </div>
       </div>
@@ -373,7 +368,6 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
               <ClipboardList className="h-3.5 w-3.5 text-brand-600" />
               Your queue
             </h2>
-            <p className="panel-sub">Files assigned to you directly, most urgent first</p>
           </div>
           <span className="badge border-brand-200 bg-brand-50 text-brand-700">
             {mine.length} open
@@ -383,7 +377,7 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
           {mine.length === 0
             ? emptyState(
                 "No files assigned to you",
-                "Use “Take file” above or ask the bureau desk to route work into your queue."
+                "Take a file from the backlog above."
               )
             : mine.map((item) => renderCard(item, false))}
         </div>
@@ -432,9 +426,6 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
                 </option>
               ))}
             </select>
-            <p className="field-hint">
-              The server verifies bureau jurisdiction; cross-bureau assignments are rejected.
-            </p>
           </div>
 
           <div>

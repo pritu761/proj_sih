@@ -256,9 +256,7 @@ export function UsersClient({ initialUsers, currentUser }: UsersClientProps) {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Administration"
-        title="Team & Access Management"
-        description="Register officers, post them to bureaus or regional offices, and suspend access — every change is audit-logged."
+        title="Team & Access"
         icon={UsersRound}
         actions={
           <button onClick={openCreate} className="btn btn-primary btn-sm">
@@ -288,9 +286,6 @@ export function UsersClient({ initialUsers, currentUser }: UsersClientProps) {
               <ShieldCheck className="h-3.5 w-3.5 text-brand-600" />
               Registered officers & administrators
             </h2>
-            <p className="panel-sub">
-              Passwords are bcrypt-hashed; the demo logins below are pre-seeded for evaluation
-            </p>
           </div>
           <span className="badge border-slate-200 bg-slate-50 text-slate-600">{users.length} accounts</span>
         </div>
@@ -483,9 +478,6 @@ export function UsersClient({ initialUsers, currentUser }: UsersClientProps) {
               placeholder="Minimum 8 chars, letter + number/symbol"
               className="input font-mono"
             />
-            <p className="field-hint">
-              Stored bcrypt-hashed. Share it over an offline channel and force a rotation later.
-            </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -709,9 +701,6 @@ export function UsersClient({ initialUsers, currentUser }: UsersClientProps) {
               placeholder="Minimum 8 chars, letter + number/symbol"
               className="input font-mono"
             />
-            <p className="field-hint">
-              The existing sessions of the officer stay valid until they re-authenticate.
-            </p>
           </div>
 
           {actionError && (

@@ -343,24 +343,6 @@
   color: var(--text-primary);
 }
 
-.panel-sub {
-  margin-top: 2px;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
 .hairline {
   height: 1px;
   background: linear-gradient(90deg, var(--border-subtle), transparent);

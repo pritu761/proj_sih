@@ -278,16 +278,9 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
           <div className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-100 to-rose-50 text-rose-600 shadow-sm sm:flex">
             <Radar className="h-5 w-5" />
           </div>
-          <div>
-            <p className="eyebrow mb-1 text-rose-600">Collision control</p>
-            <h1 className="font-display text-[25px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 sm:text-[28px]">
-              Overlap Alerts Hub
-            </h1>
-            <p className="mt-1.5 max-w-2xl text-[12.5px] font-medium leading-relaxed text-slate-500">
-              Cross-bureau collision detection and coordination centre. Assign a lead bureau before
-              duplicate action is taken.
-            </p>
-          </div>
+          <h1 className="font-display text-[25px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 sm:text-[28px]">
+            Overlap Alerts Hub
+          </h1>
         </div>
 
         <div className="flex items-center gap-2">
@@ -851,9 +844,6 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                   );
                 })}
               </div>
-              <p className="field-hint">
-                Recommended master is the oldest live file. All other files are linked as duplicates.
-              </p>
             </fieldset>
           )}
 
@@ -880,25 +870,14 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
               }
               className="input"
             />
-            <p className="field-hint">
-              {modalMode === "COORDINATE"
-                ? "Written to both case timelines and the audit ledger."
-                : modalMode === "MERGE"
-                  ? "The master reference and merge note are written to every case timeline and the SHA-256 audit ledger."
-                  : "Documented for audit; the alert leaves the active queue."}
-            </p>
           </div>
 
-          <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-[10px] leading-relaxed text-slate-500">
-            <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-saffron-500" />
-            <p>
-              {modalMode === "COORDINATE"
-                ? "Both bureaus will see the joint directive immediately in the case history."
-                : modalMode === "MERGE"
-                  ? "Merging does not close the inquiry. It prevents two bureaus from issuing contradictory orders to the institution."
-                  : "Dismissals are reversible only by the Competent Authority."}
-            </p>
-          </div>
+          {modalMode === "MERGE" && (
+            <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-[10px] leading-relaxed text-slate-500">
+              <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-saffron-500" />
+              <p>Merging links duplicates under the master docket — it does not close the inquiry.</p>
+            </div>
+          )}
 
           {errorMsg && (
             <p

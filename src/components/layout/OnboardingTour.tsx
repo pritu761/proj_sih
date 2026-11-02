@@ -13,31 +13,31 @@ interface TourStep {
 const STEPS: TourStep[] = [
   {
     title: "Welcome to the AICTE Sentinel workspace",
-    body: "This console is the single source of truth for every grievance routed across AICTE bureaus and regional offices. Let's take a quick tour of the tools you'll use daily.",
+    body: "Bureaus, regional offices and statutory SLA clocks in one console.",
   },
   {
     title: "Command centre",
-    body: "The Dashboard surfaces the live KPI picture, the SLA countdown, and cross-bureau collision alerts that need your attention today.",
+    body: "Live KPIs, SLA countdown and collision alerts that need attention today.",
     target: "a[href='/']",
   },
   {
     title: "Officer Work Queue",
-    body: "Files assigned to you appear here, alongside the bureau backlog awaiting allocation. Pick up unassigned files with one click.",
+    body: "Your assigned files plus the unassigned backlog — pick up files in one click.",
     target: "a[href='/workqueue']",
   },
   {
     title: "Hearing Calendar",
-    body: "Standing Grievance Committee sittings across bureaus. Reschedule a hearing and the case workspace, public tracker and weekly digest all stay in sync.",
+    body: "Committee sittings across bureaus. Reschedule from here and the tracker stays in sync.",
     target: "a[href='/calendar']",
   },
   {
     title: "Case Explorer & Institutions",
-    body: "Drill into any grievance, its verification trail, document vault, complainant history and inter-bureau coordination thread.",
+    body: "Every grievance with its verification trail, document vault and coordination thread.",
     target: "a[href='/cases']",
   },
   {
     title: "Public tracker & weekly digest",
-    body: "Citizens track grievances at /track without sign-in; the Reports workspace ships a weekly executive PDF digest with the bureau scorecard.",
+    body: "Citizens track grievances at /track; Reports ships the weekly digest and bureau scorecard.",
     target: "a[href='/reports']",
   },
 ];

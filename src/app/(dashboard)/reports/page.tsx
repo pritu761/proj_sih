@@ -95,9 +95,7 @@ export default async function ReportsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Insight"
         title="Reports & Analytics"
-        description="Performance metrics, disposal velocity, and statutory compliance across every AICTE bureau and regional office."
         icon={ChartSpline}
         tone="blue"
         actions={
@@ -212,9 +210,6 @@ export default async function ReportsPage() {
         <div className="panel-head">
           <div>
             <h2 className="panel-title">Bureau scorecard</h2>
-            <p className="panel-sub">
-              Statutory discipline grading — blends on-time disposals with open breach load
-            </p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-700">
             <Gauge className="h-3 w-3" />
@@ -303,7 +298,6 @@ export default async function ReportsPage() {
         <div className="panel-head">
           <div>
             <h2 className="panel-title">Bureau disposal velocity & caseload</h2>
-            <p className="panel-sub">Comparative breakdown across all AICTE divisions</p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-500">
             <Gauge className="h-3 w-3" />
@@ -367,7 +361,6 @@ export default async function ReportsPage() {
           <div className="panel-head">
             <div>
               <h2 className="panel-title">Regional office complaint volume</h2>
-              <p className="panel-sub">Jurisdictional workload across all AICTE regions</p>
             </div>
             <span className="badge border-slate-200 bg-slate-50 text-slate-600">
               {metrics.regionCases.reduce((sum: number, r: any) => sum + r.cases, 0)} cases
@@ -384,9 +377,8 @@ export default async function ReportsPage() {
               <h2 className="panel-title">Export centre</h2>
               <Timer className="h-3.5 w-3.5 text-slate-400" />
             </div>
-            <p className="panel-sub mb-3">Downloadable statutory extracts</p>
 
-            <div className="space-y-2">
+            <div className="mt-3 space-y-2">
               <a
                 href="/api/reports/csv"
                 download="aicte_complaints.csv"
