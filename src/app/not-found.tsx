@@ -14,11 +14,11 @@ export default function RootNotFound() {
           AICTE <span className="text-saffron-400">Sentinel</span>
         </p>
 
-        <div className="mt-8 rounded-[26px] border border-white/10 bg-white/[0.045] p-7 backdrop-blur-sm sm:p-9">
+        <div className="mt-8 rounded-[20px] border border-white/10 bg-white/[0.045] p-7 backdrop-blur-sm sm:p-9">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.06] text-saffron-300">
             <Compass className="h-5 w-5" />
           </div>
-          <p className="mt-4 text-[9.5px] font-bold uppercase tracking-[0.16em] text-slate-500">
+          <p className="mt-4 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-500">
             404 · Off the grid
           </p>
           <h1 className="mt-1.5 font-display text-[24px] font-extrabold leading-tight tracking-[-0.03em] text-white">
@@ -35,7 +35,7 @@ export default function RootNotFound() {
           </Link>
         </div>
 
-        <p className="mt-6 text-[9.5px] font-medium text-slate-600">
+        <p className="mt-6 text-[10.5px] font-medium text-slate-600">
           All India Council for Technical Education · Integrated Grievance Intelligence
         </p>
       </div>

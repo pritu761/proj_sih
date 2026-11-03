@@ -231,7 +231,7 @@ export function Sidebar({
                   Sentinel
                 </span>
               </div>
-              <p className="mt-0.5 whitespace-nowrap text-[9.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              <p className="mt-0.5 whitespace-nowrap text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                 Complaint Intelligence
               </p>
             </div>
@@ -257,13 +257,13 @@ export function Sidebar({
           <div className={cn("flex items-center gap-3", collapsed && "lg:justify-center")}>
             <div
               title={collapsed ? `${user.name} · ${user.designation || bureauLabel}` : undefined}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-[11px] font-extrabold text-white shadow-inner"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-[11px] font-bold text-white shadow-inner"
             >
               {initials}
             </div>
             <div className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}>
               <p className="truncate text-[12px] font-bold text-white">{user.name}</p>
-              <p className="mt-0.5 truncate text-[10px] font-medium text-slate-400">
+              <p className="mt-0.5 truncate text-[10.5px] font-medium text-slate-400">
                 {user.designation || bureauLabel}
               </p>
             </div>
@@ -274,11 +274,11 @@ export function Sidebar({
               collapsed && "lg:hidden"
             )}
           >
-            <span className="inline-flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-[0.08em] text-emerald-400">
+            <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-emerald-400">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
               Secure session
             </span>
-            <span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-300">
+            <span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-300">
               {user.role === "COMPETENT_AUTHORITY" ? "Authority" : user.role.split("_")[0]}
             </span>
           </div>
@@ -295,7 +295,7 @@ export function Sidebar({
             <div key={group.label}>
               <p
                 className={cn(
-                  "mb-2 px-3 text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400/90",
+                  "mb-2 px-3 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-400/90",
                   collapsed && "lg:hidden"
                 )}
               >
@@ -351,7 +351,7 @@ export function Sidebar({
                         )}
                       >
                         {item.badge !== undefined && item.badge > 0 && (
-                          <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500/90 px-1 text-[9.5px] font-extrabold text-white shadow-[0_0_12px_rgba(244,63,94,0.5)]">
+                          <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-rose-500/90 px-1 text-[10.5px] font-bold text-white shadow-[0_0_12px_rgba(244,63,94,0.5)]">
                             {item.badge}
                           </span>
                         )}
@@ -389,7 +389,7 @@ export function Sidebar({
               <Sparkles className="h-3.5 w-3.5 text-saffron-400" />
               <p className="text-[10.5px] font-bold text-slate-200">Overlap engine active</p>
             </div>
-            <p className="mt-1.5 text-[10px] leading-relaxed text-slate-400">
+            <p className="mt-1.5 text-[10.5px] leading-relaxed text-slate-400">
               Trilayer matching across {openOverlapCount > 0 ? `${openOverlapCount} open alert${openOverlapCount === 1 ? "" : "s"}` : "all bureaus"}.
             </p>
             <div className="mt-2.5 flex items-center gap-1.5">
@@ -422,7 +422,7 @@ export function Sidebar({
               collapsed && "lg:hidden"
             )}
           >
-            <div className="flex min-w-0 items-center gap-2 text-[10px] font-medium text-slate-400">
+            <div className="flex min-w-0 items-center gap-2 text-[10.5px] font-medium text-slate-400">
               <LifeBuoy className="h-3.5 w-3.5 shrink-0" />
               <span className="truncate">support@aicte-india.org</span>
             </div>
@@ -438,7 +438,7 @@ export function Sidebar({
                   <Keyboard className="h-3.5 w-3.5" />
                 </button>
               )}
-              <span className="flex items-center gap-1 text-[9.5px] font-bold text-emerald-400">
+              <span className="flex items-center gap-1 text-[10.5px] font-bold text-emerald-400">
                 <BadgeCheck className="h-3 w-3" />
                 v2.4
               </span>

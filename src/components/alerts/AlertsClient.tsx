@@ -284,7 +284,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[10.5px] font-bold text-emerald-700">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
@@ -350,18 +350,18 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                   <Icon className="h-4 w-4" />
                 </div>
                 {s.alert && (
-                  <span className="rounded-full bg-rose-600 px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-white">
+                  <span className="rounded-full bg-rose-600 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
                     Act
                   </span>
                 )}
               </div>
-              <p className="mt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-slate-400">
+              <p className="mt-3 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                 {s.label}
               </p>
               <p className="mt-1 font-display text-[26px] font-extrabold leading-none tracking-[-0.03em] text-slate-950">
                 {s.value}
               </p>
-              <p className="mt-1.5 text-[10px] font-medium text-slate-400">{s.note}</p>
+              <p className="mt-1.5 text-[10.5px] font-medium text-slate-400">{s.note}</p>
             </button>
           );
         })}
@@ -433,7 +433,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                 {tab.label}
                 <span
                   className={cn(
-                    "rounded-full px-1.5 py-0.5 text-[9px] font-extrabold",
+                    "rounded-full px-1.5 py-0.5 text-[10.5px] font-bold",
                     active
                       ? tab.key === "OPEN"
                         ? "bg-rose-100 text-rose-700"
@@ -454,7 +454,6 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
         <EmptyState
           icon={CheckCircle2}
           title={`No ${statusFilter === "ALL" ? "" : statusFilter.toLowerCase() + " "}overlap alerts`}
-          description="All multi-bureau inquiries are coordinated, dismissed, or no collisions currently exist."
           action={
             <button onClick={() => setStatusFilter("ALL")} className="btn btn-secondary btn-sm">
               View all alerts
@@ -487,7 +486,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span
                         className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide",
+                          "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide",
                           meta.pill
                         )}
                       >
@@ -495,17 +494,17 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                         {meta.label}
                       </span>
                       <ConfidencePill confidence={alert.confidence} />
-                      <span className="inline-flex items-center gap-1 text-[9.5px] font-medium text-slate-400">
+                      <span className="inline-flex items-center gap-1 text-[10.5px] font-medium text-slate-400">
                         <Clock3 className="h-2.5 w-2.5" />
                         {formatDateTime(alert.detected_at)}
                       </span>
-                      <span className="hidden font-mono text-[9px] text-slate-500 sm:inline">
+                      <span className="hidden font-mono text-[10.5px] text-slate-500 sm:inline">
                         {alert.id}
                       </span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                      <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                         Bureaus
                       </span>
                       {alert.bureaus_involved?.map((b: string) => (
@@ -517,7 +516,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                   {/* Body */}
                   <div className="mt-3.5 grid grid-cols-1 gap-4 lg:grid-cols-2">
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                         Institution
                       </p>
                       <Link
@@ -527,7 +526,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                         <Building2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
                         {alert.institution?.name || "Target Technical Institution"}
                       </Link>
-                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-5 text-[10px] text-slate-500">
+                      <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-5 text-[10.5px] text-slate-500">
                         <span className="inline-flex items-center gap-1">
                           <MapPin className="h-2.5 w-2.5 text-slate-400" />
                           {alert.institution?.city}, {alert.institution?.state}
@@ -539,7 +538,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                     </div>
 
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                         Colliding cases
                       </p>
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -558,7 +557,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                             <Link
                               key={cid}
                               href={`/cases/${linkedCase.id}`}
-                              className="group inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-white px-2 py-1 font-mono text-[10px] font-bold text-brand-700 transition-colors hover:border-brand-400 hover:bg-brand-50"
+                              className="group inline-flex items-center gap-1.5 rounded-lg border border-brand-200 bg-white px-2 py-1 font-mono text-[10.5px] font-bold text-brand-700 transition-colors hover:border-brand-400 hover:bg-brand-50"
                             >
                               {label}
                               <ArrowUpRight className="h-2.5 w-2.5 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -566,7 +565,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                           ) : (
                             <span
                               key={cid}
-                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[10px] font-bold text-slate-500"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-[10.5px] font-bold text-slate-500"
                             >
                               {label}
                             </span>
@@ -578,7 +577,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
 
                   {/* Match rationale */}
                   <div className="mt-3.5 rounded-xl border border-slate-200/70 bg-white/70 p-3">
-                    <p className="mb-1.5 flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                    <p className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                       <GitCompareArrows className="h-3 w-3" />
                       Match rationale
                     </p>
@@ -605,14 +604,14 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
 
                   {alert.master_case_id && (
                     <div className="dark-surface mt-2.5 rounded-xl border border-emerald-300/40 bg-emerald-950/90 p-3 text-emerald-100">
-                      <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-emerald-300">
+                      <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
                         <Crown className="h-3 w-3" />
                         Master docket established
                       </p>
                       <p className="mt-1 font-mono text-[10.5px] font-bold text-white">
                         {alert.master_case_id}
                       </p>
-                      <p className="mt-0.5 text-[10px] leading-relaxed text-emerald-100/70">
+                      <p className="mt-0.5 text-[10.5px] leading-relaxed text-emerald-100/70">
                         {alert.merged_case_ids?.length ?? 0} parallel file
                         {(alert.merged_case_ids?.length ?? 0) === 1 ? "" : "s"} linked as duplicates ·{" "}
                         {alert.merged_by ?? "AICTE officer"}
@@ -622,7 +621,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
 
                   {alert.coordination_note && (
                     <div className="mt-2.5 rounded-xl border border-emerald-200 bg-emerald-50/80 p-3">
-                      <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-emerald-700">
+                      <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-emerald-700">
                         <CheckCircle2 className="h-3 w-3" /> Coordination directives
                       </p>
                       <p className="mt-1 text-[10.5px] leading-relaxed text-emerald-900">
@@ -633,7 +632,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
 
                   {alert.dismissed_reason && (
                     <div className="mt-2.5 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
-                      <p className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-500">
+                      <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         <XCircle className="h-3 w-3" /> Dismissal reason
                       </p>
                       <p className="mt-1 text-[10.5px] leading-relaxed text-slate-600">
@@ -647,7 +646,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                     <div className="mt-3.5 flex flex-col gap-2 border-t border-white/70 pt-3 sm:flex-row sm:items-center sm:justify-between">
                       <p
                         className={cn(
-                          "flex items-center gap-1.5 text-[9.5px] font-medium",
+                          "flex items-center gap-1.5 text-[10.5px] font-medium",
                           alert.status === "ACKNOWLEDGED" ? "text-sky-700/80" : "text-rose-700/80"
                         )}
                       >
@@ -783,7 +782,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                 {activeAlert.bureaus_involved?.map((b: string) => (
                   <BureauPill key={b} bureau={b} />
                 ))}
-                <span className="font-mono text-[9.5px] text-slate-400">
+                <span className="font-mono text-[10.5px] text-slate-400">
                   {activeAlert.case_ids?.join("  ·  ")}
                 </span>
               </div>
@@ -823,13 +822,13 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
                             {item.case_id}
                           </span>
                           {isRecommended && (
-                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-amber-700">
+                            <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-amber-700">
                               Recommended · oldest
                             </span>
                           )}
                           <BureauPill bureau={item.assigned_bureau} />
                         </span>
-                        <span className="mt-0.5 block text-[10px] text-slate-500">
+                        <span className="mt-0.5 block text-[10.5px] text-slate-500">
                           {item.category}
                           {item.date_received
                             ? ` · received ${new Date(item.date_received).toLocaleDateString("en-IN", {
@@ -873,7 +872,7 @@ export function AlertsClient({ initialAlerts, currentUser: _currentUser }: Alert
           </div>
 
           {modalMode === "MERGE" && (
-            <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-[10px] leading-relaxed text-slate-500">
+            <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-[10.5px] leading-relaxed text-slate-500">
               <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-saffron-500" />
               <p>Merging links duplicates under the master docket — it does not close the inquiry.</p>
             </div>

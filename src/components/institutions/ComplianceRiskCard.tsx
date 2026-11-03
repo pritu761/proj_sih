@@ -42,7 +42,7 @@ export function ComplianceRiskCard({
 
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+          <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-500">
             <Scale className="h-3 w-3 text-amber-400" />
             Compliance & enforcement
           </p>
@@ -50,7 +50,7 @@ export function ComplianceRiskCard({
             Institutional APH risk
           </h2>
         </div>
-        <span className="rounded-md border border-white/10 bg-white/[0.03] px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-slate-400">
+        <span className="rounded-md border border-white/10 bg-white/[0.03] px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">
           APH 2026-27
         </span>
       </div>
@@ -76,19 +76,19 @@ export function ComplianceRiskCard({
             <span className="font-display text-[18px] font-extrabold leading-none text-white">
               {assessment.score}
             </span>
-            <span className="mt-0.5 text-[6.5px] font-bold uppercase tracking-[0.1em] text-slate-500">
+            <span className="mt-0.5 text-[6.5px] font-semibold uppercase tracking-[0.1em] text-slate-500">
               /100
             </span>
           </div>
         </div>
         <div className="min-w-0">
-          <span className={cn("inline-flex rounded border px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide", meta.border, meta.wash, meta.text)}>
+          <span className={cn("inline-flex rounded border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide", meta.border, meta.wash, meta.text)}>
             {assessment.band}
           </span>
-          <p className="mt-1 text-[9.5px] font-semibold leading-snug text-slate-300">
+          <p className="mt-1 text-[10.5px] font-semibold leading-snug text-slate-300">
             {assessment.eoa.flag ? "EoA scrutiny recommended" : "EoA renewal may proceed"}
           </p>
-          <p className="mt-0.5 text-[8.5px] text-slate-500">
+          <p className="mt-0.5 text-[10.5px] text-slate-500">
             {assessment.activeCases} active · {assessment.slaBreaches} breached · {assessment.openOverlaps} collision
             {assessment.openOverlaps === 1 ? "" : "s"}
           </p>
@@ -115,7 +115,7 @@ export function ComplianceRiskCard({
               )}
             >
               <Icon className={cn("mx-auto h-3 w-3", flag.active ? (flag.key === "SCN" ? "text-rose-300" : "text-amber-300") : "text-emerald-300")} />
-              <p className={cn("mt-0.5 text-[8px] font-extrabold uppercase tracking-wide", flag.active ? "text-slate-200" : "text-emerald-200")}>
+              <p className={cn("mt-0.5 text-[10.5px] font-semibold uppercase tracking-wide", flag.active ? "text-slate-200" : "text-emerald-200")}>
                 {flag.label}
               </p>
               <p className="text-[7.5px] font-semibold text-slate-500">
@@ -129,12 +129,12 @@ export function ComplianceRiskCard({
       <div className="mt-3 space-y-1.5 border-t border-white/10 pt-2.5">
         {assessment.drivers.slice(0, 3).map((driver) => (
           <div key={driver.label} className="flex items-center justify-between gap-2">
-            <span className="truncate text-[9px] font-medium text-slate-400">{driver.label}</span>
-            <span className="font-mono text-[8.5px] font-bold text-amber-300">+{driver.points}</span>
+            <span className="truncate text-[10.5px] font-medium text-slate-400">{driver.label}</span>
+            <span className="font-mono text-[10.5px] font-bold text-amber-300">+{driver.points}</span>
           </div>
         ))}
         {assessment.drivers.length === 0 && (
-          <p className="flex items-center gap-1 text-[9px] text-emerald-300">
+          <p className="flex items-center gap-1 text-[10.5px] text-emerald-300">
             <CheckCircle2 className="h-3 w-3" />
             No adverse compliance signal.
           </p>
@@ -143,11 +143,11 @@ export function ComplianceRiskCard({
 
       {assessment.evc.flag && (
         <div className="mt-2.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.05] px-2 py-1.5">
-          <p className="flex items-center gap-1 text-[8px] font-extrabold uppercase tracking-[0.1em] text-amber-300">
+          <p className="flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-amber-300">
             <AlertTriangle className="h-2.5 w-2.5" />
             EVC scope
           </p>
-          <p className="mt-0.5 line-clamp-2 text-[8.5px] leading-relaxed text-amber-100/70">
+          <p className="mt-0.5 line-clamp-2 text-[10.5px] leading-relaxed text-amber-100/70">
             {assessment.evc.scope[0]}
           </p>
         </div>
@@ -157,7 +157,7 @@ export function ComplianceRiskCard({
         {showCauseCaseId ? (
           <Link
             href={`/cases/${showCauseCaseId}`}
-            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2 py-1.5 text-[9px] font-extrabold uppercase tracking-wide text-rose-200 transition-colors hover:bg-rose-500/20 hover:text-white"
+            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2 py-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-rose-200 transition-colors hover:bg-rose-500/20 hover:text-white"
           >
             <Gavel className="h-3 w-3" />
             Open enforcement file
@@ -166,7 +166,7 @@ export function ComplianceRiskCard({
         ) : (
           <Link
             href={`/cases?q=${encodeURIComponent(assessment.aictePermanentId)}`}
-            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5 text-[9px] font-bold text-slate-300 transition-colors hover:border-white/20 hover:text-white"
+            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5 text-[10.5px] font-bold text-slate-300 transition-colors hover:border-white/20 hover:text-white"
           >
             <Building2 className="h-3 w-3" />
             View all files

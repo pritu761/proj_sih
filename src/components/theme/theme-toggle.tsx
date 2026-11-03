@@ -84,7 +84,7 @@ export function ThemeToggle({ className, withLabel = false }: ThemeToggleProps) 
       </button>
 
       {withLabel && (
-        <span className="hidden text-[10.5px] font-bold uppercase tracking-[0.12em] text-slate-400 lg:inline">
+        <span className="hidden text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400 lg:inline">
           {isDark ? "Dark" : "Light"}
         </span>
       )}

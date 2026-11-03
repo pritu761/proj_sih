@@ -117,26 +117,26 @@ export function EnforcementPanel({
               <Gavel className="h-4 w-4" />
             </div>
             <div>
-              <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-slate-500">
+              <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-500">
                 <Scale className="h-3 w-3 text-amber-400" />
                 Regulatory enforcement · APH 2026-27
               </p>
               <h2 className="mt-0.5 font-display text-[14px] font-extrabold tracking-tight text-white">
                 Institutional compliance risk & statutory action
               </h2>
-              <p className="mt-0.5 text-[10px] font-medium text-slate-500">
+              <p className="mt-0.5 text-[10.5px] font-medium text-slate-500">
                 Deterministic engine · every point traceable · audited on issue
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className={cn("rounded-md border px-2 py-1 text-[8.5px] font-extrabold uppercase tracking-wide", meta.border, meta.wash, meta.text)}>
+            <span className={cn("rounded-md border px-2 py-1 text-[10.5px] font-semibold uppercase tracking-wide", meta.border, meta.wash, meta.text)}>
               {assessment.bandLabel}
             </span>
             <Link
               href={`/institutions/${assessment.institutionId}`}
-              className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[9px] font-bold text-slate-300 transition-colors hover:border-white/20 hover:text-white"
+              className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10.5px] font-bold text-slate-300 transition-colors hover:border-white/20 hover:text-white"
             >
               <Building2 className="h-2.5 w-2.5" />
               Institution record
@@ -169,19 +169,19 @@ export function EnforcementPanel({
                 <span className="font-display text-[22px] font-extrabold leading-none tracking-tight text-white">
                   {assessment.score}
                 </span>
-                <span className="mt-0.5 text-[7px] font-bold uppercase tracking-[0.12em] text-slate-500">
+                <span className="mt-0.5 text-[7px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                   / 100 risk
                 </span>
               </div>
             </div>
             <div className="min-w-0">
-              <p className={cn("text-[10px] font-extrabold uppercase tracking-[0.12em]", meta.text)}>
+              <p className={cn("text-[10.5px] font-semibold uppercase tracking-[0.12em]", meta.text)}>
                 {assessment.band}
               </p>
-              <p className="mt-1 text-[9.5px] leading-snug text-slate-400">
+              <p className="mt-1 text-[10.5px] leading-snug text-slate-400">
                 {assessment.activeCases} active · {assessment.slaBreaches} breached
               </p>
-              <p className="mt-0.5 text-[9.5px] leading-snug text-slate-400">
+              <p className="mt-0.5 text-[10.5px] leading-snug text-slate-400">
                 {assessment.openOverlaps} collision
                 {assessment.openOverlaps === 1 ? "" : "s"} · {assessment.activeBureaus.length} bureau
                 {assessment.activeBureaus.length === 1 ? "" : "s"}
@@ -190,22 +190,22 @@ export function EnforcementPanel({
           </div>
 
           <div className="mt-3.5 space-y-2 border-t border-white/10 pt-3">
-            <p className="text-[8px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-500">
               Score drivers
             </p>
             {assessment.drivers.slice(0, 4).map((driver) => (
               <div key={driver.label} className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-[9.5px] font-bold text-slate-300">{driver.label}</p>
-                  <p className="truncate text-[8.5px] text-slate-500">{driver.detail}</p>
+                  <p className="truncate text-[10.5px] font-bold text-slate-300">{driver.label}</p>
+                  <p className="truncate text-[10.5px] text-slate-500">{driver.detail}</p>
                 </div>
-                <span className="shrink-0 font-mono text-[9px] font-extrabold text-amber-300">
+                <span className="shrink-0 font-mono text-[10.5px] font-bold text-amber-300">
                   +{driver.points}
                 </span>
               </div>
             ))}
             {assessment.drivers.length === 0 && (
-              <p className="text-[9px] italic text-slate-500">No adverse signal on record.</p>
+              <p className="text-[10.5px] italic text-slate-500">No adverse signal on record.</p>
             )}
           </div>
         </div>
@@ -228,7 +228,7 @@ export function EnforcementPanel({
                   )}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={cn("text-[8px] font-extrabold uppercase tracking-[0.1em]", flag.active ? "text-amber-300" : "text-emerald-300")}>
+                    <span className={cn("text-[10.5px] font-semibold uppercase tracking-[0.1em]", flag.active ? "text-amber-300" : "text-emerald-300")}>
                       {flagMeta.label}
                     </span>
                     {flag.active ? (
@@ -237,11 +237,11 @@ export function EnforcementPanel({
                       <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                     )}
                   </div>
-                  <p className={cn("mt-1 flex items-center gap-1 text-[10px] font-bold leading-snug", flag.active ? "text-white" : "text-emerald-200")}>
+                  <p className={cn("mt-1 flex items-center gap-1 text-[10.5px] font-bold leading-snug", flag.active ? "text-white" : "text-emerald-200")}>
                     <Icon className="h-3 w-3 shrink-0" />
                     {flag.active ? flagMeta.activeLabel : flagMeta.inactiveLabel}
                   </p>
-                  <p className="mt-0.5 line-clamp-2 text-[8.5px] leading-snug text-slate-500">
+                  <p className="mt-0.5 line-clamp-2 text-[10.5px] leading-snug text-slate-500">
                     {flag.headline}
                   </p>
                 </div>
@@ -250,7 +250,7 @@ export function EnforcementPanel({
           </div>
 
           <div className="mt-3">
-            <p className="flex items-center gap-1.5 text-[8px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+            <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-500">
               <ShieldAlert className="h-3 w-3 text-rose-400" />
               APH clauses engaged by this category
             </p>
@@ -258,12 +258,12 @@ export function EnforcementPanel({
               {clauses.map((clause) => (
                 <div key={clause.code} className="rounded-lg border border-white/10 bg-white/[0.025] px-2.5 py-2">
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 font-mono text-[8px] font-bold text-rose-300">
+                    <span className="rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-rose-300">
                       {clause.code}
                     </span>
-                    <span className="text-[9px] font-bold text-slate-300">{clause.title}</span>
+                    <span className="text-[10.5px] font-bold text-slate-300">{clause.title}</span>
                   </div>
-                  <p className="mt-1 line-clamp-2 text-[8.5px] leading-relaxed text-slate-500">
+                  <p className="mt-1 line-clamp-2 text-[10.5px] leading-relaxed text-slate-500">
                     {clause.requirement}
                   </p>
                 </div>
@@ -273,13 +273,13 @@ export function EnforcementPanel({
 
           {assessment.eoa.flag && assessment.eoa.conditions.length > 0 && (
             <div className="mt-3 rounded-lg border border-amber-400/25 bg-amber-400/[0.06] px-2.5 py-2">
-              <p className="flex items-center gap-1.5 text-[8px] font-extrabold uppercase tracking-[0.12em] text-amber-300">
+              <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-amber-300">
                 <BadgeCheck className="h-3 w-3" />
                 EoA conditions proposed
               </p>
               <ul className="mt-1 space-y-0.5">
                 {assessment.eoa.conditions.slice(0, 3).map((condition) => (
-                  <li key={condition} className="flex items-start gap-1.5 text-[8.5px] leading-relaxed text-amber-100/70">
+                  <li key={condition} className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-amber-100/70">
                     <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-amber-400" />
                     {condition}
                   </li>
@@ -291,7 +291,7 @@ export function EnforcementPanel({
       </div>
 
       <div className="flex flex-col gap-2 border-t border-white/10 bg-white/[0.02] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="flex items-start gap-1.5 text-[9px] leading-relaxed text-slate-500">
+        <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-slate-500">
           <Lock className="mt-0.5 h-2.5 w-2.5 shrink-0" />
           Notice is bound to the case record with a SHA-256 digest. Signatory: Competent Authority, AICTE.
         </p>
@@ -299,20 +299,20 @@ export function EnforcementPanel({
           {assessment.showCauseEligible ? (
             <a
               href={`/api/notices/show-cause/${caseItem.id}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/15 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-rose-200 transition-colors hover:border-rose-400 hover:bg-rose-500/25 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/15 px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-rose-200 transition-colors hover:border-rose-400 hover:bg-rose-500/25 hover:text-white"
             >
               <Download className="h-3.5 w-3.5" />
               Download show-cause PDF
             </a>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[10px] font-bold text-slate-500">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[10.5px] font-bold text-slate-500">
               <Lock className="h-3 w-3" />
               No show-cause trigger
             </span>
           )}
           <Link
             href={`/cases?q=${encodeURIComponent(caseItem.institution?.aicte_permanent_id ?? "")}`}
-            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[9.5px] font-bold text-slate-300 transition-colors hover:border-white/20 hover:text-white"
+            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[10.5px] font-bold text-slate-300 transition-colors hover:border-white/20 hover:text-white"
           >
             All files
             <ArrowUpRight className="h-3 w-3" />

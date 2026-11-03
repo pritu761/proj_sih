@@ -50,6 +50,7 @@ import { Breadcrumbs } from "@/components/ui/page-header";
 import { BureauPill, ConfidencePill, PriorityPill, StatusPill } from "@/components/ui/badges";
 import { SlaRing } from "@/components/ui/sla-ring";
 import { Modal } from "@/components/ui/modal";
+import { EmptyState } from "@/components/ui/empty-state";
 import { CaseBrief } from "./CaseBrief";
 import { EnforcementPanel } from "./EnforcementPanel";
 import { ComplainantCard } from "./ComplainantCard";
@@ -406,7 +407,7 @@ export function CaseDetailClient({
             <span className="block truncate text-[11.5px] font-semibold text-slate-700">
               {uploadedUrl ? "Document uploaded" : "Attach PDF or DOCX"}
             </span>
-            <span className="block text-[10px] text-slate-400">
+            <span className="block text-[10.5px] text-slate-400">
               {isUploading ? "Uploading securely…" : uploadedUrl ? "Stored on secure blob" : "Max 10 MB · optional"}
             </span>
           </span>
@@ -414,7 +415,7 @@ export function CaseDetailClient({
         {uploadedUrl ? (
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
         ) : (
-          <span className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600">
+          <span className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10.5px] font-bold text-slate-600">
             Browse
           </span>
         )}
@@ -446,7 +447,7 @@ export function CaseDetailClient({
                   <h2 className="font-display text-[14px] font-bold tracking-tight text-rose-950">
                     Potential Overlapping Cases – Coordination Required
                   </h2>
-                  <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                  <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
                     Action needed
                   </span>
                   <ConfidencePill confidence={overlapAlert.confidence} />
@@ -456,10 +457,10 @@ export function CaseDetailClient({
                     "This case collides with an open case in another Bureau for the same institution."}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-rose-700">
+                  <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-rose-700">
                     Colliding cases
                   </span>
-                  <span className="font-mono text-[10px] font-bold text-slate-600">
+                  <span className="font-mono text-[10.5px] font-bold text-slate-600">
                     {overlapAlert.case_ids
                       ?.filter((id: string) => id !== caseItem.case_id)
                       .join("  ·  ")}
@@ -492,14 +493,14 @@ export function CaseDetailClient({
               <PriorityPill priority={caseItem.priority} />
               <BureauPill bureau={caseItem.assigned_bureau} full />
               {closed && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9.5px] font-bold text-emerald-700">
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700">
                   <CheckCircle2 className="h-2.5 w-2.5" /> Closed
                 </span>
               )}
               {languageBadge && (
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9.5px] font-bold",
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-bold",
                     languageBadge.color
                   )}
                   title={`Multilingual intake — narrative preserved in original script`}
@@ -509,7 +510,7 @@ export function CaseDetailClient({
                 </span>
               )}
               {caseItem.hearing_date && !closed && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-2 py-0.5 text-[9.5px] font-bold text-fuchsia-700">
+                <span className="inline-flex items-center gap-1 rounded-full border border-fuchsia-200 bg-fuchsia-50 px-2 py-0.5 text-[10.5px] font-bold text-fuchsia-700">
                   <Gavel className="h-2.5 w-2.5" />
                   Hearing {formatDate(caseItem.hearing_date)}
                 </span>
@@ -561,7 +562,7 @@ export function CaseDetailClient({
               <span className="inline-flex items-center gap-1.5 text-slate-500">
                 <Layers className="h-3.5 w-3.5 text-slate-400" />
                 Source
-                <strong className="uppercase font-bold text-slate-800">{caseItem.source}</strong>
+                <strong className="uppercase font-semibold text-slate-800">{caseItem.source}</strong>
               </span>
             </div>
           </div>
@@ -569,12 +570,12 @@ export function CaseDetailClient({
           {/* SLA gauge */}
           <div className={cn("shrink-0 rounded-2xl border p-4 lg:w-[268px]", slaTone)}>
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-[10px] font-bold text-slate-700">
+              <span className="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-700">
                 <Clock className="h-3 w-3" /> SLA countdown
               </span>
               <span
                 className={cn(
-                  "rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide",
+                  "rounded-full px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide",
                   caseItem.sla?.isBreached
                     ? "bg-rose-100 text-rose-700"
                     : caseItem.sla?.isApproaching
@@ -602,7 +603,7 @@ export function CaseDetailClient({
                 <p className="text-[11px] font-semibold leading-snug text-slate-700">
                   {caseItem.sla?.statusText}
                 </p>
-                <div className="mt-2 space-y-1 text-[10px] text-slate-500">
+                <div className="mt-2 space-y-1 text-[10.5px] text-slate-500">
                   <div className="flex items-center justify-between">
                     <span>Elapsed</span>
                     <span className="font-bold tabular-nums text-slate-800">
@@ -784,13 +785,13 @@ export function CaseDetailClient({
                       <Icon className="h-3.5 w-3.5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                         {m.label}
                       </p>
                       <p className="mt-0.5 text-[11.5px] font-semibold leading-snug text-slate-800">
                         {m.value}
                       </p>
-                      <p className="mt-0.5 text-[10px] text-slate-400">{m.note}</p>
+                      <p className="mt-0.5 text-[10.5px] text-slate-400">{m.note}</p>
                     </div>
                   </div>
                 );
@@ -813,12 +814,7 @@ export function CaseDetailClient({
             </div>
 
             {linkedCases.length === 0 ? (
-              <div className="px-5 py-8 text-center">
-                <Link2 className="mx-auto h-6 w-6 text-slate-400" />
-                <p className="mt-2 text-[11px] font-medium italic text-slate-400">
-                  No cross-referenced cases linked yet.
-                </p>
-              </div>
+              <EmptyState compact icon={Link2} title="No cross-referenced cases linked yet" />
             ) : (
               <div className="space-y-2 p-4">
                 {linkedCases.map((lc) => (
@@ -831,7 +827,7 @@ export function CaseDetailClient({
                       <span className="font-mono text-[10.5px] font-bold text-brand-700 group-hover:underline">
                         {lc.case_id}
                       </span>
-                      <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-slate-600">
+                      <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-600">
                         {lc.linkType || "RELATED"}
                       </span>
                     </div>
@@ -839,7 +835,7 @@ export function CaseDetailClient({
                       {lc.category}
                     </p>
                     {lc.linkNote && (
-                      <p className="mt-0.5 line-clamp-1 text-[10px] italic text-slate-400">
+                      <p className="mt-0.5 line-clamp-1 text-[10.5px] italic text-slate-400">
                         {lc.linkNote}
                       </p>
                     )}
@@ -860,7 +856,7 @@ export function CaseDetailClient({
               <span className="badge border-slate-200 bg-slate-50 text-slate-600">
                 {actions.length} actions
               </span>
-              <span className="hidden items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-700 sm:inline-flex">
+              <span className="hidden items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700 sm:inline-flex">
                 <Lock className="h-2.5 w-2.5" /> Immutable
               </span>
             </div>
@@ -897,12 +893,12 @@ export function CaseDetailClient({
                           </span>
                           <BureauPill bureau={act.actor_bureau} />
                           {isLatest && (
-                            <span className="rounded-full bg-brand-600 px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wide text-white">
+                            <span className="rounded-full bg-brand-600 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
                               Latest
                             </span>
                           )}
                         </div>
-                        <span className="text-[10px] font-medium text-slate-400">
+                        <span className="text-[10.5px] font-medium text-slate-400">
                           {formatDateTime(act.timestamp)}
                         </span>
                       </div>
@@ -913,7 +909,7 @@ export function CaseDetailClient({
 
                       {act.attachments && act.attachments.length > 0 && (
                         <div className="mt-2.5 flex flex-wrap items-center gap-1.5 border-t border-slate-200/70 pt-2">
-                          <span className="text-[9.5px] font-semibold text-slate-400">
+                          <span className="text-[10.5px] font-semibold text-slate-400">
                             Documents
                           </span>
                           {act.attachments.map((url: string, aIdx: number) => (
@@ -922,7 +918,7 @@ export function CaseDetailClient({
                               href={url}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-1 rounded-md border border-brand-200 bg-white px-2 py-0.5 text-[10px] font-bold text-brand-700 transition-colors hover:bg-brand-50"
+                              className="inline-flex items-center gap-1 rounded-md border border-brand-200 bg-white px-2 py-0.5 text-[10.5px] font-bold text-brand-700 transition-colors hover:bg-brand-50"
                             >
                               <Paperclip className="h-2.5 w-2.5" />
                               Attachment {aIdx + 1}
@@ -931,7 +927,7 @@ export function CaseDetailClient({
                         </div>
                       )}
 
-                      <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5 text-[9.5px] text-slate-400">
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5 text-[10.5px] text-slate-400">
                         <span className="inline-flex items-center gap-1">
                           <User className="h-2.5 w-2.5" />
                           {act.actor_user}
@@ -952,7 +948,7 @@ export function CaseDetailClient({
           </div>
 
           <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-3">
-            <p className="flex items-center gap-2 text-[10px] font-medium text-slate-500">
+            <p className="flex items-center gap-2 text-[10.5px] font-medium text-slate-500">
               <Lock className="h-3 w-3 text-slate-400" />
               Entries are append-only and cryptographically ordered. They cannot be edited or deleted.
             </p>
@@ -1002,7 +998,7 @@ export function CaseDetailClient({
                 Overlap confidence
                 <span className="uppercase">{overlapAlert?.confidence}</span>
               </span>
-              <span className="font-mono text-[9.5px] text-rose-600">
+              <span className="font-mono text-[10.5px] text-rose-600">
                 Alert {overlapAlert?.id}
               </span>
             </div>
@@ -1019,7 +1015,7 @@ export function CaseDetailClient({
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="rounded-xl border-2 border-brand-300 bg-brand-50/30 p-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="rounded-md bg-brand-600 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                <span className="rounded-md bg-brand-600 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
                   Current case
                 </span>
                 <span className="font-mono text-[10.5px] font-bold text-brand-700">
@@ -1028,35 +1024,35 @@ export function CaseDetailClient({
               </div>
               <dl className="mt-3 space-y-2 text-[11px]">
                 <div>
-                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Bureau</dt>
+                  <dt className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">Bureau</dt>
                   <dd className="mt-0.5"><BureauPill bureau={caseItem.assigned_bureau} full /></dd>
                 </div>
                 <div>
-                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Category</dt>
+                  <dt className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">Category</dt>
                   <dd className="mt-0.5 font-bold text-slate-800">{caseItem.category}</dd>
                 </div>
                 <div>
-                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Status</dt>
+                  <dt className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">Status</dt>
                   <dd className="mt-1 flex flex-wrap gap-1">
                     <StatusPill status={caseItem.status} />
                     <PriorityPill priority={caseItem.priority} />
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Representation</dt>
+                  <dt className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">Representation</dt>
                   <dd className="mt-0.5 line-clamp-4 leading-relaxed text-slate-600">
                     {caseItem.description}
                   </dd>
                 </div>
               </dl>
-              <p className="mt-3 border-t border-brand-200/60 pt-2 text-[10px] text-slate-500">
+              <p className="mt-3 border-t border-brand-200/60 pt-2 text-[10.5px] text-slate-500">
                 Received {formatDate(caseItem.date_received)}
               </p>
             </div>
 
             <div className="rounded-xl border-2 border-amber-300 bg-amber-50/30 p-4">
               <div className="flex items-center justify-between gap-2">
-                <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
                   Colliding case
                 </span>
                 <span className="font-mono text-[10.5px] font-bold text-amber-700">
@@ -1066,7 +1062,7 @@ export function CaseDetailClient({
               </div>
               <dl className="mt-3 space-y-2 text-[11px]">
                 <div>
-                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Bureau</dt>
+                  <dt className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">Bureau</dt>
                   <dd className="mt-0.5">
                     {collidingCase?.assigned_bureau ? (
                       <BureauPill bureau={collidingCase.assigned_bureau} full />
@@ -1076,27 +1072,27 @@ export function CaseDetailClient({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Category</dt>
+                  <dt className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">Category</dt>
                   <dd className="mt-0.5 font-bold text-slate-800">
                     {collidingCase?.category || "Capitation Fee"}
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Status</dt>
+                  <dt className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">Status</dt>
                   <dd className="mt-1 flex flex-wrap gap-1">
                     <StatusPill status={collidingCase?.status || "PENDING"} />
                     <PriorityPill priority={collidingCase?.priority || "HIGH"} />
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">Representation</dt>
+                  <dt className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">Representation</dt>
                   <dd className="mt-0.5 line-clamp-4 leading-relaxed text-slate-600">
                     {collidingCase?.description ||
                       "Parallel representation submitted to the AICTE registry."}
                   </dd>
                 </div>
               </dl>
-              <p className="mt-3 border-t border-amber-200/60 pt-2 text-[10px] text-slate-500">
+              <p className="mt-3 border-t border-amber-200/60 pt-2 text-[10.5px] text-slate-500">
                 Received {formatDate(collidingCase?.date_received)}
               </p>
             </div>

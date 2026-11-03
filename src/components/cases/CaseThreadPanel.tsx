@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessagesSquare, ShieldCheck, Building2, Send } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { EmptyState } from "@/components/ui/empty-state";
 import { addCaseCommentAction } from "@/actions/case-actions";
 import { BureauPill } from "@/components/ui/badges";
 import { SessionUser } from "@/lib/rbac";
@@ -97,10 +98,7 @@ export function CaseThreadPanel({
 
       <div className="px-5 py-4">
         {comments.length === 0 ? (
-          <p className="text-[11px] italic text-slate-400">
-            No coordination notes yet. Use the thread to align with the colliding
-            Bureau before the record is merged or dismissed.
-          </p>
+          <EmptyState compact icon={MessagesSquare} title="No coordination notes yet" />
         ) : (
           <ul className="space-y-3">
             {comments.map((comment) => (
@@ -117,7 +115,7 @@ export function CaseThreadPanel({
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "flex h-6 w-6 items-center justify-center rounded-lg text-[8.5px] font-extrabold text-white",
+                        "flex h-6 w-6 items-center justify-center rounded-lg text-[10.5px] font-bold text-white",
                         comment.scope === "INTERNAL"
                           ? "bg-amber-500"
                           : "bg-gradient-to-br from-brand-500 to-brand-700"
@@ -138,15 +136,15 @@ export function CaseThreadPanel({
                   </div>
                   <div className="flex items-center gap-1.5">
                     {comment.scope === "INTERNAL" ? (
-                      <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-100 px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-amber-700">
+                      <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-100 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-amber-700">
                         <Building2 className="h-2.5 w-2.5" /> Bureau internal
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-brand-700">
+                      <span className="inline-flex items-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-brand-700">
                         <ShieldCheck className="h-2.5 w-2.5" /> Coordination
                       </span>
                     )}
-                    <span className="text-[9.5px] text-slate-400">
+                    <span className="text-[10.5px] text-slate-400">
                       {formatDateTime(comment.created_at)}
                     </span>
                   </div>
@@ -175,7 +173,7 @@ export function CaseThreadPanel({
                     type="button"
                     onClick={() => setScope(opt.key)}
                     className={cn(
-                      "rounded-md px-2.5 py-1 text-[10px] font-bold transition-colors",
+                      "rounded-md px-2.5 py-1 text-[10.5px] font-bold transition-colors",
                       scope === opt.key
                         ? "bg-white text-slate-900 shadow-sm"
                         : "text-slate-500 hover:text-slate-700"
@@ -186,13 +184,13 @@ export function CaseThreadPanel({
                 ))}
               </div>
             ) : (
-              <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-500">
+              <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10.5px] font-semibold text-slate-500">
                 <ShieldCheck className="h-2.5 w-2.5" />
                 Regional observers post coordination notes only
               </span>
             )}
             {scope === "INTERNAL" && (
-              <p className="text-[10px] text-slate-400">
+              <p className="text-[10.5px] text-slate-400">
                 Internal notes stay hidden from other bureaus and the public tracker.
               </p>
             )}
@@ -209,7 +207,7 @@ export function CaseThreadPanel({
             className="input"
           />
           <div className="flex items-center justify-between">
-            <p className="text-[10px] text-slate-400">
+            <p className="text-[10.5px] text-slate-400">
               Notes are appended to the case thread and the audit ledger.
             </p>
             <button

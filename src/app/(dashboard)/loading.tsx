@@ -13,7 +13,7 @@ export default function DashboardLoading() {
         </div>
       </div>
 
-      <div className="skeleton h-[168px] rounded-[26px]" />
+      <div className="skeleton h-[168px] rounded-[20px]" />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {Array.from({ length: 8 }).map((_, i) => (

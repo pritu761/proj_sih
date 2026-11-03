@@ -5,6 +5,7 @@ import { UserSearch, UsersRound, Repeat2, Building2, CalendarClock, Flag } from 
 import { RECURRENCE_META, ComplainantProfile, RecurrenceLevel } from "@/lib/services/complainant-engine";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ComplainantCardProps {
   caseItem: {
@@ -34,11 +35,7 @@ export function ComplainantCard({ caseItem, profile, isCurrentCase }: Complainan
             </h2>
           </div>
         </div>
-        <div className="px-5 py-6 text-center">
-          <p className="text-[11px] italic text-slate-400">
-            Complainant identity not captured for this record (seeded archive entry).
-          </p>
-        </div>
+        <EmptyState compact icon={UserSearch} title="Complainant identity not captured" />
       </div>
     );
   }
@@ -58,7 +55,7 @@ export function ComplainantCard({ caseItem, profile, isCurrentCase }: Complainan
         {meta && !isFirstFiling && (
           <span
             className={cn(
-              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide",
+              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide",
               meta.chip
             )}
           >
@@ -92,7 +89,7 @@ export function ComplainantCard({ caseItem, profile, isCurrentCase }: Complainan
                   { label: "Institutions", value: profile.institutions.length, tone: "text-slate-900" },
                 ].map((s) => (
                   <div key={s.label} className="rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2">
-                    <p className="text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-400">{s.label}</p>
+                    <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">{s.label}</p>
                     <p className={cn("mt-0.5 font-display text-[17px] font-extrabold leading-none", s.tone)}>
                       {s.value}
                     </p>
@@ -101,14 +98,14 @@ export function ComplainantCard({ caseItem, profile, isCurrentCase }: Complainan
               </div>
 
               {profile.institutions.length > 1 && (
-                <p className="flex items-start gap-1.5 rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 text-[10px] leading-relaxed text-amber-800">
+                <p className="flex items-start gap-1.5 rounded-xl border border-amber-200 bg-amber-50/70 p-2.5 text-[10.5px] leading-relaxed text-amber-800">
                   <Building2 className="mt-0.5 h-3 w-3 shrink-0" />
                   Filings across {profile.institutions.length} institutions — consistent with a
                   cross-campus pattern or shared representation.
                 </p>
               )}
               {profile.bureaus.length > 1 && isCurrentCase && (
-                <p className="flex items-start gap-1.5 rounded-xl border border-rose-200 bg-rose-50/70 p-2.5 text-[10px] leading-relaxed text-rose-800">
+                <p className="flex items-start gap-1.5 rounded-xl border border-rose-200 bg-rose-50/70 p-2.5 text-[10.5px] leading-relaxed text-rose-800">
                   <Repeat2 className="mt-0.5 h-3 w-3 shrink-0" />
                   This identity approached {profile.bureaus.length} bureaus, including this one —
                   check the collider's complainant before coordinating.
@@ -116,7 +113,7 @@ export function ComplainantCard({ caseItem, profile, isCurrentCase }: Complainan
               )}
 
               <div className="rounded-xl border border-slate-200 p-3">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                   Linked registry numbers
                 </p>
                 <div className="mt-1.5 flex flex-wrap gap-1">
@@ -125,7 +122,7 @@ export function ComplainantCard({ caseItem, profile, isCurrentCase }: Complainan
                       key={cid}
                       href={`/cases/${encodeURIComponent(cid)}`}
                       className={cn(
-                        "rounded-md border px-1.5 py-0.5 font-mono text-[9.5px] font-bold transition-colors",
+                        "rounded-md border px-1.5 py-0.5 font-mono text-[10.5px] font-bold transition-colors",
                         cid === profile.caseIds[0] && isCurrentCase
                           ? "border-brand-300 bg-brand-50 text-brand-700"
                           : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-700"
@@ -135,14 +132,14 @@ export function ComplainantCard({ caseItem, profile, isCurrentCase }: Complainan
                     </Link>
                   ))}
                   {profile.caseIds.length > 8 && (
-                    <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[9.5px] font-bold text-slate-500">
+                    <span className="rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-500">
                       +{profile.caseIds.length - 8} more
                     </span>
                   )}
                 </div>
               </div>
 
-              <p className="flex items-start gap-1.5 text-[10px] leading-relaxed text-slate-500">
+              <p className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-slate-500">
                 <CalendarClock className="mt-0.5 h-3 w-3 shrink-0" />
                 Filing window {formatDate(profile.firstFiled)} → {formatDate(profile.lastFiled)} ·{" "}
                 {meta?.note}

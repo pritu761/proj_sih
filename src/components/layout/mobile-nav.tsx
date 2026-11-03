@@ -49,14 +49,14 @@ function Tab({
       >
         <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.3 : 2} />
         {badge !== undefined && badge > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-rose-500 px-0.5 text-[8px] font-extrabold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-rose-500 px-0.5 text-[10.5px] font-bold text-white">
             {badge > 9 ? "9+" : badge}
           </span>
         )}
       </span>
       <span
         className={cn(
-          "text-[9px] font-bold tracking-tight transition-colors",
+          "text-[10.5px] font-bold tracking-tight transition-colors",
           active ? "text-brand-700 dark:text-brand-300" : "text-slate-500 dark:text-slate-500"
         )}
       >
@@ -95,7 +95,7 @@ export function MobileNav({ openOverlapCount, onMore }: MobileNavProps) {
           >
             <Plus className="h-5 w-5" strokeWidth={2.4} />
           </span>
-          <span className="text-[9px] font-bold tracking-tight text-slate-500">
+          <span className="text-[10.5px] font-bold tracking-tight text-slate-500">
             Register
           </span>
         </Link>
@@ -115,7 +115,7 @@ export function MobileNav({ openOverlapCount, onMore }: MobileNavProps) {
           <span className="flex h-8 w-10 items-center justify-center rounded-xl text-slate-500 transition-all duration-200 group-hover:bg-slate-50 group-hover:text-slate-700 dark:group-hover:bg-white/[0.04] dark:group-hover:text-slate-300">
             <Menu className="h-[18px] w-[18px]" />
           </span>
-          <span className="text-[9px] font-bold tracking-tight text-slate-500">Menu</span>
+          <span className="text-[10.5px] font-bold tracking-tight text-slate-500">Menu</span>
         </button>
       </div>
     </nav>

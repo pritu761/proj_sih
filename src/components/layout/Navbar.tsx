@@ -172,7 +172,7 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
             <span className="hidden md:inline">Search cases, institutions, commands...</span>
             <span className="md:hidden">Search...</span>
           </span>
-          <kbd className="hidden items-center gap-0.5 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9.5px] font-bold text-slate-400 sm:flex">
+          <kbd className="hidden items-center gap-0.5 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10.5px] font-bold text-slate-400 sm:flex">
             <Command className="h-2.5 w-2.5" /> K
           </kbd>
         </button>
@@ -216,7 +216,7 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
             >
               <Bell className="h-[18px] w-[18px]" />
               {unreadCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-rose-500 px-0.5 text-[8.5px] font-extrabold text-white">
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full border-2 border-white bg-rose-500 px-0.5 text-[10.5px] font-bold text-white">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
@@ -230,7 +230,7 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                       Notifications
                     </h4>
                     {unreadCount > 0 && (
-                      <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[9.5px] font-bold text-rose-600">
+                      <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10.5px] font-bold text-rose-600">
                         {unreadCount} new
                       </span>
                     )}
@@ -286,13 +286,13 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                                 {notif.message}
                               </p>
                               <div className="mt-1.5 flex items-center justify-between">
-                                <span className="text-[9.5px] font-medium text-slate-400">
+                                <span className="text-[10.5px] font-medium text-slate-400">
                                   {timeAgo(notif.created_at)}
                                 </span>
                                 {!notif.read && (
                                   <button
                                     onClick={() => handleMarkAsRead(notif.id)}
-                                    className="rounded-md px-1.5 py-0.5 text-[9.5px] font-bold text-brand-600 hover:bg-brand-50"
+                                    className="rounded-md px-1.5 py-0.5 text-[10.5px] font-bold text-brand-600 hover:bg-brand-50"
                                   >
                                     Mark read
                                   </button>
@@ -322,11 +322,11 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                 <p className="max-w-[150px] truncate text-[11.5px] font-bold leading-none text-slate-900">
                   {user.name}
                 </p>
-                <p className="mt-1 max-w-[150px] truncate text-[9.5px] font-semibold text-slate-400">
+                <p className="mt-1 max-w-[150px] truncate text-[10.5px] font-semibold text-slate-400">
                   {roleName()}
                 </p>
               </div>
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-ink-800 to-ink-700 text-[10.5px] font-extrabold text-white shadow-sm ring-1 ring-ink-900/10">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-ink-800 to-ink-700 text-[10.5px] font-bold text-white shadow-sm ring-1 ring-ink-900/10">
                 {initials}
               </div>
               <ChevronDown className="hidden h-3.5 w-3.5 text-slate-400 sm:block" />
@@ -338,10 +338,10 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                   <p className="text-[12px] font-bold text-slate-900">{user.name}</p>
                   <p className="mt-0.5 truncate text-[10.5px] text-slate-500">{user.email}</p>
                   <div className="mt-2 flex flex-wrap gap-1">
-                    <span className="rounded-md bg-brand-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-brand-700">
+                    <span className="rounded-md bg-brand-50 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-brand-700">
                       {roleName()}
                     </span>
-                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600">
+                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-600">
                       {user.bureau === "ALL" ? "HQ" : user.bureau.replaceAll("_", " ")}
                     </span>
                   </div>
@@ -365,7 +365,7 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                     >
                       <Keyboard className="h-3.5 w-3.5 text-slate-400" />
                       Keyboard shortcuts
-                      <kbd className="ml-auto rounded border border-slate-200 bg-slate-50 px-1 py-px font-mono text-[8.5px] text-slate-400">
+                      <kbd className="ml-auto rounded border border-slate-200 bg-slate-50 px-1 py-px font-mono text-[10.5px] text-slate-400">
                         ?
                       </kbd>
                     </button>

@@ -55,7 +55,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
     <section className="panel overflow-hidden">
       <div className="panel-head items-center">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-200 bg-brand-50 text-brand-600">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-gradient-to-b from-slate-100 to-slate-50 text-slate-500 dark:border-white/10 dark:from-white/[0.07] dark:to-white/[0.03] dark:text-slate-300">
             <Radar className="h-[18px] w-[18px]" />
           </div>
           <div>
@@ -144,7 +144,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
               <span className="font-display text-[30px] font-extrabold leading-none tracking-tight text-white">
                 <CountUp value={exposure} />
               </span>
-              <span className="mt-1 text-[8.5px] font-bold uppercase tracking-[0.14em] text-slate-400">
+              <span className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                 exposure index
               </span>
             </div>
@@ -152,7 +152,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
 
           <div className="relative mt-1 grid grid-cols-2 gap-2">
             <div className="rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-2">
-              <p className="flex items-center gap-1 text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-500">
+              <p className="flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                 <Flame className="h-2.5 w-2.5 text-rose-400" /> Overdue
               </p>
               <p className="mt-1 font-display text-[16px] font-extrabold leading-none text-white">
@@ -160,7 +160,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-2">
-              <p className="flex items-center gap-1 text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-500">
+              <p className="flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                 <ShieldAlert className="h-2.5 w-2.5 text-amber-400" /> Critical
               </p>
               <p className="mt-1 font-display text-[16px] font-extrabold leading-none text-white">
@@ -170,7 +170,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
           </div>
 
           <div className="relative mt-2 flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-2.5 py-2">
-            <span className="flex items-center gap-1 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+            <span className="flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
               <Clock3 className="h-2.5 w-2.5" /> Next {horizon} days
             </span>
             <span className="font-display text-[14px] font-extrabold text-amber-300">{horizonCount}</span>
@@ -180,10 +180,10 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
         {/* Ranked watchlist */}
         <div className="min-w-0">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-2.5 sm:px-5">
-            <span className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-400">
+            <span className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-400">
               Priority watchlist
             </span>
-            <span className="hidden text-[10px] font-medium text-slate-400 sm:inline">
+            <span className="hidden text-[10.5px] font-medium text-slate-400 sm:inline">
               Hover the scope to identify a file
             </span>
           </div>
@@ -216,7 +216,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
                         active ? "bg-brand-50/60" : "hover:bg-slate-50"
                       )}
                     >
-                      <span className="w-4 shrink-0 text-center font-mono text-[10px] font-bold text-slate-400">
+                      <span className="w-4 shrink-0 text-center font-mono text-[10.5px] font-bold text-slate-400">
                         {String(idx + 1).padStart(2, "0")}
                       </span>
 
@@ -230,7 +230,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
                         title={`Risk ${c.score}/100`}
                       >
                         {c.score}
-                        <span className="mt-0.5 text-[7px] font-bold uppercase tracking-wide opacity-70">
+                        <span className="mt-0.5 text-[7px] font-semibold uppercase tracking-wide opacity-70">
                           risk
                         </span>
                       </div>
@@ -240,17 +240,17 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
                           <span className="truncate font-mono text-[10.5px] font-bold text-brand-700">
                             {c.case_id}
                           </span>
-                          <span className="rounded-md border border-slate-200 bg-white px-1.5 py-px text-[8.5px] font-bold text-slate-500">
+                          <span className="rounded-md border border-slate-200 bg-white px-1.5 py-px text-[10.5px] font-bold text-slate-500">
                             {getBureauShortName(c.bureau)}
                           </span>
-                          <span className={cn("rounded-md px-1.5 py-px text-[8.5px] font-extrabold uppercase tracking-wide", meta.bg, meta.text)}>
+                          <span className={cn("rounded-md px-1.5 py-px text-[10.5px] font-semibold uppercase tracking-wide", meta.bg, meta.text)}>
                             {meta.label}
                           </span>
                         </div>
                         <p className="mt-0.5 truncate text-[11.5px] font-semibold text-slate-800">
                           {c.institution_name}
                         </p>
-                        <p className="mt-px truncate text-[10px] text-slate-400">
+                        <p className="mt-px truncate text-[10.5px] text-slate-400">
                           {c.category}
                           {topDriver ? ` - ${topDriver.detail}` : ""}
                         </p>
@@ -265,7 +265,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
                         >
                           {daysLabel(c)}
                         </p>
-                        <p className="text-[9px] font-medium text-slate-400">
+                        <p className="text-[10.5px] font-medium text-slate-400">
                           {c.percentElapsed}% elapsed
                         </p>
                       </div>
@@ -279,7 +279,7 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
           )}
 
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 sm:px-5">
-            <span className="inline-flex items-center gap-1 text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-400">
+            <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
               <Info className="h-2.5 w-2.5" />
               Model weights
             </span>
@@ -291,11 +291,11 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
               ["Churn", "8"],
               ["Category", "6"],
             ].map(([label, weight]) => (
-              <span key={label} className="text-[9px] font-semibold text-slate-400">
+              <span key={label} className="text-[10.5px] font-semibold text-slate-400">
                 {label} <span className="font-mono text-slate-500">{weight}</span>
               </span>
             ))}
-            <span className="ml-auto hidden text-[9px] font-medium text-slate-400 md:inline">
+            <span className="ml-auto hidden text-[10.5px] font-medium text-slate-400 md:inline">
               Deterministic and reviewable - no black-box ML
             </span>
           </div>

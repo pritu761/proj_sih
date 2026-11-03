@@ -182,7 +182,7 @@ export default function NewCasePage() {
             <CircleDot className="h-4 w-4" />
           </div>
           <div>
-            <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
               Intake progress
             </p>
             <p className="text-[12px] font-extrabold text-slate-900">
@@ -212,7 +212,7 @@ export default function NewCasePage() {
               {/* Step 1 */}
               <section>
                 <div className="mb-3 flex items-center gap-2.5">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-600 text-[10px] font-extrabold text-white">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-600 text-[10.5px] font-bold text-white">
                     1
                   </span>
                   <div>
@@ -253,7 +253,7 @@ export default function NewCasePage() {
                       </select>
                     </div>
                     {selectedInstitution && (
-                      <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-slate-500">
+                      <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10.5px] text-slate-500">
                         <span className="inline-flex items-center gap-1">
                           <MapPin className="h-2.5 w-2.5 text-slate-400" />
                           {selectedInstitution.city}, {selectedInstitution.state}
@@ -313,7 +313,7 @@ export default function NewCasePage() {
               {/* Step 2 */}
               <section>
                 <div className="mb-3 flex items-center gap-2.5">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-600 text-[10px] font-extrabold text-white">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-600 text-[10.5px] font-bold text-white">
                     2
                   </span>
                   <div>
@@ -365,13 +365,13 @@ export default function NewCasePage() {
                           >
                             <span
                               className={cn(
-                                "block text-[11px] font-extrabold",
+                                "block text-[11px] font-bold",
                                 active ? "text-brand-800" : "text-slate-700"
                               )}
                             >
                               {p.label}
                             </span>
-                            <span className="mt-0.5 block text-[9px] text-slate-400">{p.note}</span>
+                            <span className="mt-0.5 block text-[10.5px] text-slate-400">{p.note}</span>
                           </button>
                         );
                       })}
@@ -385,7 +385,7 @@ export default function NewCasePage() {
               {/* Step 3 */}
               <section>
                 <div className="mb-3 flex items-center gap-2.5">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-600 text-[10px] font-extrabold text-white">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-600 text-[10.5px] font-bold text-white">
                     3
                   </span>
                   <div>
@@ -413,7 +413,7 @@ export default function NewCasePage() {
                   </p>
                   <span
                     className={cn(
-                      "text-[10px] font-bold tabular-nums",
+                      "text-[10.5px] font-bold tabular-nums",
                       description.trim().length >= 15 ? "text-emerald-600" : "text-slate-400"
                     )}
                   >
@@ -429,7 +429,7 @@ export default function NewCasePage() {
               </Link>
 
               <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-                <p className="hidden text-[10px] font-medium text-slate-400 sm:block">
+                <p className="hidden text-[10.5px] font-medium text-slate-400 sm:block">
                   Overlap scan runs on submit
                 </p>
                 <button
@@ -470,7 +470,7 @@ export default function NewCasePage() {
               <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                    <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                       Statutory timeline
                     </p>
                     <p className="mt-1 font-display text-[30px] font-extrabold leading-none tracking-tight text-slate-950">
@@ -544,7 +544,7 @@ export default function NewCasePage() {
                     </div>
                     <div>
                       <p className="text-[11px] font-bold text-slate-800">{s.title}</p>
-                      <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">{s.text}</p>
+                      <p className="mt-0.5 text-[10.5px] leading-relaxed text-slate-400">{s.text}</p>
                     </div>
                   </div>
                 );
@@ -552,7 +552,7 @@ export default function NewCasePage() {
 
               <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
                 <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
-                <p className="text-[10px] leading-relaxed text-amber-800">
+                <p className="text-[10.5px] leading-relaxed text-amber-800">
                   If a collision is detected, a{" "}
                   <strong>“Potential Overlapping Cases – Coordination Required”</strong> alert is raised
                   for both bureaus.
@@ -565,7 +565,7 @@ export default function NewCasePage() {
           <div className="panel p-4">
             <div className="mb-2.5 flex items-center justify-between">
               <h2 className="panel-title">Readiness</h2>
-              <span className="text-[10px] font-bold text-slate-400">
+              <span className="text-[10.5px] font-bold text-slate-400">
                 {completed}/{checks.length}
               </span>
             </div>
@@ -594,7 +594,7 @@ export default function NewCasePage() {
             </div>
           </div>
 
-          <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-[10px] leading-relaxed text-slate-500">
+          <div className="flex items-start gap-2 rounded-xl border border-slate-200 bg-white p-3 text-[10.5px] leading-relaxed text-slate-500">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
             <p>
               Registration writes to the audit ledger with your officer identity.{" "}

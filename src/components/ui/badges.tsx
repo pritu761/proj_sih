@@ -146,7 +146,7 @@ export function BureauPill({
 export function PriorityPill({ priority, className }: { priority: string; className?: string }) {
   const tone = priorityTone[priority] ?? "slate";
   return (
-    <Pill tone={tone} dot className={cn("font-bold uppercase tracking-wide", className)}>
+    <Pill tone={tone} dot className={cn("font-semibold uppercase tracking-wide", className)}>
       {priority}
     </Pill>
   );

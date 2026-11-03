@@ -62,11 +62,11 @@ export function CaseBrief({
           <h2 className="font-display text-[12.5px] font-bold tracking-tight text-slate-900">
             Sentinel Brief
           </h2>
-          <span className="rounded-md border border-brand-200 bg-brand-50 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-[0.1em] text-brand-700">
+          <span className="rounded-md border border-brand-200 bg-brand-50 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-brand-700">
             Explainable
           </span>
         </div>
-        <p className="text-[9.5px] font-medium text-slate-400">
+        <p className="text-[10.5px] font-medium text-slate-400">
           Recomputed from {risk.drivers.length} live signals - no black-box model
         </p>
       </div>
@@ -93,13 +93,13 @@ export function CaseBrief({
               <span className="font-display text-[20px] font-extrabold leading-none tracking-tight" style={{ color: meta.color }}>
                 <CountUp value={risk.score} duration={1100} />
               </span>
-              <span className="mt-0.5 text-[7px] font-bold uppercase tracking-[0.12em] text-slate-400">
+              <span className="mt-0.5 text-[7px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                 / 100
               </span>
             </div>
           </div>
           <div>
-            <span className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide", meta.bg, meta.border, meta.text)}>
+            <span className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide", meta.bg, meta.border, meta.text)}>
               <Gauge className="h-2.5 w-2.5" />
               {meta.label}
             </span>
@@ -108,7 +108,7 @@ export function CaseBrief({
                 ? `${Math.abs(risk.remainingDays)} days past the statutory deadline`
                 : `${risk.remainingDays} of ${insight.timelineDays} days remain`}
             </p>
-            <p className="mt-0.5 text-[9.5px] text-slate-400">
+            <p className="mt-0.5 text-[10.5px] text-slate-400">
               {insight.elapsedDays} days elapsed - {risk.percentElapsed}% of the clock
             </p>
           </div>
@@ -117,13 +117,13 @@ export function CaseBrief({
         {/* Drivers */}
         <div className="p-5">
           <div className="flex items-center justify-between">
-            <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-400">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-400">
               Why this file ranks here
             </p>
             {overlap && (
               <Link
                 href="/alerts"
-                className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[8.5px] font-bold text-rose-600 hover:bg-rose-100"
+                className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[10.5px] font-bold text-rose-600 hover:bg-rose-100"
               >
                 <ShieldAlert className="h-2.5 w-2.5" />
                 {overlap.confidence} collision
@@ -138,11 +138,11 @@ export function CaseBrief({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="text-[11px] font-bold text-slate-800">{d.label}</p>
-                    <span className="font-mono text-[9px] font-bold text-slate-400">
+                    <span className="font-mono text-[10.5px] font-bold text-slate-400">
                       +{d.points}
                     </span>
                   </div>
-                  <p className="truncate text-[10px] text-slate-500">{d.detail}</p>
+                  <p className="truncate text-[10.5px] text-slate-500">{d.detail}</p>
                 </div>
               </li>
             ))}
@@ -154,17 +154,17 @@ export function CaseBrief({
           </ul>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 pt-2.5">
-            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-slate-400">
+            <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-slate-400">
               <Layers className="h-2.5 w-2.5" />
               {similar.length} similar closed {similar.length === 1 ? "file" : "files"}
             </span>
             {benchmark && (
-              <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-slate-400">
+              <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-slate-400">
                 <Scale className="h-2.5 w-2.5" />
                 Peer median {benchmark.avgDays}d
               </span>
             )}
-            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-emerald-600">
+            <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold text-emerald-600">
               <BadgeCheck className="h-2.5 w-2.5" />
               Audited trail
             </span>
@@ -173,7 +173,7 @@ export function CaseBrief({
 
         {/* Recommendation */}
         <div className="bg-gradient-to-br from-brand-50/80 to-white p-5">
-          <p className="text-[9px] font-extrabold uppercase tracking-[0.14em] text-brand-600">
+          <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brand-600">
             Recommended next action
           </p>
           <p className="mt-1.5 font-display text-[13px] font-bold leading-snug tracking-tight text-slate-900">
@@ -192,7 +192,7 @@ export function CaseBrief({
               <ArrowRight className="h-3 w-3" />
             </button>
           ) : (
-            <div className="mt-3 flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white/70 px-2.5 py-2 text-[9.5px] font-medium text-slate-500">
+            <div className="mt-3 flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white/70 px-2.5 py-2 text-[10.5px] font-medium text-slate-500">
               <Lock className="h-2.5 w-2.5 shrink-0" />
               Read-only view - the assigned bureau owns this workflow
             </div>

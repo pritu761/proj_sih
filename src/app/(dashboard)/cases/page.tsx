@@ -153,7 +153,6 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
       <PageHeader
         title="Case Explorer"
         icon={FolderSearch}
-        tone="blue"
         actions={
           <>
             <ExportCsvButton href={exportCsvUrl} />
@@ -176,7 +175,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
               <p className="font-display text-[12.5px] font-bold text-slate-900">Query builder</p>
             </div>
           </div>
-          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-700">
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-[10.5px] font-bold text-brand-700">
             {data.total.toLocaleString("en-IN")} matching cases
           </span>
         </div>
@@ -240,11 +239,11 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
 
           <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
+              <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                 Date window
               </span>
               <input type="date" name="date_from" defaultValue={params.date_from || ""} className="input h-8 w-[142px] text-[11px]" aria-label="From date" />
-              <span className="text-[10px] text-slate-400">to</span>
+              <span className="text-[10.5px] text-slate-400">to</span>
               <input type="date" name="date_to" defaultValue={params.date_to || ""} className="input h-8 w-[142px] text-[11px]" aria-label="To date" />
             </div>
 
@@ -262,14 +261,14 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
 
         {filterEntries.length > 0 && (
           <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 bg-slate-50/60 px-4 py-2.5 sm:px-5">
-            <span className="mr-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-slate-400">
+            <span className="mr-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
               Active
             </span>
             {filterEntries.map(([key, value]) => (
               <Link
                 key={key}
                 href={`/cases${buildQuery(baseForPagination, { [key]: undefined, page: undefined })}`}
-                className="group inline-flex items-center gap-1 rounded-full border border-brand-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-brand-700 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                className="group inline-flex items-center gap-1 rounded-full border border-brand-200 bg-white px-2 py-0.5 text-[10.5px] font-semibold text-brand-700 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
               >
                 {labelFor(key, value)}
                 <X className="h-2.5 w-2.5 opacity-50 group-hover:opacity-100" />
@@ -285,7 +284,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-brand-500" />
             <h2 className="font-display text-[13px] font-bold text-slate-900">Case registry</h2>
-            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-bold text-slate-500">
+            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-500">
               {data.total}
             </span>
           </div>
@@ -343,7 +342,6 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
             <EmptyState
               icon={FolderSearch}
               title="No cases match these filters"
-              description="Try widening the date window, clearing a filter, or searching by AICTE permanent ID."
               action={
                 <Link href="/cases" className="btn btn-secondary btn-sm">
                   Clear all filters
@@ -374,7 +372,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
                 >
                   {c.institution?.name}
                 </Link>
-                <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[9.5px] font-medium text-slate-400">
+                <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[10.5px] font-medium text-slate-400">
                   <Building2 className="h-3 w-3 shrink-0 text-slate-400" />
                   <span className="truncate">
                     {c.institution?.city}, {c.institution?.region} · {c.institution?.aicte_permanent_id}
@@ -411,13 +409,13 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
                     />
                   </div>
                   <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
-                    <span className="flex items-center gap-1 text-[9.5px] font-medium text-slate-400">
+                    <span className="flex items-center gap-1 text-[10.5px] font-medium text-slate-400">
                       <CalendarDays className="h-2.5 w-2.5" />
                       {formatDate(c.date_received)}
                     </span>
                     <Link
                       href={`/cases/${c.id}`}
-                      className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-700 hover:underline"
+                      className="inline-flex items-center gap-1 text-[10.5px] font-bold text-brand-700 hover:underline"
                     >
                       Open case
                       <ExternalLink className="h-3 w-3" />
@@ -451,7 +449,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
                         <span className="font-mono text-[10.5px] font-bold text-brand-700 group-hover:underline">
                           {c.case_id}
                         </span>
-                        <span className="mt-0.5 flex items-center gap-1 text-[9.5px] font-medium text-slate-400">
+                        <span className="mt-0.5 flex items-center gap-1 text-[10.5px] font-medium text-slate-400">
                           <CalendarDays className="h-2.5 w-2.5" />
                           {formatDate(c.last_action_date)}
                         </span>
@@ -466,7 +464,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
                         <Building2 className="h-3 w-3 shrink-0 text-slate-400" />
                         <span className="truncate">{c.institution?.name}</span>
                       </Link>
-                      <span className="mt-0.5 block pl-[18px] text-[9.5px] text-slate-400">
+                      <span className="mt-0.5 block pl-[18px] text-[10.5px] text-slate-400">
                         {c.institution?.city}, {c.institution?.region} · {c.institution?.aicte_permanent_id}
                       </span>
                     </td>

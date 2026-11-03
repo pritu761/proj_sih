@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/badges";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { EmptyState } from "@/components/ui/empty-state";
 import { assignOfficerAction } from "@/actions/case-actions";
 import { SessionUser } from "@/lib/rbac";
 import { formatDate, formatDateTime, cn } from "@/lib/utils";
@@ -87,7 +88,7 @@ function slaChip(item: QueueItem) {
       ? `${item.sla.remainingDays}d left`
       : `${item.sla.remainingDays}d left`;
   return (
-    <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide", tone)}>
+    <span className={cn("rounded-full px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide", tone)}>
       {label}
     </span>
   );
@@ -220,20 +221,20 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
       </p>
 
       {item.complainant_name && (
-        <p className="mt-1 text-[10px] text-slate-400">Complainant: {item.complainant_name}</p>
+        <p className="mt-1 text-[10.5px] text-slate-400">Complainant: {item.complainant_name}</p>
       )}
 
-      <div className="mt-2.5 grid grid-cols-2 gap-2 text-[10px] text-slate-500 sm:grid-cols-4">
+      <div className="mt-2.5 grid grid-cols-2 gap-2 text-[10.5px] text-slate-500 sm:grid-cols-4">
         <div>
-          <p className="font-bold uppercase tracking-[0.08em] text-slate-400">Received</p>
+          <p className="font-semibold uppercase tracking-[0.08em] text-slate-400">Received</p>
           <p className="font-semibold text-slate-700">{formatDate(item.date_received)}</p>
         </div>
         <div>
-          <p className="font-bold uppercase tracking-[0.08em] text-slate-400">Due</p>
+          <p className="font-semibold uppercase tracking-[0.08em] text-slate-400">Due</p>
           <p className="font-semibold text-slate-700">{formatDate(item.expected_disposal_date)}</p>
         </div>
         <div>
-          <p className="font-bold uppercase tracking-[0.08em] text-slate-400">Hearing</p>
+          <p className="font-semibold uppercase tracking-[0.08em] text-slate-400">Hearing</p>
           <p className="inline-flex items-center gap-1 font-semibold text-slate-700">
             {item.hearing_date ? (
               <>
@@ -246,7 +247,7 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
           </p>
         </div>
         <div>
-          <p className="font-bold uppercase tracking-[0.08em] text-slate-400">Last action</p>
+          <p className="font-semibold uppercase tracking-[0.08em] text-slate-400">Last action</p>
           <p className="truncate font-semibold text-slate-700" title={item.last_action}>
             {formatDate(item.last_action_date)}
           </p>
@@ -259,7 +260,7 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
         {!unassignedCard && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500">
+          <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-slate-500">
             <User className="h-3 w-3" />
             {item.assigned_officer?.toLowerCase() === currentUser.email.toLowerCase()
               ? "Assigned to you"
@@ -267,7 +268,7 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
           </span>
         )}
         {unassignedCard && (
-          <span className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wide text-rose-600">
+          <span className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-rose-600">
             Awaiting allocation
           </span>
         )}
@@ -294,14 +295,6 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
     </div>
   );
 
-  const emptyState = (title: string, note: string) => (
-    <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 px-6 py-10 text-center">
-      <Inbox className="mx-auto h-6 w-6 text-slate-300" />
-      <p className="mt-2 text-[12px] font-bold text-slate-600">{title}</p>
-      <p className="mt-1 text-[11px] text-slate-400">{note}</p>
-    </div>
-  );
-
   return (
     <div className="space-y-5">
       <PageHeader
@@ -316,13 +309,13 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
       />
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 stagger-children">
         {stats.map((s) => {
           const Icon = s.icon;
           return (
             <div key={s.label} className="panel px-4 py-3.5">
               <div className="flex items-center justify-between">
-                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                   {s.label}
                 </p>
                 <Icon className={cn("h-3.5 w-3.5", s.tone)} />
@@ -355,7 +348,7 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
         </div>
         <div className="space-y-3 p-4">
           {unassigned.length === 0
-            ? emptyState("Backlog is clear", "Every open file in scope has an allocated officer.")
+            ? <EmptyState icon={Inbox} title="Backlog is clear" />
             : unassigned.map((item) => renderCard(item, true))}
         </div>
       </div>
@@ -375,10 +368,7 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
         </div>
         <div className="space-y-3 p-4">
           {mine.length === 0
-            ? emptyState(
-                "No files assigned to you",
-                "Take a file from the backlog above."
-              )
+            ? <EmptyState icon={ClipboardList} title="No files assigned to you" />
             : mine.map((item) => renderCard(item, false))}
         </div>
       </div>

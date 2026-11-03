@@ -17,7 +17,7 @@ export default function DashboardError({
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="w-full max-w-lg overflow-hidden rounded-[26px] border border-rose-200 bg-white shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)]">
+      <div className="w-full max-w-lg overflow-hidden rounded-[20px] border border-rose-200 bg-white shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)]">
         <div className="h-1 bg-gradient-to-r from-rose-500 via-rose-400 to-amber-400" />
         <div className="p-7 text-center sm:p-9">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-rose-200 bg-rose-50 text-rose-600">
@@ -31,7 +31,7 @@ export default function DashboardError({
           </p>
 
           {error?.digest && (
-            <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[9.5px] text-slate-500">
+            <p className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 font-mono text-[10.5px] text-slate-500">
               <ShieldAlert className="h-3 w-3" />
               trace {error.digest}
             </p>
@@ -48,7 +48,7 @@ export default function DashboardError({
             </Link>
           </div>
 
-          <p className="mt-5 text-[10px] font-medium text-slate-400">
+          <p className="mt-5 text-[10.5px] font-medium text-slate-400">
             If this persists, contact the AICTE IT control room at support@aicte-india.org
           </p>
         </div>

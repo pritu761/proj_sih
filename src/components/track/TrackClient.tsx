@@ -105,7 +105,7 @@ export function TrackClient() {
             Officer sign-in
           </Link>
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.14em] text-saffron-400">
+            <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-saffron-400">
               <Landmark className="h-3.5 w-3.5" />
               Government of India
             </span>
@@ -128,7 +128,7 @@ export function TrackClient() {
 
         {/* Lookup card */}
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur">
-          <label htmlFor="registry" className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/50">
+          <label htmlFor="registry" className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/50">
             Registry number
           </label>
           <div className="mt-2 flex flex-col gap-2.5 sm:flex-row">
@@ -161,7 +161,7 @@ export function TrackClient() {
           )}
 
           <div className="mt-4 border-t border-white/10 pt-3.5">
-            <p className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-white/40">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/40">
               Demo registry numbers
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -175,7 +175,7 @@ export function TrackClient() {
                   <span className="block font-mono text-[10.5px] font-bold text-white">
                     {d.code}
                   </span>
-                  <span className="block text-[9px] text-white/40">{d.note}</span>
+                  <span className="block text-[10.5px] text-white/40">{d.note}</span>
                 </button>
               ))}
             </div>
@@ -186,7 +186,7 @@ export function TrackClient() {
         {result && (
           <div className="mt-6 animate-[fadeSlideIn_0.4s_ease-out] space-y-4">
             {checkedAt && (
-              <p className="text-center text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">
+              <p className="text-center text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/35">
                 Status as on {formatDateTime(checkedAt)}
               </p>
             )}
@@ -206,7 +206,7 @@ export function TrackClient() {
 
               <div className="mt-3 grid gap-3 text-[11px] sm:grid-cols-2">
                 <div className="rounded-xl border border-white/10 bg-ink-900/40 p-3">
-                  <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/40">
+                  <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">
                     <Building2 className="h-3 w-3" /> Institution
                   </p>
                   <p className="mt-1 font-bold leading-snug text-white">{result.institution_name}</p>
@@ -216,7 +216,7 @@ export function TrackClient() {
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-ink-900/40 p-3">
-                  <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/40">
+                  <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">
                     <Landmark className="h-3 w-3" /> Responsible wing
                   </p>
                   <p className="mt-1 font-bold leading-snug text-white">
@@ -228,19 +228,19 @@ export function TrackClient() {
 
               <div className="mt-3 grid gap-3 text-[11px] sm:grid-cols-3">
                 <div className="rounded-xl border border-white/10 p-3">
-                  <p className="inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/40">
+                  <p className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">
                     <CalendarDays className="h-3 w-3" /> Received
                   </p>
                   <p className="mt-1 font-bold text-white">{formatDate(result.date_received)}</p>
                 </div>
                 <div className="rounded-xl border border-white/10 p-3">
-                  <p className="inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/40">
+                  <p className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">
                     <Clock className="h-3 w-3" /> Disposal due
                   </p>
                   <p className="mt-1 font-bold text-white">{formatDate(result.expected_disposal_date)}</p>
                 </div>
                 <div className="rounded-xl border border-white/10 p-3">
-                  <p className="inline-flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-white/40">
+                  <p className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">
                     <Gavel className="h-3 w-3" /> Hearing
                   </p>
                   <p className="mt-1 font-bold text-white">
@@ -257,7 +257,7 @@ export function TrackClient() {
 
             {/* Public timeline */}
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-white/50">
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/50">
                 Disclosure timeline
               </p>
               <div className="mt-4 space-y-4">
@@ -281,7 +281,7 @@ export function TrackClient() {
                       <p className="text-[12px] font-bold text-white">
                         {timelineLabel[t.action_type] ?? t.action_type}
                       </p>
-                      <p className="text-[10px] font-semibold text-white/40">
+                      <p className="text-[10.5px] font-semibold text-white/40">
                         {formatDateTime(t.timestamp)}
                       </p>
                       <p className="mt-1 text-[11.5px] leading-relaxed text-white/60">
@@ -291,7 +291,7 @@ export function TrackClient() {
                   );
                 })}
               </div>
-              <p className="mt-5 border-t border-white/10 pt-3 text-[9.5px] leading-relaxed text-white/30">
+              <p className="mt-5 border-t border-white/10 pt-3 text-[10.5px] leading-relaxed text-white/30">
                 Coordination notes, officer attributions and evidence documents are internal records
                 and are not part of public disclosure.
               </p>
@@ -301,7 +301,7 @@ export function TrackClient() {
       </main>
 
       <footer className="border-t border-white/10 py-5">
-        <p className="mx-auto max-w-3xl px-5 text-center text-[10px] leading-relaxed text-white/35">
+        <p className="mx-auto max-w-3xl px-5 text-center text-[10.5px] leading-relaxed text-white/35">
           AICTE public grievance disclosure · Demonstration deployment seeded with synthetic data.
         </p>
       </footer>

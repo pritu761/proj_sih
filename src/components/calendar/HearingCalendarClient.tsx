@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatusPill, PriorityPill, BureauPill } from "@/components/ui/badges";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { EmptyState } from "@/components/ui/empty-state";
 import { scheduleHearingAction } from "@/actions/case-actions";
 import { canActOnCase, SessionUser } from "@/lib/rbac";
 import { formatDate, formatDateTime, cn } from "@/lib/utils";
@@ -125,13 +126,13 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
                 : "border-brand-200 bg-brand-50"
           )}
         >
-          <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500">
+          <span className="text-[10.5px] font-semibold uppercase tracking-widest text-slate-500">
             {WEEKDAY[date.getDay()]}
           </span>
           <span className="font-display text-[22px] font-extrabold leading-none text-slate-900">
             {date.getDate()}
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+          <span className="text-[10.5px] font-semibold uppercase tracking-wide text-slate-500">
             {date.toLocaleDateString("en-IN", { month: "short" })} ·{" "}
             {date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false })}
           </span>
@@ -149,17 +150,17 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
             <StatusPill status={h.status} />
             <PriorityPill priority={h.priority} />
             {h.sla_status.isBreached && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-rose-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-rose-700">
                 <Flame className="h-2.5 w-2.5" /> SLA breached
               </span>
             )}
             {h.isPast && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-slate-600">
+              <span className="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-600">
                 <AlertTriangle className="h-2.5 w-2.5" /> Past sitting
               </span>
             )}
             {!h.isPast && h.isThisWeek && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-100 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-fuchsia-700">
+              <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-100 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-fuchsia-700">
                 <Clock className="h-2.5 w-2.5" /> In {h.daysUntil === 0 ? "today" : `${h.daysUntil}d`}
               </span>
             )}
@@ -180,7 +181,7 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
             <BureauPill bureau={h.assigned_bureau} />
             <span
               className={cn(
-                "text-[10px] font-semibold",
+                "text-[10.5px] font-semibold",
                 h.sla_status.isBreached
                   ? "text-rose-700"
                   : h.sla_status.isApproaching
@@ -201,7 +202,7 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
               Reschedule
             </button>
           ) : (
-            <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10px] font-semibold italic text-slate-400">
+            <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-semibold italic text-slate-400">
               {h.isPast ? "Concluded sitting" : "Not your bureau's file"}
             </span>
           )}
@@ -223,9 +224,7 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
       </div>
       <div className="space-y-3 p-4">
         {items.length === 0 ? (
-          <p className="px-2 py-6 text-center text-[11px] italic text-slate-400">
-            Nothing scheduled in this window.
-          </p>
+          <EmptyState compact icon={CalendarDays} title="Nothing scheduled in this window" />
         ) : (
           items.map(renderHearing)
         )}
@@ -247,7 +246,7 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 stagger-children">
         {[
           { label: "All board sittings", value: hearings.length, tone: "text-slate-900" },
           { label: "This week", value: groups.thisWeek.length, tone: "text-fuchsia-700" },
@@ -259,7 +258,7 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
           },
         ].map((s) => (
           <div key={s.label} className="panel px-4 py-3.5">
-            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">{s.label}</p>
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">{s.label}</p>
             <p className={cn("mt-1.5 font-display text-[20px] font-extrabold leading-none", s.tone)}>
               {s.value}
             </p>

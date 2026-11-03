@@ -224,16 +224,16 @@ export function detectLanguage(
 
 /** Language display metadata for badges and selectors. */
 export const LANGUAGE_BADGE: Record<string, { label: string; color: string }> = {
-  en: { label: "EN", color: "bg-slate-100 text-slate-600 border-slate-200" },
-  hi: { label: "हि", color: "bg-orange-50 text-orange-700 border-orange-200" },
-  mr: { label: "मरा", color: "bg-orange-50 text-orange-700 border-orange-200" },
-  ta: { label: "தமி", color: "bg-red-50 text-red-700 border-red-200" },
-  te: { label: "తెలు", color: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-  bn: { label: "বাং", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-  gu: { label: "ગુજ", color: "bg-pink-50 text-pink-700 border-pink-200" },
-  pa: { label: "ਪੰ", color: "bg-indigo-50 text-indigo-700 border-indigo-200" },
-  or: { label: "ଓଡ଼", color: "bg-amber-50 text-amber-700 border-amber-200" },
-  kn: { label: "ಕನ್", color: "bg-cyan-50 text-cyan-700 border-cyan-200" },
-  ml: { label: "മല", color: "bg-lime-50 text-lime-700 border-lime-200" },
-  ur: { label: "اردو", color: "bg-green-50 text-green-700 border-green-200" },
+  en: { label: "EN", color: "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-400/10 dark:text-slate-300 dark:border-slate-400/30" },
+  hi: { label: "हि", color: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-400/10 dark:text-orange-300 dark:border-orange-400/30" },
+  mr: { label: "मरा", color: "bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-400/10 dark:text-orange-300 dark:border-orange-400/30" },
+  ta: { label: "தமி", color: "bg-red-50 text-red-700 border-red-200 dark:bg-red-400/10 dark:text-red-300 dark:border-red-400/30" },
+  te: { label: "తెలు", color: "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-400/10 dark:text-yellow-300 dark:border-yellow-400/30" },
+  bn: { label: "বাং", color: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-400/10 dark:text-emerald-300 dark:border-emerald-400/30" },
+  gu: { label: "ગુજ", color: "bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-400/10 dark:text-pink-300 dark:border-pink-400/30" },
+  pa: { label: "ਪੰ", color: "bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-400/10 dark:text-indigo-300 dark:border-indigo-400/30" },
+  or: { label: "ଓଡ଼", color: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-400/10 dark:text-amber-300 dark:border-amber-400/30" },
+  kn: { label: "ಕನ್", color: "bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-400/10 dark:text-cyan-300 dark:border-cyan-400/30" },
+  ml: { label: "മല", color: "bg-lime-50 text-lime-700 border-lime-200 dark:bg-lime-400/10 dark:text-lime-300 dark:border-lime-400/30" },
+  ur: { label: "اردو", color: "bg-green-50 text-green-700 border-green-200 dark:bg-green-400/10 dark:text-green-300 dark:border-green-400/30" },
 };

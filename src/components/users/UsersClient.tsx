@@ -267,10 +267,10 @@ export function UsersClient({ initialUsers, currentUser }: UsersClientProps) {
       />
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 stagger-children">
         {stats.map((s) => (
           <div key={s.label} className="panel px-4 py-3.5">
-            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">{s.label}</p>
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">{s.label}</p>
             <p className="mt-1.5 font-display text-[20px] font-extrabold leading-none text-slate-900">
               {s.value}
             </p>
@@ -293,12 +293,12 @@ export function UsersClient({ initialUsers, currentUser }: UsersClientProps) {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-left">
             <thead>
-              <tr className="border-b border-slate-100 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+              <tr className="border-b border-slate-100 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                 <th className="px-5 py-2.5">Officer</th>
                 <th className="px-3 py-2.5">Role</th>
                 <th className="px-3 py-2.5">Posting</th>
-                <th className="px-3 py-2.5">Open files</th>
-                <th className="px-3 py-2.5">Registered</th>
+                <th className="px-3 py-2.5 text-right">Open files</th>
+                <th className="hidden px-3 py-2.5 md:table-cell">Registered</th>
                 <th className="px-3 py-2.5">Status</th>
                 <th className="px-5 py-2.5 text-right">Actions</th>
               </tr>
@@ -310,21 +310,21 @@ export function UsersClient({ initialUsers, currentUser }: UsersClientProps) {
                     <p className="text-[11.5px] font-bold text-slate-900">
                       {u.name}
                       {u.email === currentUser.email && (
-                        <span className="ml-1.5 text-[9px] font-semibold text-slate-400">(you)</span>
+                        <span className="ml-1.5 text-[10.5px] font-semibold text-slate-400">(you)</span>
                       )}
                     </p>
-                    <p className="inline-flex items-center gap-1 font-mono text-[9.5px] text-slate-400">
+                    <p className="inline-flex items-center gap-1 font-mono text-[10.5px] text-slate-400">
                       <Mail className="h-2.5 w-2.5" />
                       {u.email}
                     </p>
                     {u.designation && (
-                      <p className="mt-0.5 text-[9.5px] text-slate-500">{u.designation}</p>
+                      <p className="mt-0.5 text-[10.5px] text-slate-500">{u.designation}</p>
                     )}
                   </td>
                   <td className="px-3 py-3">
                     <span
                       className={cn(
-                        "inline-flex rounded-md border px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide",
+                        "inline-flex rounded-md border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide",
                         roleBadge[u.role]
                       )}
                     >
@@ -335,29 +335,29 @@ export function UsersClient({ initialUsers, currentUser }: UsersClientProps) {
                     <div className="flex flex-col items-start gap-1">
                       <BureauPill bureau={u.bureau} />
                       {u.role === "REGIONAL_OFFICER" && u.region && (
-                        <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-teal-700">
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-teal-700">
                           <MapPin className="h-2.5 w-2.5" />
                           {u.region} region
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="px-3 py-3">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700">
+                  <td className="px-3 py-3 text-right">
+                    <span className="inline-flex items-center justify-end gap-1.5 text-[11px] font-bold tabular-nums text-slate-700">
                       <ClipboardList className="h-3 w-3 text-slate-400" />
                       {u.openCases}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-[10.5px] text-slate-500">
+                  <td className="hidden px-3 py-3 text-[10.5px] text-slate-500 md:table-cell">
                     {formatDate(u.createdAt)}
                   </td>
                   <td className="px-3 py-3">
                     {u.active ? (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-emerald-700">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-emerald-700">
                         <ShieldCheck className="h-2.5 w-2.5" /> Active
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-slate-500">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-500">
                         <Ban className="h-2.5 w-2.5" /> Suspended
                       </span>
                     )}

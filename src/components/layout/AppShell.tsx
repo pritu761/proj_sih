@@ -191,7 +191,7 @@ export function AppShell({ user, openOverlapCount, unassignedQueueCount = 0, not
           </main>
 
           <footer className="mx-auto w-full max-w-[1440px] px-4 pb-6 sm:px-6 lg:px-8">
-            <p className="border-t border-slate-200/80 pt-4 text-[10px] font-medium text-slate-400">
+            <p className="border-t border-slate-200/80 pt-4 text-[10.5px] font-medium text-slate-400">
               © 2026 All India Council for Technical Education
             </p>
           </footer>

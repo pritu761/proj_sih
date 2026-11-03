@@ -99,26 +99,26 @@ export function TrilayerPanel({
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-slate-400">
+          <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-slate-400">
             <Fingerprint className="h-3 w-3 text-amber-400" />
             Trilayer match explainability
           </p>
-          <p className="mt-1 text-[10px] font-medium text-slate-500">{trilayer.formula}</p>
+          <p className="mt-1 text-[10.5px] font-medium text-slate-500">{trilayer.formula}</p>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="text-right">
-            <p className="text-[8.5px] font-bold uppercase tracking-[0.12em] text-slate-500">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-500">
               Composite match
             </p>
             <p className={cn("font-display text-[22px] font-extrabold leading-none tracking-tight", scoreTone(trilayer.total))}>
               {trilayer.total}
-              <span className="ml-0.5 text-[10px] font-bold text-slate-400">/100</span>
+              <span className="ml-0.5 text-[10.5px] font-bold text-slate-400">/100</span>
             </p>
           </div>
           <span
             className={cn(
-              "rounded-md border px-2 py-1 text-[8.5px] font-extrabold uppercase tracking-wide",
+              "rounded-md border px-2 py-1 text-[10.5px] font-semibold uppercase tracking-wide",
               effectiveConfidence === "HIGH"
                 ? "border-rose-500/40 bg-rose-500/10 text-rose-300"
                 : effectiveConfidence === "MEDIUM"
@@ -147,14 +147,14 @@ export function TrilayerPanel({
                   <span className="truncate text-[11px] font-bold text-slate-200">
                     {layer.label}
                   </span>
-                  <span className="hidden rounded border border-white/10 bg-white/[0.03] px-1 py-0.5 text-[8px] font-bold uppercase tracking-wide text-slate-400 sm:inline">
+                  <span className="hidden rounded border border-white/10 bg-white/[0.03] px-1 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400 sm:inline">
                     {Math.round(layer.weight * 100)}%
                   </span>
-                  <span className={cn("hidden rounded border px-1 py-0.5 text-[8px] font-bold uppercase tracking-wide sm:inline", meta.tag)}>
+                  <span className={cn("hidden rounded border px-1 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide sm:inline", meta.tag)}>
                     {VERDICT_LABEL[layer.verdict]}
                   </span>
                 </div>
-                <span className={cn("shrink-0 font-mono text-[11px] font-extrabold tabular-nums", meta.text)}>
+                <span className={cn("shrink-0 font-mono text-[11px] font-bold tabular-nums", meta.text)}>
                   {layer.score}
                 </span>
               </div>
@@ -170,7 +170,7 @@ export function TrilayerPanel({
                 />
               </div>
 
-              <p className="mt-1 line-clamp-2 text-[9.5px] leading-relaxed text-slate-500">
+              <p className="mt-1 line-clamp-2 text-[10.5px] leading-relaxed text-slate-500">
                 {layer.evidence[0]}
               </p>
             </div>
@@ -180,23 +180,23 @@ export function TrilayerPanel({
 
       {merged ? (
         <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/[0.07] px-3 py-2">
-          <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-300">
+          <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-emerald-300">
             <CheckCircle2 className="h-3.5 w-3.5" />
             Merged into master docket
           </span>
-          <span className="font-mono text-[9.5px] font-bold text-emerald-200/80">
+          <span className="font-mono text-[10.5px] font-bold text-emerald-200/80">
             {masterCaseId ?? "master file"}
           </span>
         </div>
       ) : onMerge ? (
         <div className="mt-3.5 flex flex-col gap-2 border-t border-white/10 pt-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[9.5px] leading-relaxed text-slate-500">
+          <p className="text-[10.5px] leading-relaxed text-slate-500">
             One inquiry should proceed. Merge parallel files into a single master docket.
           </p>
           <button
             type="button"
             onClick={onMerge}
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-1.5 text-[10px] font-extrabold uppercase tracking-wide text-emerald-300 transition-colors hover:border-emerald-300 hover:bg-emerald-400/20 hover:text-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-emerald-300 transition-colors hover:border-emerald-300 hover:bg-emerald-400/20 hover:text-emerald-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
           >
             <GitMerge className="h-3.5 w-3.5" />
             Merge into master docket

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   addInstitutionDocumentAction,
   removeInstitutionDocumentAction,
@@ -204,10 +205,7 @@ export function DocumentVault({
       </div>
 
       {documents.length === 0 ? (
-        <div className="px-5 py-10 text-center">
-          <Archive className="mx-auto h-6 w-6 text-slate-300" />
-          <p className="mt-2 text-[11.5px] font-semibold text-slate-500">Vault is empty</p>
-        </div>
+        <EmptyState compact icon={Archive} title="Vault is empty" />
       ) : (
         <div className="divide-y divide-slate-100">
           {documents.map((doc) => {
@@ -237,7 +235,7 @@ export function DocumentVault({
                     {doc.case_id && (
                       <Link
                         href={`/cases/${encodeURIComponent(doc.case_id)}`}
-                        className="inline-flex items-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-brand-700 hover:bg-brand-100"
+                        className="inline-flex items-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-brand-700 hover:bg-brand-100"
                         title="Linked case"
                       >
                         <Link2 className="h-2.5 w-2.5" />
@@ -248,7 +246,7 @@ export function DocumentVault({
                   {doc.notes && (
                     <p className="mt-0.5 text-[10.5px] leading-relaxed text-slate-500">{doc.notes}</p>
                   )}
-                  <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[9.5px] text-slate-400">
+                  <p className="mt-1 flex flex-wrap items-center gap-x-2 text-[10.5px] text-slate-400">
                     <span className="inline-flex items-center gap-1">
                       <Paperclip className="h-2.5 w-2.5" />
                       {doc.file_name} · {fmtSize(Number(doc.file_size))}
@@ -330,12 +328,12 @@ export function DocumentVault({
                         ? fileName || "Document uploaded"
                         : "Attach PDF, PNG, JPEG or DOCX"}
                   </span>
-                  <span className="block text-[10px] text-slate-400">
+                  <span className="block text-[10.5px] text-slate-400">
                     {fileUrl ? `Stored on secure blob · ${fmtSize(fileSize)}` : "Max 10 MB · required"}
                   </span>
                 </span>
               </span>
-              <span className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-bold text-slate-600">
+              <span className="shrink-0 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10.5px] font-bold text-slate-600">
                 Browse
               </span>
               <input type="file" onChange={handleFileUpload} className="hidden" />

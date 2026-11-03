@@ -374,7 +374,7 @@ export function IngestionSimulator({
                   <li key={label} className="flex items-center gap-3">
                     <span
                       className={cn(
-                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[9px] font-extrabold",
+                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10.5px] font-bold",
                         done
                           ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-300"
                           : active
@@ -410,7 +410,7 @@ export function IngestionSimulator({
               <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.16em] text-emerald-300">
+                  <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.16em] text-emerald-300">
                     <CheckCircle2 className="h-3 w-3" />
                     Ingested
                   </p>
@@ -421,15 +421,15 @@ export function IngestionSimulator({
                     {result.institutionName}
                     {result.institutionCity ? ` · ${result.institutionCity}, ${result.institutionState}` : ""}
                   </p>
-                  <p className="mt-0.5 font-mono text-[9.5px] text-slate-500">
+                  <p className="mt-0.5 font-mono text-[10.5px] text-slate-500">
                     AICTE {result.aictePermanentId} · {result.institutionName ? "entity resolved" : ""}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <span className={cn("rounded-md border px-2 py-1 text-[8.5px] font-extrabold uppercase tracking-wide", PRIORITY_TONE[result.priority] ?? PRIORITY_TONE.MEDIUM)}>
+                  <span className={cn("rounded-md border px-2 py-1 text-[10.5px] font-semibold uppercase tracking-wide", PRIORITY_TONE[result.priority] ?? PRIORITY_TONE.MEDIUM)}>
                     {result.priority}
                   </span>
-                  <span className="rounded-md border border-sky-400/30 bg-sky-400/10 px-2 py-1 text-[8.5px] font-extrabold uppercase tracking-wide text-sky-300">
+                  <span className="rounded-md border border-sky-400/30 bg-sky-400/10 px-2 py-1 text-[10.5px] font-semibold uppercase tracking-wide text-sky-300">
                     {result.channelLabel}
                   </span>
                 </div>
@@ -452,7 +452,7 @@ export function IngestionSimulator({
                   const Icon = item.icon;
                   return (
                     <div key={item.label} className="rounded-xl border border-white/10 bg-white/[0.03] px-2.5 py-2">
-                      <p className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-[0.1em] text-slate-500">
+                      <p className="flex items-center gap-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                         <Icon className="h-2.5 w-2.5" />
                         {item.label}
                       </p>
@@ -462,7 +462,7 @@ export function IngestionSimulator({
                 })}
               </div>
 
-              <p className="mt-2.5 flex items-start gap-2 rounded-lg border border-sky-400/20 bg-sky-400/[0.05] px-2.5 py-1.5 text-[9.5px] leading-relaxed text-sky-200/80">
+              <p className="mt-2.5 flex items-start gap-2 rounded-lg border border-sky-400/20 bg-sky-400/[0.05] px-2.5 py-1.5 text-[10.5px] leading-relaxed text-sky-200/80">
                 <Globe2 className="mt-0.5 h-3 w-3 shrink-0" />
                 <span>
                   Offline intake layer detected <strong>{result.language.name}</strong> ({result.language.code}) at{" "}
@@ -477,19 +477,19 @@ export function IngestionSimulator({
               </p>
 
               {result.routedBureau !== result.bureau && (
-                <p className="mt-2.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-1.5 text-[9.5px] leading-relaxed text-amber-200/80">
+                <p className="mt-2.5 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-1.5 text-[10.5px] leading-relaxed text-amber-200/80">
                   Policy destination: {result.routedBureauLabel}. Queued under {result.bureauLabel} because of
                   {userBureau && userBureau !== "ALL" ? ` the ${userBureau.replaceAll("_", " ").toLowerCase()} allocation.` : " your bureau allocation."}
                 </p>
               )}
 
               <div className="mt-3 border-t border-white/10 pt-2.5">
-                <p className="text-[8.5px] font-extrabold uppercase tracking-[0.12em] text-slate-500">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                   Routing rationale
                 </p>
                 <ul className="mt-1 space-y-1">
                   {result.rationale.map((line, index) => (
-                    <li key={index} className="flex items-start gap-1.5 text-[10px] leading-relaxed text-slate-400">
+                    <li key={index} className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-slate-400">
                       <ArrowRight className="mt-0.5 h-2.5 w-2.5 shrink-0 text-amber-400" />
                       {line}
                     </li>
@@ -502,11 +502,11 @@ export function IngestionSimulator({
               <div className="space-y-3">
                 <div className="relative overflow-hidden rounded-xl border border-rose-500/30 bg-rose-500/[0.08] p-3">
                   <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-rose-500 to-amber-400" />
-                  <p className="flex items-center gap-1.5 text-[11.5px] font-extrabold text-rose-200">
+                  <p className="flex items-center gap-1.5 text-[11.5px] font-bold text-rose-200">
                     <AlertTriangle className="h-3.5 w-3.5" />
                     Potential Overlapping Cases – Coordination Required
                   </p>
-                  <p className="mt-1 text-[10px] leading-relaxed text-rose-100/70">
+                  <p className="mt-1 text-[10.5px] leading-relaxed text-rose-100/70">
                     {result.alerts.length} parallel inquir{result.alerts.length === 1 ? "y" : "ies"} detected.
                     All three matching layers are shown below with the exact evidence used.
                   </p>
@@ -515,12 +515,12 @@ export function IngestionSimulator({
                 {result.alerts.map((alert) => (
                   <div key={alert.id} className="space-y-2">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-mono text-[9.5px] text-slate-500">
+                      <span className="font-mono text-[10.5px] text-slate-500">
                         Alert {alert.id} · {alert.confidence} confidence
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {alert.bureaus_involved.map((b) => (
-                          <span key={b} className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wide text-slate-400">
+                          <span key={b} className="rounded border border-white/10 bg-white/[0.04] px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">
                             {b.replaceAll("_", " ")}
                           </span>
                         ))}
@@ -537,7 +537,7 @@ export function IngestionSimulator({
                   <p className="text-[11.5px] font-bold text-emerald-200">
                     No parallel inquiry detected
                   </p>
-                  <p className="mt-0.5 text-[10px] leading-relaxed text-emerald-100/60">
+                  <p className="mt-0.5 text-[10.5px] leading-relaxed text-emerald-100/60">
                     Trilayer scan completed against every open file. The grievance is the only live
                     inquiry on this institution and category.
                   </p>
@@ -572,7 +572,7 @@ export function IngestionSimulator({
             )}
 
             <div>
-              <p className="mb-2 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+              <p className="mb-2 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                 <Radio className="h-3 w-3 text-amber-500" />
                 1 · Inbound channel
               </p>
@@ -598,14 +598,14 @@ export function IngestionSimulator({
                           className="h-3.5 w-3.5"
                           style={{ color: active ? item.accent : "#64748b" }}
                         />
-                        <span className="font-mono text-[8px] font-bold text-slate-400">
+                        <span className="font-mono text-[10.5px] font-bold text-slate-400">
                           {item.short}
                         </span>
                       </div>
                       <p className={cn("mt-1.5 text-[10.5px] font-bold", active ? "text-slate-900" : "text-slate-400")}>
                         {item.label}
                       </p>
-                      <p className="mt-0.5 line-clamp-2 text-[8.5px] leading-snug text-slate-500">
+                      <p className="mt-0.5 line-clamp-2 text-[10.5px] leading-snug text-slate-500">
                         {item.description}
                       </p>
                     </button>
@@ -616,7 +616,7 @@ export function IngestionSimulator({
 
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <div>
-                <label htmlFor="ingest-institution" className="mb-1.5 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+                <label htmlFor="ingest-institution" className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                   <Building2 className="h-3 w-3 text-amber-500" />
                   2 · Institution
                 </label>
@@ -648,15 +648,15 @@ export function IngestionSimulator({
                   ))}
                 </select>
                 {institutionError && (
-                  <p className="mt-1 text-[10px] font-medium text-rose-700">{institutionError}</p>
+                  <p className="mt-1 text-[10.5px] font-medium text-rose-700">{institutionError}</p>
                 )}
                 {selectedInstitution && (
                   <div className="mt-1.5 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 dark:border-white/10 dark:bg-white/[0.02]">
-                    <p className="flex items-center gap-1 text-[9.5px] font-semibold text-slate-700">
+                    <p className="flex items-center gap-1 text-[10.5px] font-semibold text-slate-700">
                       <MapPin className="h-2.5 w-2.5 text-slate-500" />
                       {selectedInstitution.city}, {selectedInstitution.state} · {selectedInstitution.region} RO
                     </p>
-                    <p className="mt-0.5 font-mono text-[8.5px] text-slate-500">
+                    <p className="mt-0.5 font-mono text-[10.5px] text-slate-500">
                       AICTE {selectedInstitution.aicte_permanent_id} · {selectedInstitution.institution_type}
                     </p>
                   </div>
@@ -664,7 +664,7 @@ export function IngestionSimulator({
               </div>
 
               <div>
-                <label htmlFor="ingest-category" className="mb-1.5 flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+                <label htmlFor="ingest-category" className="mb-1.5 flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                   <Scale className="h-3 w-3 text-amber-500" />
                   3 · Grievance category & priority
                 </label>
@@ -683,7 +683,7 @@ export function IngestionSimulator({
 
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <div>
-                    <label htmlFor="ingest-priority" className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-500">
+                    <label htmlFor="ingest-priority" className="mb-1 block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                       Priority
                     </label>
                     <select
@@ -698,7 +698,7 @@ export function IngestionSimulator({
                     </select>
                   </div>
                   <div>
-                    <label htmlFor="ingest-reference" className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-500">
+                    <label htmlFor="ingest-reference" className="mb-1 block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                       Source reference
                     </label>
                     <input
@@ -715,14 +715,14 @@ export function IngestionSimulator({
 
             <div>
               <div className="mb-1.5 flex items-center justify-between gap-2">
-                <label htmlFor="ingest-description" className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+                <label htmlFor="ingest-description" className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                   <Mail className="h-3 w-3 text-amber-500" />
                   4 · Representation text
                 </label>
                 <button
                   type="button"
                   onClick={loadSample}
-                  className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[9px] font-bold text-slate-700 transition-colors hover:border-amber-400/60 hover:text-amber-700 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-amber-400/40 dark:hover:text-amber-300"
+                  className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[10.5px] font-bold text-slate-700 transition-colors hover:border-amber-400/60 hover:text-amber-700 dark:border-white/10 dark:bg-white/[0.03] dark:hover:border-amber-400/40 dark:hover:text-amber-300"
                 >
                   <Sparkles className="h-2.5 w-2.5 text-amber-400" />
                   Load realistic sample
@@ -736,15 +736,15 @@ export function IngestionSimulator({
                 placeholder="Paste the complaint text or OCR output. The semantic layer scores this against every open representation."
                 className={darkInput}
               />
-              <p className="mt-1 text-[9.5px] text-slate-500">
+              <p className="mt-1 text-[10.5px] text-slate-500">
                 {description.trim().length} characters · minimum 30
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide",
+                    "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide",
                     LANGUAGE_BADGE[detectedLanguage.code]?.color ??
-                      "bg-slate-100 text-slate-600 border-slate-200"
+                      "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-400/10 dark:text-slate-300 dark:border-slate-400/30"
                   )}
                   title={detectedLanguage.note}
                 >
@@ -752,7 +752,7 @@ export function IngestionSimulator({
                   {" · "}
                   {detectedLanguage.name}
                 </span>
-                <span className="text-[9.5px] text-slate-500">
+                <span className="text-[10.5px] text-slate-500">
                   Confidence: {detectedLanguage.confidence}
                   {detectedLanguage.suggestedCategory && (
                     <>
@@ -766,7 +766,7 @@ export function IngestionSimulator({
 
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div>
-                <label htmlFor="ingest-complainant-name" className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-500">
+                <label htmlFor="ingest-complainant-name" className="mb-1 block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                   Complainant name
                 </label>
                 <input
@@ -778,7 +778,7 @@ export function IngestionSimulator({
                 />
               </div>
               <div>
-                <label htmlFor="ingest-complainant-contact" className="mb-1 block text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-500">
+                <label htmlFor="ingest-complainant-contact" className="mb-1 block text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-500">
                   Complainant contact
                 </label>
                 <input
@@ -793,22 +793,22 @@ export function IngestionSimulator({
 
             <div className="dark-surface rounded-xl border border-white/10 bg-slate-950 p-3.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="flex items-center gap-1.5 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-500">
+                <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                   <Siren className="h-3 w-3 text-amber-400" />
                   Routing decision
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="rounded border border-sky-400/30 bg-sky-400/10 px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase text-sky-300">
+                  <span className="rounded border border-sky-400/30 bg-sky-400/10 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase text-sky-300">
                     {routing.bureauCode} · {routing.bureau.replaceAll("_", " ")}
                   </span>
-                  <span className="rounded border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase text-amber-300">
+                  <span className="rounded border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase text-amber-300">
                     {routing.slaDays}d SLA
                   </span>
-                  <span className={cn("rounded border px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase", PRIORITY_TONE[routing.priority])}>
+                  <span className={cn("rounded border px-1.5 py-0.5 text-[10.5px] font-semibold uppercase", PRIORITY_TONE[routing.priority])}>
                     {routing.priority}
                   </span>
                   {routing.regulatory && (
-                    <span className="rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase text-rose-300">
+                    <span className="rounded border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase text-rose-300">
                       APH hook
                     </span>
                   )}
@@ -816,7 +816,7 @@ export function IngestionSimulator({
               </div>
               <ul className="mt-2 space-y-1">
                 {routing.rationale.map((line, index) => (
-                  <li key={index} className="flex items-start gap-1.5 text-[10px] leading-relaxed text-slate-400">
+                  <li key={index} className="flex items-start gap-1.5 text-[10.5px] leading-relaxed text-slate-400">
                     <ArrowRight className="mt-0.5 h-2.5 w-2.5 shrink-0 text-emerald-400" />
                     {line}
                   </li>

@@ -185,17 +185,17 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
                 <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border", s.tone)}>
                   <Icon className="h-4 w-4" />
                 </div>
-                <span className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide text-emerald-700">
+                <span className="flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-emerald-700">
                   <Lock className="h-2 w-2" /> sealed
                 </span>
               </div>
-              <p className="mt-3 text-[9.5px] font-bold uppercase tracking-[0.1em] text-slate-400">
+              <p className="mt-3 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                 {s.label}
               </p>
               <p className="mt-1 font-display text-[26px] font-extrabold leading-none tracking-[-0.03em] text-slate-950">
                 <CountUp value={s.value} />
               </p>
-              <p className="mt-1.5 text-[10px] font-medium text-slate-400">{s.note}</p>
+              <p className="mt-1.5 text-[10.5px] font-medium text-slate-400">{s.note}</p>
             </div>
           );
         })}
@@ -264,7 +264,7 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
                 </p>
                 <span
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide",
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide",
                     verifyState === "invalid"
                       ? "border-rose-300 bg-rose-100 text-rose-700"
                       : verifyState === "verifying"
@@ -293,7 +293,7 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <button
                   onClick={copyHead}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white/80 px-2 py-1 font-mono text-[9.5px] font-semibold text-slate-600 transition-colors hover:border-brand-300 hover:text-brand-700"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white/80 px-2 py-1 font-mono text-[10.5px] font-semibold text-slate-600 transition-colors hover:border-brand-300 hover:text-brand-700"
                   title={chain.head}
                 >
                   <Hash className="h-2.5 w-2.5 text-slate-400" />
@@ -304,7 +304,7 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
                     <Copy className="h-2.5 w-2.5 text-slate-300" />
                   )}
                 </button>
-                <span className="text-[9px] font-semibold text-slate-400">
+                <span className="text-[10.5px] font-semibold text-slate-400">
                   {chain.algorithm} - {chain.count} blocks - genesis {chain.genesis}
                 </span>
               </div>
@@ -333,7 +333,7 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
                   ? "Re-verify ledger"
                   : "Verify ledger integrity"}
             </button>
-            <p className="text-[9px] font-medium text-slate-400">
+            <p className="text-[10.5px] font-medium text-slate-400">
               {verifyState === "valid" && verified
                 ? `Verified ${verified.count} blocks in ${verified.durationMs}ms at ${formatDateTime(verified.checkedAt)}`
                 : verifyState === "invalid"
@@ -350,7 +350,7 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-500" />
             <h2 className="font-display text-[13px] font-bold text-slate-900">Audit ledger</h2>
-            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-bold text-slate-500">
+            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-500">
               {filtered.length}
             </span>
           </div>
@@ -399,7 +399,6 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
             <EmptyState
               icon={ScrollText}
               title="No audit entries match"
-              description="Clear the search or choose a different action type. New mutations appear here in real time."
               action={
                 <button
                   onClick={() => {
@@ -439,17 +438,17 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
                       <tr
                         className={cn("group", open && "bg-brand-50/30")}
                       >
-                        <td className="whitespace-nowrap font-mono text-[10px] text-slate-500">
+                        <td className="whitespace-nowrap font-mono text-[10.5px] text-slate-500">
                           {formatDateTime(log.timestamp)}
                         </td>
                         <td className="whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
-                            <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-slate-500">
+                            <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10.5px] font-bold text-slate-500">
                               <Link2 className="h-2 w-2 text-slate-300" />
                               {log.block}
                             </span>
                             <span
-                              className="hidden font-mono text-[9px] text-slate-400 xl:inline"
+                              className="hidden font-mono text-[10.5px] text-slate-400 xl:inline"
                               title={log.hash}
                             >
                               {String(log.hash ?? "").slice(0, 8)}
@@ -458,7 +457,7 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
                         </td>
                         <td>
                           <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-ink-800 to-ink-700 text-[8.5px] font-extrabold text-white">
+                            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-ink-800 to-ink-700 text-[10.5px] font-bold text-white">
                               {initials(log.user)}
                             </span>
                             <span className="text-[11px] font-bold text-slate-800">{log.user}</span>
@@ -467,7 +466,7 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
                         <td>
                           <span
                             className={cn(
-                              "inline-flex rounded-md border px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wide",
+                              "inline-flex rounded-md border px-1.5 py-0.5 font-mono text-[10.5px] font-semibold uppercase tracking-wide",
                               actionTone[log.action] ?? "border-slate-200 bg-slate-50 text-slate-600"
                             )}
                           >
@@ -478,13 +477,13 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
                         <td className="max-w-[190px] truncate font-mono text-[10.5px] font-bold text-brand-700">
                           {log.entity_id}
                         </td>
-                        <td className="font-mono text-[10px] text-slate-500">{log.ip}</td>
+                        <td className="font-mono text-[10.5px] text-slate-500">{log.ip}</td>
                         <td className="text-right">
                           <button
                             onClick={() => setExpanded(open ? null : idx)}
                             aria-expanded={open}
                             className={cn(
-                              "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[9.5px] font-bold transition-colors",
+                              "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10.5px] font-bold transition-colors",
                               open
                                 ? "border-brand-300 bg-brand-50 text-brand-700"
                                 : "border-slate-200 bg-white text-slate-500 hover:border-brand-300 hover:text-brand-700"
@@ -502,15 +501,15 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
                         <tr>
                           <td colSpan={8} className="dark-surface bg-ink-950 px-4 py-4">
                             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                              <p className="flex items-center gap-1.5 font-mono text-[9.5px] font-bold uppercase tracking-[0.12em] text-slate-400">
+                              <p className="flex items-center gap-1.5 font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                                 <Braces className="h-3 w-3 text-emerald-400" />
                                 Immutable payload · {log.entity_id}
                               </p>
-                              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-emerald-400">
+                              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-emerald-400">
                                 <CheckCircle2 className="h-2.5 w-2.5" /> verified
                               </span>
                             </div>
-                            <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[9px] text-slate-500">
+                            <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[10.5px] text-slate-500">
                               <span className="inline-flex items-center gap-1 text-slate-300">
                                 <Hash className="h-2.5 w-2.5" /> {log.block}
                               </span>
@@ -534,13 +533,13 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
         )}
 
         <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
+          <p className="flex items-center gap-1.5 text-[10.5px] font-medium text-slate-500">
             <Lock className="h-3 w-3 text-slate-400" />
             Append-only ledger · SHA-256 chained · head {shortHash(chain.head, 10)}
           </p>
 
           <div className="flex items-center justify-between gap-3 sm:justify-end">
-            <p className="text-[10px] font-medium text-slate-400">
+            <p className="text-[10.5px] font-medium text-slate-400">
               {filtered.length === 0
                 ? "No entries"
                 : `Showing ${firstRow}–${lastRow} of ${filtered.length}`}
@@ -554,7 +553,7 @@ export function AuditLedger({ logs, chain }: { logs: any[]; chain: ChainSummary 
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
-              <span className="min-w-[64px] text-center text-[10px] font-bold tabular-nums text-slate-500">
+              <span className="min-w-[64px] text-center text-[10.5px] font-bold tabular-nums text-slate-500">
                 {currentPage} / {pageCount}
               </span>
               <button

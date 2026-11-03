@@ -76,10 +76,10 @@ export function SlaRing({
           {breached ? "−" : ""}
           {Math.abs(days)}
         </span>
-        <span className="mt-0.5 text-[8.5px] font-bold uppercase tracking-[0.1em] text-slate-400">
+        <span className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
           {days < 0 ? "days over" : label}
         </span>
-        <span className={cn("mt-px text-[8.5px] font-semibold", textTone)}>
+        <span className={cn("mt-px text-[10.5px] font-semibold", textTone)}>
           {safe.toFixed(0)}% elapsed
         </span>
       </div>

@@ -97,7 +97,6 @@ export default async function ReportsPage() {
       <PageHeader
         title="Reports & Analytics"
         icon={ChartSpline}
-        tone="blue"
         actions={
           <>
             <a href="/api/reports/csv" download="aicte_complaints.csv" className="btn btn-secondary">
@@ -146,7 +145,7 @@ export default async function ReportsPage() {
             <strong className="text-emerald-700">Statutory format</strong>
           </span>
         </div>
-        <p className="text-[10px] font-medium text-slate-400">
+        <p className="text-[10.5px] font-medium text-slate-400">
           Generated{" "}
           {new Date().toLocaleDateString("en-IN", {
             day: "2-digit",
@@ -171,12 +170,12 @@ export default async function ReportsPage() {
                 >
                   <Icon className="h-4 w-4" />
                 </div>
-                <span className="rounded-md bg-slate-50 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-slate-400">
+                <span className="rounded-md bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-400">
                   YTD
                 </span>
               </div>
 
-              <p className="mt-3.5 min-h-[24px] text-[9.5px] font-bold uppercase leading-[1.25] tracking-[0.1em] text-slate-400">
+              <p className="mt-3.5 min-h-[24px] text-[10.5px] font-semibold uppercase leading-[1.25] tracking-[0.1em] text-slate-400">
                 {kpiItem.label}
               </p>
               <p
@@ -185,7 +184,7 @@ export default async function ReportsPage() {
               >
                 {kpiItem.value}
               </p>
-              <p className="mt-1.5 text-[10px] font-medium leading-snug text-slate-400">
+              <p className="mt-1.5 text-[10.5px] font-medium leading-snug text-slate-400">
                 {kpiItem.subtext}
               </p>
               <div className="mt-3 h-1 overflow-hidden rounded-full bg-slate-100">
@@ -211,7 +210,7 @@ export default async function ReportsPage() {
           <div>
             <h2 className="panel-title">Bureau scorecard</h2>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-700">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-brand-50 px-2.5 py-1 text-[10.5px] font-bold text-brand-700">
             <Gauge className="h-3 w-3" />
             {scorecard.filter((s) => s.grade === "A").length}/{scorecard.length} graded A
           </span>
@@ -273,7 +272,7 @@ export default async function ReportsPage() {
                     <td>
                       <span
                         className={cn(
-                          "inline-flex rounded-md border px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide",
+                          "inline-flex rounded-md border px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide",
                           gradeTone
                         )}
                       >
@@ -287,7 +286,7 @@ export default async function ReportsPage() {
           </table>
         </div>
 
-        <p className="border-t border-slate-100 bg-slate-50/60 px-5 py-2.5 text-[10px] text-slate-500">
+        <p className="border-t border-slate-100 bg-slate-50/60 px-5 py-2.5 text-[10.5px] text-slate-500">
           Grading rule: A ≥ 85% on-time disposals and ≤ 5 open files breached · B ≥ 70% / ≤ 10 ·
           C ≥ 50% on-time · D otherwise. Figures recomputed live from the SLA engine.
         </p>
@@ -299,7 +298,7 @@ export default async function ReportsPage() {
           <div>
             <h2 className="panel-title">Bureau disposal velocity & caseload</h2>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-500">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10.5px] font-bold text-slate-500">
             <Gauge className="h-3 w-3" />
             {disposalRate}% overall
           </span>
@@ -342,7 +341,7 @@ export default async function ReportsPage() {
                             style={{ width: `${rate}%`, background: rateColor }}
                           />
                         </div>
-                        <span className="text-[11px] font-extrabold tabular-nums text-slate-700">
+                        <span className="text-[11px] font-bold tabular-nums text-slate-700">
                           {rate}%
                         </span>
                       </div>
@@ -391,7 +390,7 @@ export default async function ReportsPage() {
                   <span className="block text-[11px] font-bold text-slate-800">
                     Case-level dataset
                   </span>
-                  <span className="block text-[9.5px] text-slate-400">
+                  <span className="block text-[10.5px] text-slate-400">
                     CSV · full filtered registry
                   </span>
                 </span>
@@ -410,7 +409,7 @@ export default async function ReportsPage() {
                   <span className="block text-[11px] font-bold text-slate-800">
                     Executive brief
                   </span>
-                  <span className="block text-[9.5px] text-slate-400">
+                  <span className="block text-[10.5px] text-slate-400">
                     PDF · signed-off summary
                   </span>
                 </span>
@@ -429,7 +428,7 @@ export default async function ReportsPage() {
                   <span className="block text-[11px] font-bold text-slate-800">
                     Weekly executive digest
                   </span>
-                  <span className="block text-[9.5px] text-slate-400">
+                  <span className="block text-[10.5px] text-slate-400">
                     PDF · scorecard + hearing board + recurrence watch
                   </span>
                 </span>
@@ -446,11 +445,11 @@ export default async function ReportsPage() {
             <p className="mt-1 font-display text-[26px] font-extrabold leading-none tracking-tight text-emerald-700">
               {slaCompliance}%
             </p>
-            <p className="mt-1.5 text-[10px] leading-relaxed text-emerald-800/75">
+            <p className="mt-1.5 text-[10.5px] leading-relaxed text-emerald-800/75">
               {kpi.pendingBeyondTimeline} of {kpi.totalReceived} active cases have exceeded their
               statutory timeline.
             </p>
-            <p className="mt-2 flex items-center gap-1.5 border-t border-emerald-200/60 pt-2 text-[9.5px] font-medium text-emerald-700">
+            <p className="mt-2 flex items-center gap-1.5 border-t border-emerald-200/60 pt-2 text-[10.5px] font-medium text-emerald-700">
               <TrendingUp className="h-3 w-3" />
               Average resolution {metrics.avgResolutionDays ?? 0} days
             </p>

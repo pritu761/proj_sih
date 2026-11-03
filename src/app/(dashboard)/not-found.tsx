@@ -4,7 +4,7 @@ import { FileQuestion, ArrowLeft, Search } from "lucide-react";
 export default function DashboardNotFound() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
-      <div className="w-full max-w-lg overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)]">
+      <div className="w-full max-w-lg overflow-hidden rounded-[20px] border border-slate-200 bg-white shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)]">
         <div className="h-1 bg-gradient-to-r from-brand-500 via-brand-400 to-saffron-400" />
         <div className="p-7 text-center sm:p-9">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-400">

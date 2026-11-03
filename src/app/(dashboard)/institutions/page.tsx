@@ -96,7 +96,6 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
       <PageHeader
         title="Institution directory"
         icon={Building2}
-        tone="violet"
         actions={
           <Link href="/cases/new" className="btn btn-primary">
             <PlusCircle className="h-3.5 w-3.5" />
@@ -114,7 +113,7 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
           { label: "Regions covered", value: regions.length, tone: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
         ].map((s) => (
           <div key={s.label} className={cn("rounded-2xl border bg-white p-3.5 shadow-sm", s.bg)}>
-            <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-slate-400">{s.label}</p>
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">{s.label}</p>
             <p className={cn("mt-1.5 font-display text-[24px] font-extrabold leading-none tracking-tight", s.tone)}>
               {s.value.toLocaleString("en-IN")}
             </p>
@@ -175,7 +174,7 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
           </p>
         </div>
         {activeFilters > 0 && (
-          <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-bold text-brand-700">
+          <span className="rounded-full bg-brand-50 px-2.5 py-1 text-[10.5px] font-bold text-brand-700">
             {activeFilters} filter{activeFilters > 1 ? "s" : ""} active
           </span>
         )}
@@ -186,7 +185,6 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
         <EmptyState
           icon={Building2}
           title="No institutions found"
-          description="Try a different name, AICTE permanent ID, region, or institution type."
           action={
             <Link href="/institutions" className="btn btn-secondary btn-sm">
               Reset search
@@ -233,22 +231,22 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
                       {monogram || "AI"}
                     </div>
                     <div>
-                      <span className="block font-mono text-[9.5px] font-bold tracking-tight text-brand-700">
+                      <span className="block font-mono text-[10.5px] font-bold tracking-tight text-brand-700">
                         {inst.aicte_permanent_id}
                       </span>
-                      <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                      <span className="mt-0.5 block text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">
                         {inst.region} region
                       </span>
                     </div>
                   </div>
 
                   {overlap ? (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-rose-600">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-rose-600">
                       <ShieldAlert className="h-3 w-3" />
                       {inst.openOverlaps} overlap{inst.openOverlaps > 1 ? "s" : ""}
                     </span>
                   ) : (
-                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700">
+                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-emerald-700">
                       Clear
                     </span>
                   )}
@@ -270,11 +268,11 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">
+                  <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">
                     Active
                   </span>
                   {inst.activeBureaus.length === 0 ? (
-                    <span className="text-[9.5px] italic text-slate-400">No live inquiries</span>
+                    <span className="text-[10.5px] italic text-slate-400">No live inquiries</span>
                   ) : (
                     inst.activeBureaus.map((b: string) => <BureauPill key={b} bureau={b} />)
                   )}
@@ -283,17 +281,17 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
                 <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
                   <div className="flex items-center gap-4">
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">Active</p>
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">Active</p>
                       <p className="mt-0.5 text-[13px] font-extrabold text-slate-900">{inst.activeCases}</p>
                     </div>
                     <div className="h-6 w-px bg-slate-100" />
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">Closed</p>
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">Closed</p>
                       <p className="mt-0.5 text-[13px] font-extrabold text-emerald-600">{inst.disposedCases}</p>
                     </div>
                     <div className="h-6 w-px bg-slate-100" />
                     <div>
-                      <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-slate-400">Total</p>
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-400">Total</p>
                       <p className="mt-0.5 text-[13px] font-extrabold text-slate-900">{inst.totalCases}</p>
                     </div>
                   </div>

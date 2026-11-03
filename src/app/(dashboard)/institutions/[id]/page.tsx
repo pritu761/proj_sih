@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { BureauPill, PriorityPill, StatusPill } from "@/components/ui/badges";
 import { ComplianceRiskCard } from "@/components/institutions/ComplianceRiskCard";
 import { DocumentVault } from "@/components/institutions/DocumentVault";
@@ -138,7 +139,6 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
       <PageHeader
         title={institution.name}
         icon={Building2}
-        tone="violet"
         crumbs={[
           { label: "Institutions", href: "/institutions" },
           { label: institution.name },
@@ -169,7 +169,7 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                   <h2 className="font-display text-[14px] font-bold tracking-tight text-rose-950">
                     Potential Overlapping Cases – Coordination Required
                   </h2>
-                  <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                  <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
                     Critical collision
                   </span>
                 </div>
@@ -178,13 +178,13 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                     "Multiple AICTE Bureaus are actively investigating grievances for this institution concurrently."}
                 </p>
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-rose-700">
+                  <span className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-rose-700">
                     Bureaus involved
                   </span>
                   {firstAlert?.bureaus_involved?.map((b: string) => (
                     <BureauPill key={b} bureau={b} />
                   ))}
-                  <span className="font-mono text-[9.5px] font-semibold text-slate-500">
+                  <span className="font-mono text-[10.5px] font-semibold text-slate-500">
                     {firstAlert?.case_ids?.join("  ·  ")}
                   </span>
                 </div>
@@ -216,13 +216,13 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-lg border border-brand-200 bg-brand-50 px-2 py-0.5 font-mono text-[10px] font-bold text-brand-700">
+                    <span className="rounded-lg border border-brand-200 bg-brand-50 px-2 py-0.5 font-mono text-[10.5px] font-bold text-brand-700">
                       {institution.aicte_permanent_id}
                     </span>
-                    <span className="rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[9.5px] font-bold text-slate-600">
+                    <span className="rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[10.5px] font-bold text-slate-600">
                       {institution.region} region
                     </span>
-                    <span className="rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[9.5px] font-bold text-slate-600">
+                    <span className="rounded-lg border border-slate-200 bg-white px-2 py-0.5 text-[10.5px] font-bold text-slate-600">
                       {institution.institution_type}
                     </span>
                   </div>
@@ -259,7 +259,7 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                 { label: "SLA breach", value: breached, tone: "text-rose-700" },
               ].map((s) => (
                 <div key={s.label} className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2.5">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">{s.label}</p>
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">{s.label}</p>
                   <p className={cn("mt-1 font-display text-[21px] font-extrabold leading-none tracking-tight", s.tone)}>
                     {s.value}
                   </p>
@@ -352,13 +352,13 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                 >
                   <div className="min-w-0">
                     <p className="truncate text-[11.5px] font-bold text-slate-900">{p.name}</p>
-                    <p className="text-[9.5px] text-slate-500">
+                    <p className="text-[10.5px] text-slate-500">
                       {p.totalCases} filings · {p.openCases} open · {p.bureaus.length} bureau(s)
                     </p>
                   </div>
                   <span
                     className={cn(
-                      "rounded-full border px-2 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide",
+                      "rounded-full border px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide",
                       meta.chip
                     )}
                   >
@@ -380,7 +380,7 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
               <h2 className="font-display text-[14px] font-bold text-slate-900">
                 Consolidated case history
               </h2>
-              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-bold text-slate-500">
+              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-500">
                 {cases.length}
               </span>
             </div>
@@ -393,10 +393,8 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
           </div>
 
           {cases.length === 0 ? (
-            <div className="panel p-10 text-center">
-              <Inbox className="mx-auto h-8 w-8 text-slate-400" />
-              <p className="mt-2 text-[12px] font-semibold text-slate-600">No cases on record</p>
-              <p className="text-[10.5px] text-slate-400">This institution has a clean grievance history.</p>
+            <div className="panel">
+              <EmptyState icon={Inbox} title="No cases on record" />
             </div>
           ) : (
             <div className="space-y-2.5">
@@ -448,7 +446,7 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                   </p>
 
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[9.5px] text-slate-400">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-slate-400">
                       <span className="inline-flex items-center gap-1">
                         <UserCheck className="h-3 w-3" />
                         {c.assigned_officer || "Unassigned"}
@@ -503,16 +501,16 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                     <div className="flex items-center justify-between gap-2">
                       <Link
                         href={`/cases/${act.case_internal_id}`}
-                        className="font-mono text-[9.5px] font-bold text-brand-700 hover:underline"
+                        className="font-mono text-[10.5px] font-bold text-brand-700 hover:underline"
                       >
                         {act.case_id}
                       </Link>
-                      <span className="text-[9px] font-medium text-slate-400">
+                      <span className="text-[10.5px] font-medium text-slate-400">
                         {formatDate(act.timestamp)}
                       </span>
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[8.5px] font-bold uppercase tracking-wide text-slate-600">
+                      <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-slate-600">
                         {act.action_type.replaceAll("_", " ")}
                       </span>
                       <BureauPill bureau={act.actor_bureau} />
@@ -520,7 +518,7 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                     <p className="mt-1 line-clamp-3 text-[10.5px] leading-relaxed text-slate-600">
                       {act.remarks}
                     </p>
-                    <p className="mt-0.5 text-[9px] text-slate-400">by {act.actor_user}</p>
+                    <p className="mt-0.5 text-[10.5px] text-slate-400">by {act.actor_user}</p>
                   </div>
                 );
               })}
@@ -528,7 +526,7 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
           </div>
 
           <div className="border-t border-slate-100 bg-slate-50/60 px-4 py-3">
-            <div className="flex items-center gap-2 text-[10px] font-medium text-slate-500">
+            <div className="flex items-center gap-2 text-[10.5px] font-medium text-slate-500">
               <AlertTriangle className="h-3 w-3 text-amber-500" />
               Append-only ledger. Entries cannot be edited or deleted.
             </div>
@@ -565,9 +563,9 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
                 <Icon className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">{f.label}</p>
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">{f.label}</p>
                 <p className="mt-0.5 truncate text-[11.5px] font-bold text-slate-800">{f.value}</p>
-                <p className="mt-0.5 line-clamp-1 text-[10px] text-slate-400">{f.note}</p>
+                <p className="mt-0.5 line-clamp-1 text-[10.5px] text-slate-400">{f.note}</p>
               </div>
             </div>
           );

@@ -402,12 +402,12 @@ export function CommandPalette({ user }: { user: SessionUser }) {
             placeholder="Search cases, institutions, or run a command..."
             className="h-7 flex-1 bg-transparent text-[14px] font-medium text-slate-900 outline-none placeholder:text-slate-400"
           />
-          <span className="hidden items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[9px] font-bold text-slate-400 sm:flex">
+          <span className="hidden items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-400 sm:flex">
             <Command className="h-2.5 w-2.5" />K
           </span>
           <button
             onClick={close}
-            className="rounded-md border border-slate-200 px-1.5 py-0.5 text-[9px] font-bold text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+            className="rounded-md border border-slate-200 px-1.5 py-0.5 text-[10.5px] font-bold text-slate-400 hover:bg-slate-50 hover:text-slate-600"
             aria-label="Close command palette"
           >
             ESC
@@ -429,7 +429,7 @@ export function CommandPalette({ user }: { user: SessionUser }) {
           ) : (
             grouped.map(({ group, items: groupItems }) => (
               <div key={group} className="mb-1">
-                <p className="px-3 pb-1 pt-2 text-[9px] font-extrabold uppercase tracking-[0.14em] text-slate-400">
+                <p className="px-3 pb-1 pt-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                   {groupLabel[group]}
                 </p>
                 {groupItems.map((item) => {
@@ -461,7 +461,7 @@ export function CommandPalette({ user }: { user: SessionUser }) {
                             {item.title}
                           </span>
                           {item.badge && (
-                            <span className="rounded border border-slate-200 bg-white px-1 py-px text-[8.5px] font-bold text-slate-500">
+                            <span className="rounded border border-slate-200 bg-white px-1 py-px text-[10.5px] font-bold text-slate-500">
                               {item.badge}
                             </span>
                           )}
@@ -473,7 +473,7 @@ export function CommandPalette({ user }: { user: SessionUser }) {
                         )}
                       </span>
                       {isActive ? (
-                        <span className="flex shrink-0 items-center gap-1 text-[9px] font-bold text-brand-600">
+                        <span className="flex shrink-0 items-center gap-1 text-[10.5px] font-bold text-brand-600">
                           <CornerDownLeft className="h-3 w-3" />
                           Enter
                         </span>
@@ -490,26 +490,26 @@ export function CommandPalette({ user }: { user: SessionUser }) {
 
         {/* Footer */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5">
-          <div className="flex items-center gap-3 text-[9px] font-semibold text-slate-400">
+          <div className="flex items-center gap-3 text-[10.5px] font-semibold text-slate-400">
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-slate-200 bg-white px-1 py-px font-mono text-[8.5px]">&uarr;&darr;</kbd>
+              <kbd className="rounded border border-slate-200 bg-white px-1 py-px font-mono text-[10.5px]">&uarr;&darr;</kbd>
               navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="rounded border border-slate-200 bg-white px-1 py-px font-mono text-[8.5px]">&#8629;</kbd>
+              <kbd className="rounded border border-slate-200 bg-white px-1 py-px font-mono text-[10.5px]">&#8629;</kbd>
               open
             </span>
             <span className="hidden items-center gap-1 sm:flex">
-              <kbd className="rounded border border-slate-200 bg-white px-1 py-px font-mono text-[8.5px]">esc</kbd>
+              <kbd className="rounded border border-slate-200 bg-white px-1 py-px font-mono text-[10.5px]">esc</kbd>
               close
             </span>
             <span className="hidden items-center gap-1 md:flex">
-              <kbd className="rounded border border-slate-200 bg-white px-1 py-px font-mono text-[8.5px]">?</kbd>
+              <kbd className="rounded border border-slate-200 bg-white px-1 py-px font-mono text-[10.5px]">?</kbd>
               shortcuts
             </span>
           </div>
-          <span className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">
-            <span className="flex h-4 w-4 items-center justify-center rounded bg-saffron-500 text-[8px] font-extrabold text-ink-950">
+          <span className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
+            <span className="flex h-4 w-4 items-center justify-center rounded bg-saffron-500 text-[10.5px] font-bold text-ink-950">
               A
             </span>
             Sentinel command

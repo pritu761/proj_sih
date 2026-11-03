@@ -162,7 +162,7 @@ export function OnboardingTour() {
               <Sparkles className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-saffron-300">
+              <p className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-saffron-300">
                 Step {step + 1} of {STEPS.length}
               </p>
               <h3 className="font-display text-[14px] font-extrabold text-white">{current.title}</h3>

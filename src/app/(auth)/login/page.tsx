@@ -101,7 +101,7 @@ function LoginForm() {
         </div>
       </div>
 
-      <div className="rounded-[26px] border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] sm:p-8">
+      <div className="rounded-[20px] border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] sm:p-8">
         <div className="mb-6">
           <h1 className="font-display text-[26px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950">
             Sign in to the command center
@@ -193,10 +193,10 @@ function LoginForm() {
 
         <div className="mt-7 border-t border-slate-100 pt-5">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
               Demo role access
             </p>
-            <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[9px] font-bold text-brand-700">
+            <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10.5px] font-bold text-brand-700">
               One-click sign in
             </span>
           </div>
@@ -213,7 +213,7 @@ function LoginForm() {
                   className="group flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-[0_8px_20px_-10px_rgba(37,89,232,0.35)] disabled:opacity-60"
                 >
                   <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[9.5px] font-extrabold ${meta.className}`}
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[10.5px] font-bold ${meta.className}`}
                   >
                     {u.name
                       .split(" ")
@@ -226,7 +226,7 @@ function LoginForm() {
                     <span className="flex items-center gap-1 text-[11px] font-bold text-slate-800">
                       <span className="truncate">{u.name}</span>
                     </span>
-                    <span className="mt-0.5 block truncate text-[9.5px] font-medium text-slate-400">
+                    <span className="mt-0.5 block truncate text-[10.5px] font-medium text-slate-400">
                       {u.designation}
                     </span>
                   </span>
@@ -303,14 +303,14 @@ export default function LoginPage() {
             <p className="font-display text-[17px] font-extrabold tracking-tight text-white">
               AICTE <span className="text-saffron-400">Sentinel</span>
             </p>
-            <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.2em] text-slate-500">
               Integrated complaint intelligence
             </p>
           </div>
         </div>
 
         <div className="relative z-10 max-w-[540px]">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-300">
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-300">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
             National grievance grid · Live
           </span>
@@ -360,13 +360,13 @@ export default function LoginPage() {
                 <p className="font-display text-[22px] font-extrabold tracking-tight text-white">
                   {s.value}
                 </p>
-                <p className="mt-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                   {s.label}
                 </p>
               </div>
             ))}
           </div>
-          <p className="mt-4 text-[9.5px] font-medium leading-relaxed text-slate-400">
+          <p className="mt-4 text-[10.5px] font-medium leading-relaxed text-slate-400">
             All India Council for Technical Education · Nelson Mandela Marg, Vasant Kunj, New Delhi 110070
           </p>
         </div>

@@ -27,10 +27,10 @@ export function OperationsWire({ items }: { items: WireItem[] }) {
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
         </span>
         <Radio className="hidden h-3.5 w-3.5 text-saffron-400 sm:block" />
-        <span className="hidden text-[9px] font-extrabold uppercase tracking-[0.15em] text-slate-300 sm:inline">
+        <span className="hidden text-[10.5px] font-semibold uppercase tracking-[0.15em] text-slate-300 sm:inline">
           Command brief
         </span>
-        <span className="text-[9px] font-extrabold uppercase tracking-[0.15em] text-slate-300 sm:hidden">
+        <span className="text-[10.5px] font-semibold uppercase tracking-[0.15em] text-slate-300 sm:hidden">
           Brief
         </span>
       </div>
@@ -56,7 +56,7 @@ export function OperationsWire({ items }: { items: WireItem[] }) {
                     style={{ background: item.tone ?? "#6091fa" }}
                   />
                   <span className="text-[10.5px] font-medium text-slate-400 transition-colors group-hover:text-slate-200">
-                    <strong className="font-display text-[11.5px] font-extrabold tabular-nums text-white">
+                    <strong className="font-display text-[11.5px] font-bold tabular-nums text-white">
                       {item.value}
                     </strong>{" "}
                     {item.text}
@@ -71,7 +71,7 @@ export function OperationsWire({ items }: { items: WireItem[] }) {
 
       <Link
         href="/reports"
-        className="relative z-10 hidden shrink-0 items-center gap-1.5 border-l border-white/10 px-4 text-[10px] font-bold text-slate-400 transition-colors hover:bg-white/[0.04] hover:text-white md:flex"
+        className="relative z-10 hidden shrink-0 items-center gap-1.5 border-l border-white/10 px-4 text-[10.5px] font-bold text-slate-400 transition-colors hover:bg-white/[0.04] hover:text-white md:flex"
       >
         Full brief
         <ArrowUpRight className="h-3 w-3" />

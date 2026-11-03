@@ -27,14 +27,13 @@ export default async function AuditPage() {
       <PageHeader
         title="System security & audit trail"
         icon={ScrollText}
-        tone="emerald"
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-[10.5px] font-bold text-emerald-700">
               <ShieldCheck className="h-3.5 w-3.5" />
               Tamper-evident ledger active
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10px] font-bold text-slate-600">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1.5 text-[10.5px] font-bold text-slate-600">
               Restricted · Admin & Authority
             </span>
           </div>

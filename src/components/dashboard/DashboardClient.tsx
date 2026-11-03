@@ -41,6 +41,8 @@ import {
 import { StatusPill, BureauPill, ConfidencePill } from "@/components/ui/badges";
 import { CountUp } from "@/components/ui/count-up";
 import { useToast } from "@/components/ui/toast";
+import { ChartTooltip } from "@/components/ui/chart-tooltip";
+import { EmptyState } from "@/components/ui/empty-state";
 import { RiskRadar } from "./RiskRadar";
 import { IngestionSimulator } from "./IngestionSimulator";
 import { OperationsWire } from "./OperationsWire";
@@ -67,34 +69,6 @@ const statusColor: Record<string, string> = {
   Transferred: "#7c3aed",
   Escalated: "#e11d48",
 };
-
-function ChartTooltip({ active, payload, label, suffix }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="dark-surface rounded-xl border border-white/10 bg-ink-900/95 px-3.5 py-2.5 shadow-2xl backdrop-blur">
-      {label && (
-        <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">
-          {label}
-        </p>
-      )}
-      <div className="space-y-1">
-        {payload.map((p: any, i: number) => (
-          <div key={i} className="flex items-center gap-2 text-[11px]">
-            <span
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ background: p.color || p.payload?.fill || "#60a5fa" }}
-            />
-            <span className="font-medium text-slate-300">{p.name}</span>
-            <span className="ml-auto font-bold tabular-nums text-white">
-              {p.value}
-              {suffix ?? ""}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function DashboardClient({
   initialMetrics,
@@ -131,7 +105,6 @@ export function DashboardClient({
       if (!res.ok) throw new Error("Metrics endpoint unavailable");
       setMetrics(await res.json());
       setLastUpdated(new Date());
-      toast.success("Metrics refreshed");
     } catch {
       toast.error(
         "Refresh failed",
@@ -307,9 +280,14 @@ export function DashboardClient({
       .find((w) => w && !honorifics.has(w.toLowerCase().replace(/\./g, ""))) ?? "Officer";
 
   return (
-    <div className="space-y-5">
+    <div
+      className={cn(
+        "space-y-5 transition-opacity",
+        isRefreshing && "pointer-events-none opacity-50"
+      )}
+    >
       {/* ── Command hero ── */}
-      <section className="hero-mesh relative overflow-hidden rounded-[26px] border border-white/10 px-5 py-5 shadow-[0_24px_60px_-30px_rgba(6,10,20,0.6)] sm:px-7 sm:py-6">
+      <section className="hero-mesh relative overflow-hidden rounded-[20px] border border-white/10 px-5 py-5 shadow-[0_24px_60px_-30px_rgba(6,10,20,0.6)] sm:px-7 sm:py-6">
         {/* Real AICTE HQ architectural backdrop */}
         <div
           className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center opacity-25 filter contrast-125 mix-blend-luminosity dark:opacity-40 dark:filter-none dark:brightness-105"
@@ -324,14 +302,14 @@ export function DashboardClient({
         <div className="relative z-10 flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[9.5px] font-extrabold uppercase tracking-[0.12em] text-emerald-300">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
                 </span>
                 Live command center
               </span>
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[9.5px] font-bold uppercase tracking-[0.1em] text-slate-400">
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                 {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
               </span>
             </div>
@@ -354,7 +332,7 @@ export function DashboardClient({
                 <PlusCircle className="h-3.5 w-3.5" />
                 Register complaint
               </Link>
-              <span className="ml-1 text-[10px] font-medium text-slate-400">
+              <span className="ml-1 text-[10.5px] font-medium text-slate-400">
                 Synced {lastUpdated ? lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "just now"}
               </span>
             </div>
@@ -371,7 +349,7 @@ export function DashboardClient({
               return (
                 <div key={s.label} className="rounded-2xl border border-white/10 bg-white/[0.045] p-3 backdrop-blur-sm">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-slate-400">{s.label}</span>
+                    <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">{s.label}</span>
                     <Icon className="h-3.5 w-3.5" style={{ color: s.color }} />
                   </div>
                   <p className="mt-2 font-display text-[21px] font-extrabold leading-none tracking-tight text-white">
@@ -406,7 +384,7 @@ export function DashboardClient({
                   <h2 className="font-display text-[14px] font-bold tracking-tight text-rose-950">
                     Potential Overlapping Cases – Coordination Required
                   </h2>
-                  <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white">
+                  <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
                     {k.openOverlapAlerts} open
                   </span>
                 </div>
@@ -445,13 +423,13 @@ export function DashboardClient({
                 <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 opacity-0 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-slate-500 group-hover:opacity-100" />
               </div>
 
-              <p className="mt-3.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-slate-400">
+              <p className="mt-3.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
                 {kpi.label}
               </p>
               <p className="mt-1 font-display text-[29px] font-extrabold leading-none tracking-[-0.03em] text-slate-950">
                 <CountUp value={kpi.value} />
               </p>
-              <p className="mt-1.5 truncate text-[10px] font-medium text-slate-400">{kpi.sub}</p>
+              <p className="mt-1.5 truncate text-[10.5px] font-medium text-slate-400">{kpi.sub}</p>
 
               <div className="mt-3.5 h-1 overflow-hidden rounded-full bg-slate-100">
                 <div
@@ -479,7 +457,7 @@ export function DashboardClient({
                 { label: "In process", color: "#2559e8" },
                 { label: "Disposed", color: "#059669" },
               ].map((l) => (
-                <span key={l.label} className="hidden items-center gap-1.5 text-[10px] font-semibold text-slate-500 sm:flex">
+                <span key={l.label} className="hidden items-center gap-1.5 text-[10.5px] font-semibold text-slate-500 sm:flex">
                   <span className="h-2 w-2 rounded-sm" style={{ background: l.color }} />
                   {l.label}
                 </span>
@@ -497,7 +475,7 @@ export function DashboardClient({
                   if (key) go(`/cases?bureau=${key}`);
                 }}
               >
-                <CartesianGrid strokeDasharray="4 4" stroke="#eef2f8" vertical={false} />
+                <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.28)" vertical={false} />
                 <XAxis dataKey="short" axisLine={false} tickLine={false} dy={8} />
                 <YAxis axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip cursor={{ fill: "rgba(37,89,232,0.045)" }} content={<ChartTooltip />} />
@@ -550,7 +528,7 @@ export function DashboardClient({
               <span className="font-display text-[27px] font-extrabold leading-none tracking-tight text-slate-950">
                 {k.totalReceived}
               </span>
-              <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+              <span className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                 total cases
               </span>
             </div>
@@ -592,7 +570,7 @@ export function DashboardClient({
           <div className="h-[224px] px-3 pb-3 pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={ageingData} margin={{ top: 6, right: 8, left: -24, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="4 4" stroke="#eef2f8" vertical={false} />
+                <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.28)" vertical={false} />
                 <XAxis dataKey="range" axisLine={false} tickLine={false} dy={6} />
                 <YAxis axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip cursor={{ fill: "rgba(37,89,232,0.04)" }} content={<ChartTooltip suffix=" cases" />} />
@@ -628,7 +606,7 @@ export function DashboardClient({
                     <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="4 4" stroke="#eef2f8" vertical={false} />
+                <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.28)" vertical={false} />
                 <XAxis dataKey="month" axisLine={false} tickLine={false} dy={6} tickFormatter={(v) => String(v).split(" ")[0]} />
                 <YAxis axisLine={false} tickLine={false} />
                 <Tooltip content={<ChartTooltip />} />
@@ -638,10 +616,10 @@ export function DashboardClient({
             </ResponsiveContainer>
           </div>
           <div className="flex items-center justify-center gap-4 pb-3">
-            <span className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
+            <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500">
               <span className="h-2 w-2 rounded-full bg-amber-500" /> Received
             </span>
-            <span className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
+            <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500">
               <span className="h-2 w-2 rounded-full bg-emerald-500" /> Disposed
             </span>
           </div>
@@ -667,7 +645,7 @@ export function DashboardClient({
                   if (region) go(`/cases?region=${encodeURIComponent(region)}`);
                 }}
               >
-                <CartesianGrid strokeDasharray="4 4" stroke="#eef2f8" horizontal={false} />
+                <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.28)" horizontal={false} />
                 <XAxis type="number" axisLine={false} tickLine={false} allowDecimals={false} />
                 <YAxis type="category" dataKey="region" axisLine={false} tickLine={false} width={74} tickFormatter={(v) => String(v).replace("North-Western", "NW").replace("South-Western", "SW")} />
                 <Tooltip cursor={{ fill: "rgba(37,89,232,0.04)" }} content={<ChartTooltip suffix=" cases" />} />
@@ -696,10 +674,7 @@ export function DashboardClient({
           </div>
 
           {urgentCases.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-400" />
-              <p className="mt-2 text-[12px] font-semibold text-slate-600">No urgent cases right now</p>
-            </div>
+            <EmptyState icon={CheckCircle2} title="No urgent cases right now" />
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -729,7 +704,7 @@ export function DashboardClient({
                         <span className="block max-w-[200px] truncate text-[11px] font-semibold text-slate-800">
                           {c.institution_name}
                         </span>
-                        <span className="mt-0.5 block text-[9.5px] text-slate-400">{c.institution_city}</span>
+                        <span className="mt-0.5 block text-[10.5px] text-slate-400">{c.institution_city}</span>
                       </td>
                       <td><BureauPill bureau={c.assigned_bureau} /></td>
                       <td>
@@ -774,10 +749,7 @@ export function DashboardClient({
           </div>
 
           {openOverlaps.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <ShieldAlert className="mx-auto h-8 w-8 text-emerald-300" />
-              <p className="mt-2 text-[12px] font-semibold text-slate-600">No uncoordinated overlaps</p>
-            </div>
+            <EmptyState icon={ShieldAlert} title="No uncoordinated overlaps" />
           ) : (
             <div className="divide-y divide-slate-100">
               {openOverlaps.map((o) => (
@@ -796,11 +768,11 @@ export function DashboardClient({
                     {o.bureaus_involved.map((b: string) => (
                       <BureauPill key={b} bureau={b} />
                     ))}
-                    <span className="text-[9.5px] font-semibold text-slate-400">
+                    <span className="text-[10.5px] font-semibold text-slate-400">
                       {o.case_ids.length} cases
                     </span>
                   </div>
-                  <p className="mt-1.5 line-clamp-1 text-[10px] text-slate-400">
+                  <p className="mt-1.5 line-clamp-1 text-[10.5px] text-slate-400">
                     {o.match_reasons?.[0]?.description ?? "Multi-bureau inquiry detected."}
                   </p>
                 </Link>

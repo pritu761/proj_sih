@@ -25,8 +25,8 @@ function Keycaps({ keys }: { keys: string[] }) {
     <span className="flex items-center gap-1">
       {keys.map((key, index) => (
         <span key={`${key}-${index}`} className="flex items-center gap-1">
-          {index > 0 && <span className="text-[8px] font-bold text-slate-500">+</span>}
-          <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-1.5 font-mono text-[9.5px] font-bold text-slate-600 shadow-[0_1px_0_rgba(10,16,32,0.06)]">
+          {index > 0 && <span className="text-[10.5px] font-bold text-slate-500">+</span>}
+          <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-1.5 font-mono text-[10.5px] font-bold text-slate-600 shadow-[0_1px_0_rgba(10,16,32,0.06)]">
             {key}
           </kbd>
         </span>
@@ -84,7 +84,7 @@ export function ShortcutsDialog({
         aria-modal="true"
         aria-labelledby="shortcuts-title"
         tabIndex={-1}
-        className="animate-scale-in max-h-[calc(100vh-2rem)] w-full max-w-[620px] overflow-y-auto rounded-[22px] border border-slate-200 bg-white shadow-[0_40px_90px_-24px_rgba(6,10,20,0.6)] outline-none"
+        className="animate-scale-in max-h-[calc(100vh-2rem)] w-full max-w-[620px] overflow-y-auto rounded-[20px] border border-slate-200 bg-white shadow-[0_40px_90px_-24px_rgba(6,10,20,0.6)] outline-none"
       >
         <div className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-br from-slate-50 via-white to-brand-50/60 px-6 py-5">
           <span
@@ -122,7 +122,7 @@ export function ShortcutsDialog({
               <Compass className="h-3.5 w-3.5 text-brand-500" />
               <h3
                 id="shortcuts-navigate"
-                className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-slate-500"
+                className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-500"
               >
                 Navigate
               </h3>
@@ -147,7 +147,7 @@ export function ShortcutsDialog({
               <Keyboard className="h-3.5 w-3.5 text-saffron-500" />
               <h3
                 id="shortcuts-workspace"
-                className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-slate-500"
+                className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-slate-500"
               >
                 Workspace
               </h3>
@@ -169,7 +169,7 @@ export function ShortcutsDialog({
         </div>
 
         <div className="flex flex-col gap-2 border-t border-slate-100 bg-slate-50/70 px-6 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[10px] font-medium text-slate-500">
+          <p className="text-[10.5px] font-medium text-slate-500">
             Shortcuts pause automatically while you are typing in a field.
           </p>
           <button type="button" onClick={onClose} className="btn btn-secondary btn-sm">

@@ -14,17 +14,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-
-const tooltipStyle = {
-  backgroundColor: "rgba(10, 16, 32, 0.96)",
-  color: "#F8FAFC",
-  borderRadius: "12px",
-  fontSize: "11px",
-  fontWeight: 600,
-  padding: "9px 12px",
-  border: "1px solid rgba(255,255,255,0.12)",
-  boxShadow: "0 12px 32px rgba(6,10,20,0.35)",
-};
+import { ChartTooltip } from "@/components/ui/chart-tooltip";
 
 const statusColor: Record<string, string> = {
   Pending: "#f59e0b",
@@ -72,10 +62,10 @@ export function ReportsClient({ metrics }: { metrics: any }) {
               <h2 className="panel-title">Disposal velocity</h2>
             </div>
             <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
+              <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500">
                 <span className="h-2 w-2 rounded-full bg-saffron-500" /> Received
               </span>
-              <span className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
+              <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500">
                 <span className="h-2 w-2 rounded-full bg-emerald-500" /> Disposed
               </span>
             </div>
@@ -96,7 +86,7 @@ export function ReportsClient({ metrics }: { metrics: any }) {
                     <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="4 4" stroke="#eef2f8" vertical={false} />
+                <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.28)" vertical={false} />
                 <XAxis
                   dataKey="month"
                   axisLine={false}
@@ -105,7 +95,7 @@ export function ReportsClient({ metrics }: { metrics: any }) {
                   tickFormatter={(v) => String(v).split(" ")[0]}
                 />
                 <YAxis axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: "#cbd5e1", strokeDasharray: "4 4" }} />
+                <Tooltip cursor={{ stroke: "#cbd5e1", strokeDasharray: "4 4" }} content={<ChartTooltip />} />
                 <Area
                   type="monotone"
                   dataKey="received"
@@ -158,14 +148,14 @@ export function ReportsClient({ metrics }: { metrics: any }) {
                     <Cell key={i} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
+                <Tooltip content={<ChartTooltip />} />
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pb-1">
               <span className="font-display text-[26px] font-extrabold leading-none tracking-tight text-slate-950">
                 {metrics.kpi?.totalReceived ?? 0}
               </span>
-              <span className="mt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-slate-400">
+              <span className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                 total cases
               </span>
             </div>
@@ -202,7 +192,7 @@ export function ReportsClient({ metrics }: { metrics: any }) {
               ].map((l) => (
                 <span
                   key={l.label}
-                  className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500"
+                  className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500"
                 >
                   <span className="h-2 w-2 rounded-sm" style={{ background: l.color }} />
                   {l.label}
@@ -217,10 +207,10 @@ export function ReportsClient({ metrics }: { metrics: any }) {
                 margin={{ top: 6, right: 12, left: -18, bottom: 0 }}
                 barGap={5}
               >
-                <CartesianGrid strokeDasharray="4 4" stroke="#eef2f8" vertical={false} />
+                <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.28)" vertical={false} />
                 <XAxis dataKey="short" axisLine={false} tickLine={false} dy={8} />
                 <YAxis axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip cursor={{ fill: "rgba(37,89,232,0.05)" }} contentStyle={tooltipStyle} />
+                <Tooltip cursor={{ fill: "rgba(37,89,232,0.05)" }} content={<ChartTooltip />} />
                 <Bar dataKey="pending" name="Pending" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} maxBarSize={46} animationDuration={700} />
                 <Bar dataKey="underProcess" name="In process" stackId="a" fill="#2559e8" maxBarSize={46} animationDuration={700} />
                 <Bar dataKey="disposed" name="Disposed" stackId="a" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={46} animationDuration={700} />
@@ -244,7 +234,7 @@ export function ReportsClient({ metrics }: { metrics: any }) {
                   <span className="font-semibold text-slate-600">{a.range}</span>
                   <span className="font-extrabold tabular-nums text-slate-900">
                     {a.count}
-                    <span className="ml-1 text-[9px] font-medium text-slate-400">
+                    <span className="ml-1 text-[10.5px] font-medium text-slate-400">
                       {Math.round((a.count / totalAgeing) * 100)}%
                     </span>
                   </span>
@@ -262,10 +252,10 @@ export function ReportsClient({ metrics }: { metrics: any }) {
             ))}
 
             <div className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/70 p-3">
-              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-500 text-[8px] font-extrabold text-white">
+              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-amber-500 text-[10.5px] font-bold text-white">
                 !
               </span>
-              <p className="text-[10px] leading-relaxed text-amber-800">
+              <p className="text-[10.5px] leading-relaxed text-amber-800">
                 Cases beyond 60 days materially reduce the bureau disposal rate and trigger automatic
                 escalation.
               </p>
@@ -293,7 +283,7 @@ export function RegionBars({ data }: { data: any[] }) {
               style={{ width: `${(r.cases / max) * 100}%` }}
             />
           </div>
-          <span className="w-8 shrink-0 text-right text-[10.5px] font-extrabold tabular-nums text-slate-900">
+          <span className="w-8 shrink-0 text-right text-[10.5px] font-bold tabular-nums text-slate-900">
             {r.cases}
           </span>
         </div>

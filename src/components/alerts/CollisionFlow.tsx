@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Network, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface FlowAlert {
   id: string;
@@ -178,15 +179,11 @@ export function CollisionFlow({
 
   if (model.institutions.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center">
-        <Network className="mx-auto h-6 w-6 text-slate-400" />
-        <p className="mt-2 text-[12px] font-semibold text-slate-500">
-          No active collisions to plot.
-        </p>
-        <p className="mt-1 text-[10.5px] text-slate-400">
-          The topology redraws as soon as the engine detects a parallel inquiry.
-        </p>
-      </div>
+      <EmptyState
+        icon={Network}
+        title="No active collisions to plot"
+        className="rounded-2xl border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.03]"
+      />
     );
   }
 
@@ -194,7 +191,7 @@ export function CollisionFlow({
     <section className="panel overflow-hidden">
       <div className="panel-head items-center">
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-600">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 bg-gradient-to-b from-slate-100 to-slate-50 text-slate-500 dark:border-white/10 dark:from-white/[0.07] dark:to-white/[0.03] dark:text-slate-300">
             <Network className="h-[17px] w-[17px]" />
           </div>
           <div>
@@ -203,7 +200,7 @@ export function CollisionFlow({
             </div>
           </div>
         </div>
-        <span className="hidden items-center gap-1.5 text-[10px] font-semibold text-slate-500 sm:flex">
+        <span className="hidden items-center gap-1.5 text-[10.5px] font-semibold text-slate-500 sm:flex">
           {model.institutions.length}
           {model.institutionTotal > model.institutions.length && "+"} institutions ·{" "}
           {model.bureauCount} bureaus · {model.totalCases} cases
@@ -381,7 +378,7 @@ export function CollisionFlow({
 
       <div
         className={cn(
-          "flex min-h-[38px] flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 px-4 py-2.5 text-[10px] font-medium transition-colors",
+          "flex min-h-[38px] flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-100 px-4 py-2.5 text-[10.5px] font-medium transition-colors",
           hoveredLink ? "bg-brand-50/60 text-brand-800" : "bg-slate-50/60 text-slate-500"
         )}
       >
@@ -394,7 +391,7 @@ export function CollisionFlow({
             </span>
             <span>{hoveredLink.count} parallel cases</span>
             <span
-              className="rounded-full px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase tracking-wide"
+              className="rounded-full px-1.5 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide"
               style={{
                 color: CONFIDENCE_COLOR[hoveredLink.confidence],
                 background: `${CONFIDENCE_COLOR[hoveredLink.confidence]}18`,
@@ -402,7 +399,7 @@ export function CollisionFlow({
             >
               {hoveredLink.confidence} confidence
             </span>
-            <span className="ml-auto hidden text-[9px] text-slate-400 sm:inline">
+            <span className="ml-auto hidden text-[10.5px] text-slate-400 sm:inline">
               Click to jump to the alert
             </span>
           </>
@@ -412,10 +409,10 @@ export function CollisionFlow({
               Thicker links carry more parallel cases. Every edge is an active cross-bureau
               collision, not a historical trend.
             </span>
-            <span className="ml-auto text-[9px] text-slate-400 sm:hidden">
+            <span className="ml-auto text-[10.5px] text-slate-400 sm:hidden">
               Swipe the map to pan
             </span>
-            <span className="ml-auto hidden items-center gap-2 text-[9px] text-slate-400 sm:flex">
+            <span className="ml-auto hidden items-center gap-2 text-[10.5px] text-slate-400 sm:flex">
               {Object.entries(BUREAU_META).map(([key, meta]) => (
                 <span key={key} className="inline-flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta.color }} />
