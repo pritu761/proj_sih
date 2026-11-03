@@ -13,19 +13,18 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  ScanLine,
-  Network,
-  Timer,
-  ArrowUpRight,
+  LogOut,
 } from "lucide-react";
 
-const roleMeta: Record<string, { label: string; className: string }> = {
-  ADMIN: { label: "Admin", className: "bg-ink-900 text-white" },
-  COMPETENT_AUTHORITY: { label: "Authority", className: "bg-saffron-500 text-ink-950" },
-  REGULATION_OFFICER: { label: "RB", className: "bg-indigo-600 text-white" },
-  PGRC_OFFICER: { label: "PGRC", className: "bg-sky-700 text-white" },
-  BUREAU_OFFICER: { label: "AB", className: "bg-amber-500 text-ink-950" },
-  REGIONAL_OFFICER: { label: "Region", className: "bg-teal-700 text-white" },
+type RoleMeta = { label: string; code: string; className: string };
+
+const roleMeta: Record<string, RoleMeta> = {
+  ADMIN: { label: "Admin", code: "AD", className: "bg-ink-900 text-white" },
+  COMPETENT_AUTHORITY: { label: "Authority", code: "AU", className: "bg-saffron-500 text-ink-950" },
+  REGULATION_OFFICER: { label: "Regulation", code: "RB", className: "bg-indigo-600 text-white" },
+  PGRC_OFFICER: { label: "PGRC", code: "PG", className: "bg-sky-700 text-white" },
+  BUREAU_OFFICER: { label: "Approval", code: "AB", className: "bg-amber-500 text-ink-950" },
+  REGIONAL_OFFICER: { label: "Regional", code: "RO", className: "bg-teal-700 text-white" },
 };
 
 function safeCallbackUrl(value: string | null) {
@@ -40,6 +39,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
+  const signedOut = searchParams.get("signedout") === "1";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -87,24 +87,32 @@ function LoginForm() {
   };
 
   return (
-    <div className="w-full max-w-[460px]">
+    <div className="w-full max-w-[440px]">
       <div className="mb-7 lg:hidden">
         <div className="flex items-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-saffron-400 to-saffron-600">
             <ShieldCheck className="h-5 w-5 text-ink-950" />
           </div>
-          <div>
-            <p className="font-display text-[16px] font-extrabold tracking-tight text-slate-900">
-              AICTE <span className="text-saffron-600">Sentinel</span>
-            </p>
-          </div>
+          <p className="font-display text-[16px] font-extrabold tracking-tight text-slate-900 dark:text-white">
+            AICTE <span className="text-saffron-600 dark:text-saffron-400">Sentinel</span>
+          </p>
         </div>
       </div>
 
-      <div className="rounded-[20px] border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] sm:p-8">
+      <div className="rounded-[20px] border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] sm:p-8 dark:border-white/10 dark:bg-ink-900 dark:shadow-[0_30px_80px_-40px_rgba(0,0,0,0.75)]">
+        {signedOut && (
+          <div
+            role="status"
+            className="mb-5 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11.5px] font-medium text-slate-600 animate-slide-down dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300"
+          >
+            <LogOut aria-hidden className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" />
+            <span>You have signed out of Sentinel.</span>
+          </div>
+        )}
+
         <div className="mb-6">
-          <h1 className="font-display text-[26px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950">
-            Sign in to the command center
+          <h1 className="font-display text-[24px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 dark:text-white">
+            Sign in
           </h1>
         </div>
 
@@ -121,7 +129,7 @@ function LoginForm() {
         <form onSubmit={submit} className="space-y-4">
           <div>
             <label htmlFor="email" className="field-label">
-              Official email address
+              Official email
             </label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -139,14 +147,9 @@ function LoginForm() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between">
-              <label htmlFor="password" className="field-label">
-                Password
-              </label>
-              <span className="mb-1.5 text-[10.5px] font-semibold text-slate-400">
-                SSO-ready
-              </span>
-            </div>
+            <label htmlFor="password" className="field-label">
+              Password
+            </label>
             <div className="relative">
               <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -163,7 +166,7 @@ function LoginForm() {
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition-colors hover:text-slate-700 dark:hover:text-slate-200"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -184,87 +187,49 @@ function LoginForm() {
               </>
             ) : (
               <>
-                Access dashboard
+                Sign in
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
           </button>
         </form>
 
-        <div className="mt-7 border-t border-slate-100 pt-5">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
-              Demo role access
-            </p>
-            <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10.5px] font-bold text-brand-700">
-              One-click sign in
-            </span>
-          </div>
+        <div className="mt-7 border-t border-slate-100 pt-5 dark:border-white/10">
+          <p className="mb-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+            Demo access
+          </p>
 
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {DEMO_USERS.map((u) => {
-              const meta = roleMeta[u.role] ?? { label: "Officer", className: "bg-slate-600 text-white" };
+              const meta = roleMeta[u.role] ?? { label: "Officer", code: "OF", className: "bg-slate-600 text-white" };
               return (
                 <button
                   key={u.id}
                   type="button"
                   onClick={() => quickLogin(u.email, u.password)}
                   disabled={isLoading}
-                  className="group flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white p-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-[0_8px_20px_-10px_rgba(37,89,232,0.35)] disabled:opacity-60"
+                  title={`${u.name} — ${u.designation}`}
+                  className="group flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50/40 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-brand-400/40 dark:hover:bg-brand-400/10"
                 >
                   <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[10.5px] font-bold ${meta.className}`}
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10.5px] font-bold ${meta.className}`}
                   >
-                    {u.name
-                      .split(" ")
-                      .filter(Boolean)
-                      .map((w) => w[0])
-                      .join("")
-                      .slice(0, 2)}
+                    {meta.code}
                   </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1 text-[11px] font-bold text-slate-800">
-                      <span className="truncate">{u.name}</span>
-                    </span>
-                    <span className="mt-0.5 block truncate text-[10.5px] font-medium text-slate-400">
-                      {u.designation}
-                    </span>
+                  <span className="truncate text-[11px] font-semibold text-slate-700 group-hover:text-slate-900 dark:text-slate-200 dark:group-hover:text-white">
+                    {meta.label}
                   </span>
-                  <ArrowUpRight className="h-3 w-3 shrink-0 text-slate-300 transition-colors group-hover:text-brand-500" />
                 </button>
               );
             })}
           </div>
         </div>
       </div>
-
-      <div className="mt-5 flex items-center justify-center gap-2 text-[10.5px] font-medium text-slate-400">
-        <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-        <span>RBAC enforced · JWT session · Rate-limited · Audit logged</span>
-      </div>
     </div>
   );
 }
 
 export default function LoginPage() {
-  const highlights = [
-    {
-      icon: Network,
-      title: "Cross-bureau overlap detection",
-      text: "Trilayer matching catches the same institution under different IDs, names, and categories.",
-    },
-    {
-      icon: Timer,
-      title: "Statutory SLA countdowns",
-      text: "Category-aware timelines with amber/red escalation before a grievance goes stale.",
-    },
-    {
-      icon: ScanLine,
-      title: "One live operating picture",
-      text: "Every bureau, region, and case stream in a single auditable source of truth.",
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-[var(--surface-bg)]/60 backdrop-blur-[1px] lg:grid lg:grid-cols-[1.05fr_1fr]">
       <div className="fixed right-4 top-4 z-50">
@@ -287,35 +252,20 @@ export default function LoginPage() {
           className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-t from-ink-950 via-ink-950/80 to-ink-950/50"
           aria-hidden="true"
         />
-        <div
-          className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top_left,rgba(59,118,246,0.35),transparent_65%),radial-gradient(ellipse_at_bottom_right,rgba(245,158,11,0.2),transparent_60%)]"
-          aria-hidden="true"
-        />
 
-        <span className="hero-scan" aria-hidden="true" />
         <div className="relative z-10 flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-gradient-to-br from-saffron-400 to-saffron-600 shadow-[0_10px_30px_-10px_rgba(245,158,11,0.8)]">
             <svg viewBox="0 0 24 24" className="h-[22px] w-[22px] text-ink-950" fill="currentColor" aria-hidden>
               <path d="M12 1.8 3.6 5.4v5.5c0 5.2 3.5 9.7 8.4 11.3 4.9-1.6 8.4-6.1 8.4-11.3V5.4L12 1.8Zm0 3.1 5.6 2.4v3.6c0 3.6-2.3 6.8-5.6 8.1-3.3-1.3-5.6-4.5-5.6-8.1V7.3L12 4.9Zm-1 3.7v3.3H8.4l3.6 4.5 3.6-4.5H13V8.6h-2Z" />
             </svg>
           </div>
-          <div>
-            <p className="font-display text-[17px] font-extrabold tracking-tight text-white">
-              AICTE <span className="text-saffron-400">Sentinel</span>
-            </p>
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Integrated complaint intelligence
-            </p>
-          </div>
+          <p className="font-display text-[17px] font-extrabold tracking-tight text-white">
+            AICTE <span className="text-saffron-400">Sentinel</span>
+          </p>
         </div>
 
-        <div className="relative z-10 max-w-[540px]">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-300">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-            National grievance grid · Live
-          </span>
-
-          <h1 className="mt-6 font-display text-[46px] font-extrabold leading-[1.02] tracking-[-0.045em] text-white xl:text-[54px]">
+        <div className="relative z-10 max-w-[460px]">
+          <h1 className="font-display text-[42px] font-extrabold leading-[1.04] tracking-[-0.045em] text-white xl:text-[48px]">
             Every grievance.
             <br />
             <span className="bg-gradient-to-r from-brand-300 via-white to-saffron-300 bg-clip-text text-transparent">
@@ -323,53 +273,15 @@ export default function LoginPage() {
             </span>
           </h1>
 
-          <p className="mt-5 max-w-[460px] text-[13.5px] leading-relaxed text-slate-400">
-            AICTE&apos;s single source of truth for institutional complaints — ending duplicated
-            effort, parallel inquiries, and silent SLA breaches across every Bureau and Regional
-            Office.
-          </p>
-
-          <div className="mt-8 space-y-3.5">
-            {highlights.map((h) => {
-              const Icon = h.icon;
-              return (
-                <div key={h.title} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.05] text-brand-300">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-[12px] font-bold text-slate-100">{h.title}</p>
-                    <p className="mt-0.5 max-w-[400px] text-[10.5px] leading-relaxed text-slate-500">
-                      {h.text}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="relative z-10">
-          <div className="grid grid-cols-3 gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4 backdrop-blur-sm">
-            {[
-              { value: "300+", label: "Active grievances" },
-              { value: "5", label: "Regional offices" },
-              { value: "4", label: "Bureaus unified" },
-            ].map((s) => (
-              <div key={s.label}>
-                <p className="font-display text-[22px] font-extrabold tracking-tight text-white">
-                  {s.value}
-                </p>
-                <p className="mt-0.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                  {s.label}
-                </p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 text-[10.5px] font-medium leading-relaxed text-slate-400">
-            All India Council for Technical Education · Nelson Mandela Marg, Vasant Kunj, New Delhi 110070
+          <p className="mt-5 max-w-[400px] text-[13px] leading-relaxed text-slate-400">
+            AICTE&apos;s single source of truth for institutional complaints — across every
+            Bureau, Cell, and Regional Office.
           </p>
         </div>
+
+        <p className="relative z-10 text-[10.5px] font-medium leading-relaxed text-slate-500">
+          All India Council for Technical Education · Nelson Mandela Marg, Vasant Kunj, New Delhi 110070
+        </p>
       </section>
 
       {/* Right form */}
@@ -378,7 +290,7 @@ export default function LoginPage() {
           fallback={
             <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-400">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-brand-500" />
-              Loading secure portal…
+              Loading…
             </div>
           }
         >

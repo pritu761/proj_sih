@@ -121,7 +121,8 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
     } catch (err) {
       console.error("Sign out request failed; clearing local session view.", err);
     } finally {
-      router.replace("/login");
+      // `signedout=1` gives the login screen a quiet "you have signed out" state.
+      router.replace("/login?signedout=1");
       router.refresh();
     }
   };
