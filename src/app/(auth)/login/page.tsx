@@ -288,9 +288,11 @@ export default function LoginPage() {
           >
             Every grievance.
             <br />
-            <span className="gradient-pan-text bg-gradient-to-r from-brand-300 via-white to-saffron-300 bg-clip-text pr-0.5 text-transparent">
-              <TextReveal text="One command view." delayBase={240} />
-            </span>
+            <TextReveal
+              text="One command view."
+              delayBase={240}
+              wordClassName="gradient-pan-text bg-gradient-to-r from-brand-300 via-white to-saffron-300 bg-clip-text text-transparent"
+            />
           </h1>
 
           <p
