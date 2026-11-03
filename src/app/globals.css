@@ -894,6 +894,35 @@ textarea.input {
 @keyframes spin-slow {
   to { transform: rotate(360deg); }
 }
+@keyframes rise-soft {
+  from { opacity: 0; transform: translateY(12px) scale(0.992); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -18px, 0); }
+}
+@keyframes float-slower {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(14px, 12px, 0) scale(1.03); }
+}
+@keyframes beam-flow {
+  to { stroke-dashoffset: -1200; }
+}
+@keyframes gradient-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.animate-rise { animation: rise-soft 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-spin-slow { animation: spin-slow 52s linear infinite; }
+.animate-float-slow { animation: float-slow 18s ease-in-out infinite; }
+.animate-float-slower { animation: float-slower 26s ease-in-out infinite; }
+.gradient-pan-text {
+  background-size: 220% 100%;
+  animation: gradient-pan 10s ease-in-out infinite;
+}
+.beam-line { animation: beam-flow 6s linear infinite; }
 
 .animate-fade-in { animation: fade-in 0.4s ease-out both; }
 .animate-slide-up { animation: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -921,6 +950,7 @@ textarea.input {
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    animation-delay: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;

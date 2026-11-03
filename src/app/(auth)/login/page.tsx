@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DEMO_USERS } from "@/lib/demo-data";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { BackgroundBeams } from "@/components/ui/background-beams";
+import { TextReveal } from "@/components/ui/text-reveal";
+import { ToastProvider, useToast } from "@/components/ui/toast";
 import {
   ShieldCheck,
   Lock,
@@ -13,7 +16,6 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  LogOut,
 } from "lucide-react";
 
 type RoleMeta = { label: string; code: string; className: string };
@@ -39,7 +41,18 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
-  const signedOut = searchParams.get("signedout") === "1";
+  const toast = useToast();
+
+  useEffect(() => {
+    if (searchParams.get("signedout") !== "1") return;
+    toast.info("Signed out", "You have signed out of Sentinel. Sign in again to continue.");
+    // Strip the flag so a manual refresh does not replay the toast.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("signedout");
+    const query = url.searchParams.toString();
+    window.history.replaceState(null, "", url.pathname + (query ? `?${query}` : ""));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -88,7 +101,7 @@ function LoginForm() {
 
   return (
     <div className="w-full max-w-[440px]">
-      <div className="mb-7 lg:hidden">
+      <div className="mb-7 animate-fade-in lg:hidden">
         <div className="flex items-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-saffron-400 to-saffron-600">
             <ShieldCheck className="h-5 w-5 text-ink-950" />
@@ -99,19 +112,9 @@ function LoginForm() {
         </div>
       </div>
 
-      <div className="rounded-[20px] border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] sm:p-8 dark:border-white/10 dark:bg-ink-900 dark:shadow-[0_30px_80px_-40px_rgba(0,0,0,0.75)]">
-        {signedOut && (
-          <div
-            role="status"
-            className="mb-5 flex items-center gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11.5px] font-medium text-slate-600 animate-slide-down dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-300"
-          >
-            <LogOut aria-hidden className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-400" />
-            <span>You have signed out of Sentinel.</span>
-          </div>
-        )}
-
-        <div className="mb-6">
-          <h1 className="font-display text-[24px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 dark:text-white">
+      <div className="animate-slide-up rounded-[20px] border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] sm:p-8 dark:border-white/10 dark:bg-ink-900 dark:shadow-[0_30px_80px_-40px_rgba(0,0,0,0.75)]">
+        <div className="mb-6" style={{ animationDelay: "60ms" }}>
+          <h1 className="animate-rise font-display text-[24px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 dark:text-white">
             Sign in
           </h1>
         </div>
@@ -126,7 +129,7 @@ function LoginForm() {
           </div>
         )}
 
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="animate-rise space-y-4" style={{ animationDelay: "140ms" }}>
           <div>
             <label htmlFor="email" className="field-label">
               Official email
@@ -194,13 +197,16 @@ function LoginForm() {
           </button>
         </form>
 
-        <div className="mt-7 border-t border-slate-100 pt-5 dark:border-white/10">
+        <div
+          className="animate-rise mt-7 border-t border-slate-100 pt-5 dark:border-white/10"
+          style={{ animationDelay: "260ms" }}
+        >
           <p className="mb-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
             Demo access
           </p>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {DEMO_USERS.map((u) => {
+            {DEMO_USERS.map((u, i) => {
               const meta = roleMeta[u.role] ?? { label: "Officer", code: "OF", className: "bg-slate-600 text-white" };
               return (
                 <button
@@ -209,14 +215,15 @@ function LoginForm() {
                   onClick={() => quickLogin(u.email, u.password)}
                   disabled={isLoading}
                   title={`${u.name} — ${u.designation}`}
-                  className="group flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50/40 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-brand-400/40 dark:hover:bg-brand-400/10"
+                  className="group flex h-10 animate-rise items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50/40 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-brand-400/40 dark:hover:bg-brand-400/10"
+                  style={{ animationDelay: `${320 + i * 60}ms` }}
                 >
                   <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10.5px] font-bold ${meta.className}`}
+                    className={`ring-1 ring-black/5 dark:ring-white/10 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[10.5px] font-bold ${meta.className}`}
                   >
                     {meta.code}
                   </span>
-                  <span className="truncate text-[11px] font-semibold text-slate-700 group-hover:text-slate-900 dark:text-slate-200 dark:group-hover:text-white">
+                  <span className="truncate text-[11px] font-semibold text-slate-700 group-hover:text-slate-900">
                     {meta.label}
                   </span>
                 </button>
@@ -231,29 +238,39 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-[var(--surface-bg)]/60 backdrop-blur-[1px] lg:grid lg:grid-cols-[1.05fr_1fr]">
+    <div className="min-h-screen bg-[var(--surface-bg)] lg:grid lg:grid-cols-[1.05fr_1fr]">
       <div className="fixed right-4 top-4 z-50">
         <ThemeToggle />
       </div>
 
       {/* Left brand rail */}
       <section className="hero-mesh relative hidden flex-col justify-between overflow-hidden p-10 lg:flex xl:p-14">
-        {/* Photorealistic AICTE HQ Building Backdrop */}
+        {/* Ambient motion layer */}
         <div
-          className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center transition-transform duration-1000"
-          style={{
-            backgroundImage: "url('/images/aicte-hq.webp')",
-            filter: "contrast(1.15) brightness(0.48) saturate(1.18)",
-          }}
+          className="animate-float-slow pointer-events-none absolute -left-40 top-24 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgba(59,118,246,0.16),transparent_68%)]"
           aria-hidden="true"
         />
-        {/* Cinematic gradient wash for maximum legibility */}
         <div
-          className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-t from-ink-950 via-ink-950/80 to-ink-950/50"
+          className="animate-float-slower pointer-events-none absolute -bottom-44 -right-40 h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.1),transparent_66%)]"
           aria-hidden="true"
         />
+        <div
+          className="animate-spin-slow pointer-events-none absolute right-[12%] top-[12%] h-64 w-64 rounded-full border border-white/[0.06]"
+          style={{ animationDuration: "64s" }}
+          aria-hidden="true"
+        >
+          <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-saffron-300/70" />
+        </div>
+        <div
+          className="animate-spin-slow pointer-events-none absolute bottom-[6%] right-[8%] h-[22rem] w-[22rem] rounded-full border border-white/[0.05]"
+          style={{ animationDirection: "reverse", animationDuration: "76s" }}
+          aria-hidden="true"
+        >
+          <span className="absolute bottom-0 left-1/2 h-1 w-1 -translate-x-1/2 translate-y-1/2 rounded-full bg-brand-300/60" />
+        </div>
+        <BackgroundBeams className="z-0 opacity-25 motion-reduce:opacity-10" />
 
-        <div className="relative z-10 flex items-center gap-3">
+        <div className="animate-fade-in relative z-10 flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-gradient-to-br from-saffron-400 to-saffron-600 shadow-[0_10px_30px_-10px_rgba(245,158,11,0.8)]">
             <svg viewBox="0 0 24 24" className="h-[22px] w-[22px] text-ink-950" fill="currentColor" aria-hidden>
               <path d="M12 1.8 3.6 5.4v5.5c0 5.2 3.5 9.7 8.4 11.3 4.9-1.6 8.4-6.1 8.4-11.3V5.4L12 1.8Zm0 3.1 5.6 2.4v3.6c0 3.6-2.3 6.8-5.6 8.1-3.3-1.3-5.6-4.5-5.6-8.1V7.3L12 4.9Zm-1 3.7v3.3H8.4l3.6 4.5 3.6-4.5H13V8.6h-2Z" />
@@ -265,37 +282,48 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 max-w-[460px]">
-          <h1 className="font-display text-[42px] font-extrabold leading-[1.04] tracking-[-0.045em] text-white xl:text-[48px]">
+          <h1
+            className="animate-rise font-display text-[42px] font-extrabold leading-[1.04] tracking-[-0.045em] text-white xl:text-[48px]"
+            style={{ animationDelay: "80ms" }}
+          >
             Every grievance.
             <br />
-            <span className="bg-gradient-to-r from-brand-300 via-white to-saffron-300 bg-clip-text text-transparent">
-              One command view.
+            <span className="gradient-pan-text bg-gradient-to-r from-brand-300 via-white to-saffron-300 bg-clip-text pr-0.5 text-transparent">
+              <TextReveal text="One command view." delayBase={240} />
             </span>
           </h1>
 
-          <p className="mt-5 max-w-[400px] text-[13px] leading-relaxed text-slate-400">
+          <p
+            className="animate-rise mt-5 max-w-[400px] text-[13px] leading-relaxed text-slate-400"
+            style={{ animationDelay: "400ms" }}
+          >
             AICTE&apos;s single source of truth for institutional complaints — across every
             Bureau, Cell, and Regional Office.
           </p>
         </div>
 
-        <p className="relative z-10 text-[10.5px] font-medium leading-relaxed text-slate-500">
+        <p
+          className="animate-fade-in relative z-10 text-[10.5px] font-medium leading-relaxed text-slate-500"
+          style={{ animationDelay: "560ms" }}
+        >
           All India Council for Technical Education · Nelson Mandela Marg, Vasant Kunj, New Delhi 110070
         </p>
       </section>
 
       {/* Right form */}
       <section className="relative flex min-h-screen items-center justify-center px-4 py-10 sm:px-8">
-        <Suspense
-          fallback={
-            <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-400">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-brand-500" />
-              Loading…
-            </div>
-          }
-        >
-          <LoginForm />
-        </Suspense>
+        <ToastProvider>
+          <Suspense
+            fallback={
+              <div className="flex items-center gap-2 text-[12px] font-semibold text-slate-400">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-brand-500" />
+                Loading…
+              </div>
+            }
+          >
+            <LoginForm />
+          </Suspense>
+        </ToastProvider>
       </section>
     </div>
   );
