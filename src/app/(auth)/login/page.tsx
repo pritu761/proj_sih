@@ -5,8 +5,8 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DEMO_USERS } from "@/lib/demo-data";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { BackgroundBeams } from "@/components/ui/background-beams";
 import { TextReveal } from "@/components/ui/text-reveal";
+import { HeroAmbient } from "./hero-ambient";
 import { ToastProvider, useToast } from "@/components/ui/toast";
 import {
   ShieldCheck,
@@ -112,7 +112,7 @@ function LoginForm() {
         </div>
       </div>
 
-      <div className="animate-slide-up rounded-[20px] border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] sm:p-8 dark:border-white/10 dark:bg-ink-900 dark:shadow-[0_30px_80px_-40px_rgba(0,0,0,0.75)]">
+      <div className="auth-card animate-slide-up rounded-[20px] border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] sm:p-8 dark:border-white/10 dark:bg-ink-900 dark:shadow-[0_30px_80px_-40px_rgba(0,0,0,0.75)]">
         <div className="mb-6" style={{ animationDelay: "60ms" }}>
           <h1 className="animate-rise font-display text-[24px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 dark:text-white">
             Sign in
@@ -245,30 +245,7 @@ export default function LoginPage() {
 
       {/* Left brand rail */}
       <section className="hero-mesh relative hidden flex-col justify-between overflow-hidden p-10 lg:flex xl:p-14">
-        {/* Ambient motion layer */}
-        <div
-          className="animate-float-slow pointer-events-none absolute -left-40 top-24 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgba(59,118,246,0.16),transparent_68%)]"
-          aria-hidden="true"
-        />
-        <div
-          className="animate-float-slower pointer-events-none absolute -bottom-44 -right-40 h-[620px] w-[620px] rounded-full bg-[radial-gradient(circle,rgba(245,158,11,0.1),transparent_66%)]"
-          aria-hidden="true"
-        />
-        <div
-          className="animate-spin-slow pointer-events-none absolute right-[12%] top-[12%] h-64 w-64 rounded-full border border-white/[0.06]"
-          style={{ animationDuration: "64s" }}
-          aria-hidden="true"
-        >
-          <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-saffron-300/70" />
-        </div>
-        <div
-          className="animate-spin-slow pointer-events-none absolute bottom-[6%] right-[8%] h-[22rem] w-[22rem] rounded-full border border-white/[0.05]"
-          style={{ animationDirection: "reverse", animationDuration: "76s" }}
-          aria-hidden="true"
-        >
-          <span className="absolute bottom-0 left-1/2 h-1 w-1 -translate-x-1/2 translate-y-1/2 rounded-full bg-brand-300/60" />
-        </div>
-        <BackgroundBeams className="z-0 opacity-25 motion-reduce:opacity-10" />
+        <HeroAmbient />
 
         <div className="animate-fade-in relative z-10 flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-gradient-to-br from-saffron-400 to-saffron-600 shadow-[0_10px_30px_-10px_rgba(245,158,11,0.8)]">

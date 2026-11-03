@@ -40,6 +40,7 @@ import {
 } from "recharts";
 import { StatusPill, BureauPill, ConfidencePill } from "@/components/ui/badges";
 import { CountUp } from "@/components/ui/count-up";
+import { ProgressRing } from "@/components/ui/progress-ring";
 import { useToast } from "@/components/ui/toast";
 import { ChartTooltip } from "@/components/ui/chart-tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -341,9 +342,9 @@ export function DashboardClient({
           {/* Live pulse stats */}
           <div className="grid w-full grid-cols-3 gap-2.5 xl:w-[390px]">
             {[
-              { label: "Disposal rate", value: `${disposalRate}%`, pct: disposalRate, color: "#34d399", icon: TrendingUp },
-              { label: "SLA compliance", value: `${slaCompliance}%`, pct: slaCompliance, color: "#60a5fa", icon: Gauge },
-              { label: "Avg. resolution", value: `${avgResolution}d`, pct: Math.min(100, (avgResolution / 45) * 100), color: "#fbbf4c", icon: Timer },
+              { label: "Disposal rate", value: disposalRate, suffix: "%", pct: disposalRate, color: "#34d399", icon: TrendingUp },
+              { label: "SLA compliance", value: slaCompliance, suffix: "%", pct: slaCompliance, color: "#60a5fa", icon: Gauge },
+              { label: "Avg. resolution", value: avgResolution, suffix: "d", pct: Math.min(100, (avgResolution / 45) * 100), color: "#fbbf4c", icon: Timer },
             ].map((s, si) => {
               const Icon = s.icon;
               return (
@@ -352,13 +353,17 @@ export function DashboardClient({
                     <span className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">{s.label}</span>
                     <Icon className="h-3.5 w-3.5" style={{ color: s.color }} />
                   </div>
-                  <p className="mt-2 font-display text-[21px] font-extrabold leading-none tracking-tight text-white">
-                    {s.value}
-                  </p>
-                  <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="meter-fill h-full rounded-full transition-all duration-700"
-                      style={{ width: `${s.pct}%`, background: s.color, animationDelay: `${120 + si * 110}ms` }}
+                  <div className="mt-2 flex items-center justify-between gap-2">
+                    <p className="font-display text-[21px] font-extrabold leading-none tracking-tight text-white">
+                      <CountUp value={s.value} suffix={s.suffix} />
+                    </p>
+                    <ProgressRing
+                      value={s.pct}
+                      color={s.color}
+                      size={40}
+                      stroke={3}
+                      delay={140 + si * 120}
+                      trackClassName="stroke-white/10"
                     />
                   </div>
                 </div>
@@ -475,13 +480,27 @@ export function DashboardClient({
                   if (key) go(`/cases?bureau=${key}`);
                 }}
               >
+                <defs>
+                  <linearGradient id="dBureauPending" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fbbf4c" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.72} />
+                  </linearGradient>
+                  <linearGradient id="dBureauProcess" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6091fa" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#2559e8" stopOpacity={0.78} />
+                  </linearGradient>
+                  <linearGradient id="dBureauDisposed" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#34d399" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#059669" stopOpacity={0.78} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.28)" vertical={false} />
                 <XAxis dataKey="short" axisLine={false} tickLine={false} dy={8} />
                 <YAxis axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip cursor={{ fill: "rgba(37,89,232,0.045)" }} content={<ChartTooltip />} />
-                <Bar dataKey="pending" name="Pending" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={34} cursor="pointer" animationDuration={700} />
-                <Bar dataKey="underProcess" name="In process" fill="#2559e8" radius={[6, 6, 0, 0]} maxBarSize={34} cursor="pointer" animationDuration={700} />
-                <Bar dataKey="disposed" name="Disposed" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={34} cursor="pointer" animationDuration={700} />
+                <Bar dataKey="pending" name="Pending" fill="url(#dBureauPending)" radius={[6, 6, 0, 0]} maxBarSize={34} cursor="pointer" animationDuration={700} />
+                <Bar dataKey="underProcess" name="In process" fill="url(#dBureauProcess)" radius={[6, 6, 0, 0]} maxBarSize={34} cursor="pointer" animationDuration={700} />
+                <Bar dataKey="disposed" name="Disposed" fill="url(#dBureauDisposed)" radius={[6, 6, 0, 0]} maxBarSize={34} cursor="pointer" animationDuration={700} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -526,7 +545,7 @@ export function DashboardClient({
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pb-1">
               <span className="font-display text-[27px] font-extrabold leading-none tracking-tight text-slate-950">
-                {k.totalReceived}
+                <CountUp value={k.totalReceived} />
               </span>
               <span className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                 total cases

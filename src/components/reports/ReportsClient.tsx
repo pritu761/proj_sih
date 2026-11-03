@@ -15,6 +15,7 @@ import {
   Cell,
 } from "recharts";
 import { ChartTooltip } from "@/components/ui/chart-tooltip";
+import { CountUp } from "@/components/ui/count-up";
 
 const statusColor: Record<string, string> = {
   Pending: "#f59e0b",
@@ -153,7 +154,7 @@ export function ReportsClient({ metrics }: { metrics: any }) {
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pb-1">
               <span className="font-display text-[26px] font-extrabold leading-none tracking-tight text-slate-950">
-                {metrics.kpi?.totalReceived ?? 0}
+                <CountUp value={metrics.kpi?.totalReceived ?? 0} />
               </span>
               <span className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                 total cases
@@ -207,13 +208,27 @@ export function ReportsClient({ metrics }: { metrics: any }) {
                 margin={{ top: 6, right: 12, left: -18, bottom: 0 }}
                 barGap={5}
               >
+                <defs>
+                  <linearGradient id="repBarPending" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fbbf4c" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.8} />
+                  </linearGradient>
+                  <linearGradient id="repBarProcess" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6091fa" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#2559e8" stopOpacity={0.85} />
+                  </linearGradient>
+                  <linearGradient id="repBarDisposed" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#34d399" stopOpacity={0.95} />
+                    <stop offset="100%" stopColor="#059669" stopOpacity={0.85} />
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.28)" vertical={false} />
                 <XAxis dataKey="short" axisLine={false} tickLine={false} dy={8} />
                 <YAxis axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip cursor={{ fill: "rgba(37,89,232,0.05)" }} content={<ChartTooltip />} />
-                <Bar dataKey="pending" name="Pending" stackId="a" fill="#f59e0b" radius={[0, 0, 0, 0]} maxBarSize={46} animationDuration={700} />
-                <Bar dataKey="underProcess" name="In process" stackId="a" fill="#2559e8" maxBarSize={46} animationDuration={700} />
-                <Bar dataKey="disposed" name="Disposed" stackId="a" fill="#10b981" radius={[6, 6, 0, 0]} maxBarSize={46} animationDuration={700} />
+                <Bar dataKey="pending" name="Pending" stackId="a" fill="url(#repBarPending)" radius={[0, 0, 0, 0]} maxBarSize={46} animationDuration={700} />
+                <Bar dataKey="underProcess" name="In process" stackId="a" fill="url(#repBarProcess)" maxBarSize={46} animationDuration={700} />
+                <Bar dataKey="disposed" name="Disposed" stackId="a" fill="url(#repBarDisposed)" radius={[6, 6, 0, 0]} maxBarSize={46} animationDuration={700} />
               </BarChart>
             </ResponsiveContainer>
           </div>

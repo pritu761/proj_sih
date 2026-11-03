@@ -77,8 +77,16 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
   const [showProfile, setShowProfile] = useState(false);
   const [notifList, setNotifList] = useState(notifications);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const unreadCount = notifList.filter((n) => !n.read).length;
 
@@ -148,7 +156,12 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
 
   return (
     <header
-      className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl"
+      className={cn(
+        "sticky top-0 z-30 border-b bg-white/80 backdrop-blur-xl transition-all duration-300",
+        scrolled
+          ? "border-slate-200/80 shadow-[0_12px_32px_-20px_rgba(6,10,20,0.3)]"
+          : "border-transparent"
+      )}
       style={{ height: "var(--navbar-height)" }}
     >
       <div className="flex h-full items-center gap-3 px-4 sm:px-6 lg:px-8">

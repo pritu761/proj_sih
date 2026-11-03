@@ -434,6 +434,7 @@
   isolation: isolate;
   overflow: hidden;
   background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.05'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E"),
     radial-gradient(900px 300px at 8% -40%, rgba(59, 118, 246, 0.5), transparent 62%),
     radial-gradient(700px 260px at 92% 130%, rgba(245, 158, 11, 0.28), transparent 60%),
     linear-gradient(135deg, #070c18 0%, #0c1730 52%, #0a1122 100%);
@@ -660,6 +661,7 @@ textarea.input {
   width: 100%;
   text-align: left;
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
   border-collapse: separate;
   border-spacing: 0;
 }
@@ -671,7 +673,8 @@ textarea.input {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
-  background: var(--table-head);
+  background: color-mix(in srgb, var(--table-head) 88%, transparent);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;
@@ -682,12 +685,17 @@ textarea.input {
 .data-table tbody td {
   padding: 13px 16px;
   border-bottom: 1px solid var(--table-border);
-  transition: background-color var(--transition-fast);
+  transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
   vertical-align: middle;
 }
 
 .data-table tbody tr:hover td {
   background-color: var(--table-row-hover);
+}
+
+/* Brand accent slides in at the row's leading edge on hover */
+.data-table tbody tr:hover td:first-child {
+  box-shadow: inset 2px 0 0 var(--primary-400);
 }
 
 .data-table tbody tr:last-child td {
@@ -837,6 +845,11 @@ textarea.input {
 }
 .recharts-surface:focus {
   outline: none;
+}
+/* Crisp donut separation without var() inside SVG attributes */
+.recharts-pie-sector path {
+  stroke: var(--surface-card);
+  stroke-width: 2;
 }
 
 /* ─── Misc ─── */
@@ -1082,6 +1095,14 @@ textarea.input {
 .dark .group:hover .group-hover\:text-saffron-400 { color: #fbbf24; }
 
 /* Chart grid lines are drawn with a stroke attribute; CSS wins over it */
+/* Premium dark depth: a hairline of light along every raised surface's top edge */
+.dark .panel,
+.dark .card,
+.dark .kpi-card {
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
 .dark .recharts-cartesian-grid line { stroke: var(--chart-grid); }
 .dark .recharts-tooltip-cursor { fill: rgba(96, 145, 250, 0.08); }
 .dark .recharts-area-area { opacity: 0.6; }
@@ -1300,6 +1321,26 @@ textarea.input {
   to {
     transform: scaleX(1);
   }
+}
+
+/* Progress rings sweep from zero */
+.ring-fill {
+  animation: ring-fill 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes ring-fill {
+  from {
+    stroke-dashoffset: 100.53;
+  }
+  to {
+    stroke-dashoffset: var(--ring-target, 100.53);
+  }
+}
+
+/* Login card: a slightly stronger focus halo */
+.auth-card .input:focus {
+  box-shadow:
+    0 0 0 3.5px rgba(59, 118, 246, 0.14),
+    0 0 28px -8px rgba(59, 118, 246, 0.45);
 }
 
 /* Risk radar watchlist swap */
