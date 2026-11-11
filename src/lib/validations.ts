@@ -216,5 +216,46 @@ export const TrackCaseSchema = z.object({
     .string()
     .min(10, "Enter the full registry number, e.g. AICTE/PGRC/2026/00101")
     .max(48)
-    .transform((v) => v.trim().replace(/\s+/g, "").toUpperCase()),});
+    .transform((v) => v.trim().replace(/\s+/g, "").toUpperCase()),
+});
+
+// -----------------------------------------------------------------------------
+// AI feature validations
+// -----------------------------------------------------------------------------
+export const AiSummarizeCaseSchema = z.object({
+  caseId: z.string().min(1, "Case ID is required"),
+});
+
+export const AiSuggestClassificationSchema = z.object({
+  caseId: z.string().optional(),
+  description: z.string().min(15, "Describe the grievance in at least 15 characters"),
+  language: z.string().max(10).optional(),
+  institutionState: z.string().optional(),
+  currentCategory: z.string().optional(),
+  currentBureau: z.string().optional(),
+  currentPriority: z.string().optional(),
+});
+
+export const AiDraftReplySchema = z.object({
+  caseId: z.string().min(1, "Case ID is required"),
+  replyType: z.enum([
+    "ACKNOWLEDGEMENT",
+    "STATUS_UPDATE",
+    "RESOLUTION",
+    "SHOW_CAUSE",
+    "HEARING_NOTICE",
+  ]),
+  language: z.string().max(10).optional(),
+  officerName: z.string().max(120, "Officer name is too long").optional(),
+});
+
+export const AiTranslateSchema = z.object({
+  text: z.string().min(3, "Text is required"),
+  from: z.string().max(10),
+  to: z.string().max(10),
+});
+
+export const AiExplainOverlapSchema = z.object({
+  alertId: z.string().min(1, "Alert ID is required"),
+});
 

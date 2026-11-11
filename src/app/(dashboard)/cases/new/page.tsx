@@ -19,8 +19,10 @@ import {
   CircleDot,
   Layers,
   Info,
+  Loader2,
 } from "lucide-react";
 import { createCaseAction } from "@/actions/case-actions";
+import { aiSuggestClassificationAction } from "@/actions/ai-actions";
 import { SLA_CONFIGS } from "@/lib/demo-data";
 import { Breadcrumbs } from "@/components/ui/page-header";
 import { BureauPill, PriorityPill, SlaPill } from "@/components/ui/badges";
@@ -78,11 +80,50 @@ export default function NewCasePage() {
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // AI smart classification
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<any>(null);
+  const [aiError, setAiError] = useState("");
   const [today, setToday] = useState<Date | null>(null);
 
   useEffect(() => {
     setToday(new Date());
   }, []);
+
+  const handleAiClassify = async () => {
+    if (description.trim().length < 15) {
+      setAiError("Write at least 15 characters of the grievance first.");
+      return;
+    }
+    setAiSuggesting(true);
+    setAiError("");
+    setAiSuggestion(null);
+    try {
+      const res = await aiSuggestClassificationAction({
+        description,
+        institutionState: selectedInstitution?.state,
+        currentCategory: category,
+        currentBureau: assignedBureau,
+        currentPriority: priority,
+      });
+      if (res.disabled) {
+        setAiError(res.error || "AI is not configured. Set GROQ_API_KEY in .env.");
+      } else if (!res.success || !res.data) {
+        setAiError(res.error || "AI classification failed.");
+      } else {
+        setAiSuggestion(res.data);
+        // Apply the suggestion to the Step 2 controls.
+        if (res.data.suggestedCategory) setCategory(res.data.suggestedCategory);
+        if (res.data.suggestedBureau) setAssignedBureau(res.data.suggestedBureau);
+        if (res.data.suggestedPriority) setPriority(res.data.suggestedPriority);
+      }
+    } catch (err: any) {
+      setAiError(err.message || "AI request failed.");
+    } finally {
+      setAiSuggesting(false);
+    }
+  };
 
   useEffect(() => {
     fetch("/api/institutions/list")
@@ -419,6 +460,72 @@ export default function NewCasePage() {
                   >
                     {description.trim().length}/15 min
                   </span>
+                </div>
+
+                {/* AI smart classification */}
+                <div className="mt-3 rounded-xl border border-violet-100 bg-gradient-to-br from-violet-50/60 via-white to-white p-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.1em] text-violet-700">
+                      <Sparkles className="h-3.5 w-3.5" />
+                      AI smart classification
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAiClassify}
+                      disabled={aiSuggesting || description.trim().length < 15}
+                      className="btn btn-sm border border-violet-200 bg-white text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+                    >
+                      <Loader2 className={cn("h-3 w-3", aiSuggesting && "animate-spin")} />
+                      {aiSuggesting ? "Classifying…" : "Classify with AI"}
+                    </button>
+                  </div>
+                  <p className="mt-1.5 text-[10.5px] leading-relaxed text-slate-500">
+                    Reads the representation above and auto-fills category, bureau, and priority in
+                    Step 2.
+                  </p>
+
+                  {aiError && (
+                    <p role="alert" className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[10.5px] font-medium text-rose-700">
+                      {aiError}
+                    </p>
+                  )}
+
+                  {aiSuggestion && !aiError && (
+                    <div className="mt-2.5 space-y-1.5 rounded-lg border border-violet-200 bg-white p-2.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="rounded-md border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                          {aiSuggestion.suggestedCategory}
+                        </span>
+                        <span className="rounded-md border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700">
+                          {String(aiSuggestion.suggestedBureau).replaceAll("_", " ")}
+                        </span>
+                        <span className="rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                          {aiSuggestion.suggestedPriority}
+                        </span>
+                        <span
+                          className={cn(
+                            "rounded-full border px-2 py-0.5 text-[10px] font-bold",
+                            aiSuggestion.confidence === "HIGH"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                              : aiSuggestion.confidence === "MEDIUM"
+                                ? "border-amber-200 bg-amber-50 text-amber-700"
+                                : "border-rose-200 bg-rose-50 text-rose-700"
+                          )}
+                        >
+                          {aiSuggestion.confidence}
+                        </span>
+                        <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Applied to Step 2
+                        </span>
+                      </div>
+                      {aiSuggestion.reasoning && (
+                        <p className="text-[10.5px] leading-relaxed text-slate-500">
+                          {aiSuggestion.reasoning}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </section>
             </div>

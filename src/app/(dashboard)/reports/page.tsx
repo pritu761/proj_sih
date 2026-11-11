@@ -20,6 +20,7 @@ import { SessionUser } from "@/lib/rbac";
 import { PageHeader } from "@/components/ui/page-header";
 import { BureauPill } from "@/components/ui/badges";
 import { ReportsClient, RegionBars } from "@/components/reports/ReportsClient";
+import { AiReportSummary } from "@/components/reports/AiReportSummary";
 import { computeBureauScorecard } from "@/lib/services/scorecard";
 import { cn } from "@/lib/utils";
 import { CalendarClock } from "lucide-react";
@@ -200,6 +201,9 @@ export default async function ReportsPage() {
           );
         })}
       </div>
+
+      {/* AI executive summary */}
+      <AiReportSummary />
 
       {/* Charts */}
       <ReportsClient metrics={metrics} />

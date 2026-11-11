@@ -47,6 +47,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { RiskRadar } from "./RiskRadar";
 import { IngestionSimulator } from "./IngestionSimulator";
 import { OperationsWire } from "./OperationsWire";
+import { AiBriefing } from "./AiBriefing";
 import { cn } from "@/lib/utils";
 
 interface DashboardClientProps {
@@ -374,6 +375,8 @@ export function DashboardClient({
       </section>
 
       <OperationsWire items={wireItems} />
+
+      <AiBriefing />
 
       {/* ── Overlap alert ── */}
       {k.openOverlapAlerts > 0 && (

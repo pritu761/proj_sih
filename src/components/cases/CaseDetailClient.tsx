@@ -52,6 +52,7 @@ import { SlaRing } from "@/components/ui/sla-ring";
 import { Modal } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CaseBrief } from "./CaseBrief";
+import { CaseAiPanel } from "./CaseAiPanel";
 import { EnforcementPanel } from "./EnforcementPanel";
 import { ComplainantCard } from "./ComplainantCard";
 import { CaseThreadPanel, CaseCommentView } from "./CaseThreadPanel";
@@ -722,6 +723,16 @@ export function CaseDetailClient({
             profile={complainant?.profile ?? null}
             meta={complainant?.meta ?? null}
             isCurrentCase={complainant?.isCurrentCase ?? false}
+          />
+
+          {/* AI assistant: summary, classification, drafting, translation, overlap explainer */}
+          <CaseAiPanel
+            caseItem={caseItem}
+            actions={caseItem.actions ?? []}
+            comments={comments}
+            overlapAlert={overlapAlert}
+            collidingCase={collidingCase}
+            currentUser={currentUser}
           />
 
           {/* Representation */}

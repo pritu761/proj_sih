@@ -24,6 +24,7 @@ import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { EmptyState } from "@/components/ui/empty-state";
 import { assignOfficerAction } from "@/actions/case-actions";
+import { QueueAdvice } from "./QueueAdvice";
 import { SessionUser } from "@/lib/rbac";
 import { formatDate, formatDateTime, cn } from "@/lib/utils";
 
@@ -332,6 +333,9 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
           );
         })}
       </div>
+
+      {/* AI prioritization advice */}
+      <QueueAdvice hasQueue={mine.length > 0 || unassigned.length > 0} />
 
       {/* Unassigned backlog */}
       <div className="panel">
