@@ -69,7 +69,7 @@ export async function groqChat(options: GroqChatOptions): Promise<GroqChatResult
     return { ok: false, disabled: true, error: "GROQ_API_KEY is not configured." };
   }
 
-  const model = options.model ?? process.env.GROQ_MODEL ?? "llama-3.1-8b-instant";
+  const model = options.model ?? process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
   const body = {
     model,
     messages: options.messages,
