@@ -70,11 +70,20 @@ export async function groqChat(options: GroqChatOptions): Promise<GroqChatResult
   }
 
   const model = options.model ?? process.env.GROQ_MODEL ?? "openai/gpt-oss-120b";
+
+  // Reasoning models (GPT-OSS, Qwen3, MiniMax) spend completion tokens on
+  // internal reasoning before emitting the final JSON. Keep the effort low for
+  // these short triage tasks and give the document enough room to land.
+  const isReasoningModel = /gpt-oss|qwen3|minimax|muse/i.test(model);
+
   const body = {
     model,
     messages: options.messages,
     temperature: options.temperature ?? 0.3,
-    max_completion_tokens: options.maxTokens ?? 900,
+    max_completion_tokens: options.maxTokens ?? 4000,
+    ...(isReasoningModel
+      ? { reasoning_effort: process.env.GROQ_REASONING_EFFORT ?? "low" }
+      : {}),
     ...(options.jsonMode ? { response_format: { type: "json_object" } } : {}),
   };
 

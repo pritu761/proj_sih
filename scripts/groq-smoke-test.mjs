@@ -19,15 +19,20 @@ const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
   body: JSON.stringify({
     model,
     messages: [
-      { role: "system", content: "Respond only with valid JSON." },
+      {
+        role: "system",
+        content: "Respond only with valid JSON.",
+      },
       {
         role: "user",
         content:
-          'Return a JSON object with exactly these keys: ok (boolean true), model (string "smoke")',
+          'You are triaging an AICTE grievance. Return a JSON object with exactly these keys: ok (boolean true), model (string "smoke"), riskFlags (array with one short string item).',
       },
     ],
     temperature: 0.3,
-    max_completion_tokens: 200,
+    // Stress-test the tightest app-side budget with reasoning effort low.
+    max_completion_tokens: 512,
+    reasoning_effort: "low",
     response_format: { type: "json_object" },
   }),
 });

@@ -129,7 +129,7 @@ Do not invent facts not present in the case.`,
     },
   ];
 
-  return groqJson<CaseSummaryResult>({ messages, temperature: 0.3, maxTokens: 900 });
+  return groqJson<CaseSummaryResult>({ messages, temperature: 0.3, maxTokens: 3000 });
 }
 
 // ============================================================================
@@ -189,7 +189,7 @@ Do not invent facts. If the text is too vague to classify confidently, set confi
     },
   ];
 
-  return groqJson<ClassificationSuggestion>({ messages, temperature: 0.2, maxTokens: 700 });
+  return groqJson<ClassificationSuggestion>({ messages, temperature: 0.2, maxTokens: 2500 });
 }
 
 // ============================================================================
@@ -268,7 +268,7 @@ Keep the letter concise, neutral, and grounded only in the case facts provided.`
     },
   ];
 
-  return groqJson<DraftReplyResult>({ messages, temperature: 0.4, maxTokens: 1000 });
+  return groqJson<DraftReplyResult>({ messages, temperature: 0.4, maxTokens: 3500 });
 }
 
 // ============================================================================
@@ -309,7 +309,7 @@ Return a JSON object with exactly these keys:
     },
   ];
 
-  return groqJson<TranslateResult>({ messages, temperature: 0.2, maxTokens: 900 });
+  return groqJson<TranslateResult>({ messages, temperature: 0.2, maxTokens: 3000 });
 }
 
 // ============================================================================
@@ -374,7 +374,7 @@ Ground every claim in the case facts above.`,
     },
   ];
 
-  return groqJson<OverlapExplanation>({ messages, temperature: 0.3, maxTokens: 800 });
+  return groqJson<OverlapExplanation>({ messages, temperature: 0.3, maxTokens: 2500 });
 }
 
 // ============================================================================
@@ -468,7 +468,7 @@ Do not invent numbers. Use only the data above.`,
     },
   ];
 
-  return groqJson<DashboardBriefing>({ messages, temperature: 0.4, maxTokens: 700 });
+  return groqJson<DashboardBriefing>({ messages, temperature: 0.4, maxTokens: 2500 });
 }
 
 // ============================================================================
@@ -539,7 +539,7 @@ Ground everything in the case data above. SLA breach and hearings are the top dr
     },
   ];
 
-  return groqJson<QueueAdvice>({ messages, temperature: 0.4, maxTokens: 600 });
+  return groqJson<QueueAdvice>({ messages, temperature: 0.4, maxTokens: 2500 });
 }
 
 // ============================================================================
@@ -616,7 +616,7 @@ Do not invent numbers. Use only the data above.`,
     },
   ];
 
-  return groqJson<ReportSummary>({ messages, temperature: 0.4, maxTokens: 700 });
+  return groqJson<ReportSummary>({ messages, temperature: 0.4, maxTokens: 2500 });
 }
 
 // ============================================================================
@@ -669,5 +669,5 @@ Return a JSON object with exactly these keys:
     },
   ];
 
-  return groqJson<ParsedSearchQuery>({ messages, temperature: 0.1, maxTokens: 400 });
+  return groqJson<ParsedSearchQuery>({ messages, temperature: 0.1, maxTokens: 1500 });
 }
