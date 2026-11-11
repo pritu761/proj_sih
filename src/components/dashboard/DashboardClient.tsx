@@ -44,6 +44,7 @@ import { ProgressRing } from "@/components/ui/progress-ring";
 import { useToast } from "@/components/ui/toast";
 import { ChartTooltip } from "@/components/ui/chart-tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Reveal } from "@/components/ui/reveal";
 import { RiskRadar } from "./RiskRadar";
 import { IngestionSimulator } from "./IngestionSimulator";
 import { OperationsWire } from "./OperationsWire";
@@ -316,7 +317,7 @@ export function DashboardClient({
               </span>
             </div>
 
-            <h1 className="mt-3.5 font-display text-[27px] font-extrabold leading-[1.08] tracking-[-0.035em] text-white sm:text-[34px]">
+            <h1 className="mt-3.5 font-display text-[clamp(1.65rem,3vw,2.15rem)] font-extrabold leading-[1.08] tracking-[-0.035em] text-white">
               {userName ? `Welcome back, ${firstName}.` : "Institutional grievance overview."}
             </h1>
             <p className="mt-2 max-w-xl text-[12.5px] leading-relaxed text-slate-400">
@@ -374,9 +375,13 @@ export function DashboardClient({
         </div>
       </section>
 
-      <OperationsWire items={wireItems} />
+      <Reveal>
+        <OperationsWire items={wireItems} />
+      </Reveal>
 
-      <AiBriefing />
+      <Reveal delay={90}>
+        <AiBriefing />
+      </Reveal>
 
       {/* ── Overlap alert ── */}
       {k.openOverlapAlerts > 0 && (
@@ -451,8 +456,11 @@ export function DashboardClient({
       </div>
 
       {/* ── Charts row 1 ── */}
-      <RiskRadar risk={metrics.riskRadar} />
+      <Reveal>
+        <RiskRadar risk={metrics.riskRadar} />
+      </Reveal>
 
+      <Reveal delay={80}>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="panel xl:col-span-2">
           <div className="panel-head">
@@ -579,8 +587,10 @@ export function DashboardClient({
           </div>
         </div>
       </div>
+      </Reveal>
 
       {/* ── Charts row 2 ── */}
+      <Reveal delay={80}>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="panel">
           <div className="panel-head">
@@ -677,8 +687,10 @@ export function DashboardClient({
           </div>
         </div>
       </div>
+      </Reveal>
 
       {/* ── Attention + collisions ── */}
+      <Reveal delay={80}>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="panel xl:col-span-2 overflow-hidden">
           <div className="panel-head">
@@ -809,6 +821,7 @@ export function DashboardClient({
           )}
         </div>
       </div>
+      </Reveal>
     </div>
   );
 }

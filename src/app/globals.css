@@ -486,7 +486,19 @@
   outline-offset: 2px;
 }
 .btn:active:not(:disabled) {
-  transform: translateY(0) scale(0.985);
+  transform: translateY(0) scale(0.97);
+}
+
+/* Card lift: apply alongside .panel / cards for a quiet hover response */
+.lift {
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px -22px rgba(6, 10, 20, 0.35);
 }
 
 .btn-primary {

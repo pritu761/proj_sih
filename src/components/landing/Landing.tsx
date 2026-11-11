@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   Sparkles,
@@ -22,69 +22,8 @@ import { TextReveal } from "@/components/ui/text-reveal";
 import { CountUp } from "@/components/ui/count-up";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { BackgroundBeams } from "@/components/ui/background-beams";
+import { Reveal, useInViewOnce } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils";
-
-/* ============================================================================
-   Scroll-reveal primitives (landing only)
-
-   Sections fade and rise into place as they enter the viewport — the
-   signature Apple product-page motion. IntersectionObserver, no libraries.
-   Reduced-motion users get content immediately visible.
-   ========================================================================== */
-
-function useInViewOnce(threshold = 0.18) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (visible) return;
-    if (typeof window === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setVisible(true);
-      return;
-    }
-    const node = ref.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold, rootMargin: "0px 0px -8% 0px" }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [visible, threshold]);
-
-  return { ref, visible };
-}
-
-function Reveal({
-  children,
-  delay = 0,
-  className,
-}: {
-  children: ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  const { ref, visible } = useInViewOnce();
-  return (
-    <div
-      ref={ref}
-      className={cn(
-        "transition-all duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
-        visible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0",
-        className
-      )}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      {children}
-    </div>
-  );
-}
 
 /* ============================================================================
    Frosted-glass sticky nav

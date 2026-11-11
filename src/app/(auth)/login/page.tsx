@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DEMO_USERS } from "@/lib/demo-data";
@@ -13,6 +14,7 @@ import {
   Lock,
   Mail,
   ArrowRight,
+  ArrowLeft,
   AlertCircle,
   Eye,
   EyeOff,
@@ -112,11 +114,14 @@ function LoginForm() {
         </div>
       </div>
 
-      <div className="auth-card animate-slide-up rounded-[20px] border border-slate-200/80 bg-white p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] sm:p-8 dark:border-white/10 dark:bg-ink-900 dark:shadow-[0_30px_80px_-40px_rgba(0,0,0,0.75)]">
+      <div className="auth-card animate-slide-up rounded-[20px] border border-slate-200/70 bg-white/75 p-6 shadow-[0_30px_80px_-40px_rgba(6,10,20,0.35)] backdrop-blur-2xl backdrop-saturate-150 sm:p-8 dark:border-white/10 dark:bg-ink-900/75 dark:shadow-[0_30px_80px_-40px_rgba(0,0,0,0.75)]">
         <div className="mb-6" style={{ animationDelay: "60ms" }}>
-          <h1 className="animate-rise font-display text-[24px] font-extrabold leading-tight tracking-[-0.03em] text-slate-950 dark:text-white">
-            Sign in
+          <h1 className="animate-rise font-display text-[clamp(1.5rem,2.6vw,1.95rem)] font-extrabold leading-tight tracking-[-0.035em] text-slate-950 dark:text-white">
+            Welcome back.
           </h1>
+          <p className="animate-rise mt-1.5 text-[11.5px] font-medium text-slate-400" style={{ animationDelay: "120ms" }}>
+            Sign in with your AICTE official email to open the command centre.
+          </p>
         </div>
 
         {errorMessage && (
@@ -215,7 +220,7 @@ function LoginForm() {
                   onClick={() => quickLogin(u.email, u.password)}
                   disabled={isLoading}
                   title={`${u.name} — ${u.designation}`}
-                  className="group flex h-10 animate-rise items-center gap-2 rounded-xl border border-slate-200 bg-white px-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50/40 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-brand-400/40 dark:hover:bg-brand-400/10"
+                  className="group flex h-10 animate-rise items-center gap-2 rounded-xl border border-slate-200 bg-white/90 px-2.5 text-left lift hover:-translate-y-0.5 hover:border-brand-300 hover:bg-brand-50/40 disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.06] dark:hover:border-brand-400/40 dark:hover:bg-brand-400/10"
                   style={{ animationDelay: `${320 + i * 60}ms` }}
                 >
                   <span
@@ -231,6 +236,25 @@ function LoginForm() {
             })}
           </div>
         </div>
+      </div>
+
+      {/* Below-card links */}
+      <div className="animate-fade-in mt-5 flex items-center justify-center gap-5" style={{ animationDelay: "480ms" }}>
+        <Link
+          href="/"
+          className="group inline-flex items-center gap-1 text-[11.5px] font-bold text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+          <ArrowLeft className="h-3 w-3 transition-transform duration-300 group-hover:-translate-x-0.5" />
+          Back to home
+        </Link>
+        <span className="h-3 w-px bg-slate-300/70 dark:bg-white/10" aria-hidden />
+        <Link
+          href="/track"
+          className="group inline-flex items-center gap-1 text-[11.5px] font-bold text-slate-500 transition-colors hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
+        >
+          Track a grievance
+          <ArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5" />
+        </Link>
       </div>
     </div>
   );

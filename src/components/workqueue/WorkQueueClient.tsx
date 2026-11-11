@@ -314,7 +314,7 @@ export function WorkQueueClient({ mine, unassigned, officers, currentUser }: Wor
         {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className="panel px-4 py-3.5">
+            <div key={s.label} className="panel lift px-4 py-3.5">
               <div className="flex items-center justify-between">
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                   {s.label}
