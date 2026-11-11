@@ -16,7 +16,7 @@ export default async function AuditPage() {
   const user = session.user as unknown as SessionUser;
 
   if (user.role !== "ADMIN" && user.role !== "COMPETENT_AUTHORITY") {
-    redirect("/");
+    redirect("/dashboard");
   }
 
   const logs = await repository.getAuditLogs();

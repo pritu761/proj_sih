@@ -22,7 +22,7 @@ export default function DashboardNotFound() {
               <Search className="h-3.5 w-3.5" />
               Open case explorer
             </Link>
-            <Link href="/" className="btn btn-secondary">
+            <Link href="/dashboard" className="btn btn-secondary">
               <ArrowLeft className="h-3.5 w-3.5" />
               Back to dashboard
             </Link>

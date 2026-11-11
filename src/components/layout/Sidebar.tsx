@@ -67,7 +67,7 @@ export function Sidebar({
     {
       label: "Command",
       items: [
-        { name: "Dashboard", href: "/", icon: LayoutDashboard, active: pathname === "/" },
+        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, active: pathname === "/dashboard" },
         {
           name: "Overlap Alerts",
           href: "/alerts",
@@ -213,7 +213,7 @@ export function Sidebar({
           )}
         >
           <Link
-            href="/"
+            href="/dashboard"
             className="group flex items-center gap-3"
             aria-label="AICTE Sentinel home"
           >

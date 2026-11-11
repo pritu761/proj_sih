@@ -13,7 +13,7 @@ export default async function UsersPage() {
   const user = session.user as unknown as SessionUser;
   // Non-administrators are bounced: the console is Administrator-only by design.
   if (user.role !== "ADMIN") {
-    redirect("/");
+    redirect("/dashboard");
   }
 
   const users = await repository.getUsers(user);

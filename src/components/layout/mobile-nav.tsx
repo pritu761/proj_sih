@@ -68,7 +68,7 @@ function Tab({
 
 export function MobileNav({ openOverlapCount, onMore }: MobileNavProps) {
   const pathname = usePathname();
-  const dashboardActive = pathname === "/";
+  const dashboardActive = pathname === "/dashboard";
   const casesActive = pathname.startsWith("/cases") && pathname !== "/cases/new";
   const alertsActive = pathname.startsWith("/alerts");
   const registerActive = pathname === "/cases/new";
@@ -80,7 +80,7 @@ export function MobileNav({ openOverlapCount, onMore }: MobileNavProps) {
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <div className="mx-auto grid h-[64px] max-w-lg grid-cols-5 items-stretch px-1.5">
-        <Tab href="/" label="Home" icon={LayoutDashboard} active={dashboardActive} />
+        <Tab href="/dashboard" label="Home" icon={LayoutDashboard} active={dashboardActive} />
         <Tab href="/cases" label="Cases" icon={FolderSearch} active={casesActive} />
         <Link
           href="/cases/new"

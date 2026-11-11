@@ -31,7 +31,7 @@ interface AppShellProps {
 const SIDEBAR_KEY = "aicte-sentinel-sidebar";
 
 const quickDestinations: Record<string, string> = {
-  d: "/",
+  d: "/dashboard",
   c: "/cases",
   a: "/alerts",
   i: "/institutions",

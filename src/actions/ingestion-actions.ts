@@ -114,7 +114,7 @@ export async function simulateIngestionAction(data: {
       alert.case_ids.includes(created.case_id)
     );
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/cases");
     revalidatePath("/alerts");
     revalidatePath("/institutions");

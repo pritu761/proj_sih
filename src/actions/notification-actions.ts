@@ -14,7 +14,7 @@ export async function markNotificationReadAction(id: string) {
   try {
     const actor = session.user as unknown as SessionUser;
     await repository.markNotificationRead(id, actor);
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/alerts");
     return { success: true };
   } catch (err: any) {

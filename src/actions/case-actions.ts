@@ -43,7 +43,7 @@ export async function updateCaseStatusAction(data: {
       parsed.data.attachments || []
     );
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/cases");
     revalidatePath(`/cases/${parsed.data.caseId}`);
     return { success: true, data: updated };
@@ -78,7 +78,7 @@ export async function transferCaseAction(data: {
       parsed.data.attachments || []
     );
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/cases");
     revalidatePath(`/cases/${parsed.data.caseId}`);
     return { success: true, data: updated };
@@ -111,7 +111,7 @@ export async function escalateCaseAction(data: {
       parsed.data.attachments || []
     );
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/cases");
     revalidatePath(`/cases/${parsed.data.caseId}`);
     return { success: true, data: updated };
@@ -211,7 +211,7 @@ export async function createCaseAction(data: {
     const actor = session.user as unknown as SessionUser;
     const created = await repository.createCase(parsed.data, actor);
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/cases");
     revalidatePath("/alerts");
     return { success: true, caseId: created.id, caseCode: created.case_id };
@@ -244,7 +244,7 @@ export async function assignOfficerAction(data: {
       actor
     );
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/cases");
     revalidatePath(`/cases/${parsed.data.caseId}`);
     revalidatePath("/workqueue");

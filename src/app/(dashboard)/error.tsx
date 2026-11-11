@@ -42,7 +42,7 @@ export default function DashboardError({
               <RefreshCw className="h-3.5 w-3.5" />
               Retry request
             </button>
-            <Link href="/" className="btn btn-secondary">
+            <Link href="/dashboard" className="btn btn-secondary">
               <Home className="h-3.5 w-3.5" />
               Back to dashboard
             </Link>

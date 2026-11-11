@@ -208,7 +208,7 @@ export function CommandPalette({ user }: { user: SessionUser }) {
 
   const staticItems = useMemo<PaletteItem[]>(() => {
     const nav: { title: string; subtitle: string; href: string; icon: typeof Search; roles?: string[] }[] = [
-      { title: "Dashboard", subtitle: "Command centre and live metrics", href: "/", icon: LayoutDashboard },
+      { title: "Dashboard", subtitle: "Command centre and live metrics", href: "/dashboard", icon: LayoutDashboard },
       { title: "Case Explorer", subtitle: "Search, filter and drill into grievances", href: "/cases", icon: FolderSearch },
       { title: "Register complaint", subtitle: "Open a new grievance file", href: "/cases/new", icon: PlusCircle },
       { title: "Overlap Alerts", subtitle: "Cross-bureau collision coordination", href: "/alerts", icon: Radar },

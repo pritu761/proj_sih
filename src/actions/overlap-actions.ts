@@ -32,7 +32,7 @@ export async function coordinateOverlapAction(data: {
       actor
     );
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/alerts");
     revalidatePath("/institutions");
     revalidatePath("/cases");
@@ -66,7 +66,7 @@ export async function mergeOverlapAction(data: {
       actor
     );
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/alerts");
     revalidatePath("/cases");
     revalidatePath(`/cases/${merged.masterInternalId}`);
@@ -99,7 +99,7 @@ export async function dismissOverlapAction(data: {
       actor
     );
 
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     revalidatePath("/alerts");
     revalidatePath("/institutions");
     return { success: true, data: updated };

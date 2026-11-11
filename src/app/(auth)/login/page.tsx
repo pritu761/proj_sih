@@ -30,7 +30,7 @@ const roleMeta: Record<string, RoleMeta> = {
 };
 
 function safeCallbackUrl(value: string | null) {
-  if (!value) return "/";
+  if (!value) return "/dashboard";
   // Only allow same-origin relative paths. Reject `//evil.example` and any
   // absolute URL so a crafted login link cannot bounce users off-site.
   if (!value.startsWith("/") || value.startsWith("//")) return "/";

@@ -4,8 +4,10 @@ import type { NextRequest } from "next/server";
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 1. Allow public assets, login page, public tracker, auth/cron API routes
+  // 1. Allow public assets, marketing landing (/), login page, public tracker,
+  // auth/cron API routes
   if (
+    pathname === "/" ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon.ico") ||
     pathname.startsWith("/icon") ||
