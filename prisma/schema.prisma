@@ -62,6 +62,7 @@ model Case {
   links_as_b             CaseLink[]      @relation("CaseLinksB")
   notifications          Notification[]
   comments               CaseComment[]
+  watchers               GrievanceWatcher[]
 
   @@index([institution_id])
   @@index([status])
@@ -184,6 +185,22 @@ model SlaConfig {
   warning_threshold_percent Int      @default(80)
   created_at                DateTime @default(now())
   updated_at                DateTime @updatedAt
+}
+
+/**
+ * Citizens who asked to be notified when a tracked grievance changes state.
+ * Keyed per (case, email) so repeat subscriptions are idempotent.
+ */
+model GrievanceWatcher {
+  id         String   @id @default(cuid())
+  case_id    String
+  case       Case     @relation(fields: [case_id], references: [id], onDelete: Cascade)
+  email      String
+  created_at DateTime @default(now())
+
+  @@unique([case_id, email])
+  @@index([case_id])
+  @@index([email])
 }
 
 model AuditLog {

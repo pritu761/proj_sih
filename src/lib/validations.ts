@@ -219,9 +219,29 @@ export const TrackCaseSchema = z.object({
     .transform((v) => v.trim().replace(/\s+/g, "").toUpperCase()),
 });
 
+export const SubscribeCaseWatchSchema = z.object({
+  registryNo: z
+    .string()
+    .min(10, "Enter the full registry number, e.g. AICTE/PGRC/2026/00101")
+    .max(48)
+    .transform((v) => v.trim().replace(/\s+/g, "").toUpperCase()),
+  email: z
+    .string()
+    .email("Enter a valid email address")
+    .max(120)
+    .transform((v) => v.toLowerCase().trim()),
+});
+
 // -----------------------------------------------------------------------------
 // AI feature validations
 // -----------------------------------------------------------------------------
+export const AiCaseFiltersSchema = z.object({
+  query: z
+    .string()
+    .min(4, "Describe the filter in a few words, e.g. breached capitation cases older than 30 days")
+    .max(140, "Keep the query under 140 characters"),
+});
+
 export const AiSummarizeCaseSchema = z.object({
   caseId: z.string().min(1, "Case ID is required"),
 });

@@ -4,7 +4,18 @@ import { auth } from "@/auth";
 import { SessionUser } from "@/lib/rbac";
 import repository from "@/lib/services/repository";
 import { computeBureauScorecard } from "@/lib/services/scorecard";
-import { AiSummarizeCaseSchema, AiSuggestClassificationSchema, AiDraftReplySchema, AiTranslateSchema, AiExplainOverlapSchema } from "@/lib/validations";
+import { SLA_CONFIGS } from "@/lib/demo-data";
+import {
+  AiSummarizeCaseSchema,
+  AiSuggestClassificationSchema,
+  AiDraftReplySchema,
+  AiTranslateSchema,
+  AiExplainOverlapSchema,
+  AiCaseFiltersSchema,
+  BureauEnum,
+  CaseStatusEnum,
+  CasePriorityEnum,
+} from "@/lib/validations";
 import {
   summarizeCase,
   suggestClassification,
@@ -14,6 +25,7 @@ import {
   briefDashboard,
   adviseQueue,
   summarizeReports,
+  parseSearchQuery,
 } from "@/lib/services/ai-engine";
 
 async function requireActor(): Promise<SessionUser | { error: string }> {
@@ -453,3 +465,156 @@ export async function aiReportSummaryAction() {
     return { success: false, disabled: false, error: err.message || "Failed to generate report summary." };
   }
 }
+
+/**
+ * Parse a plain-language case-explorer query ("breached capitation cases older
+ * than 30 days") into whitelisted query-builder filters. Every AI-returned
+ * value is validated against the registry's allowed enums before it reaches
+ * the URL, and SLA wording / date windows are extracted deterministically.
+ */
+export async function aiParseCaseFiltersAction(data: { query: string }) {
+  const actor = await requireActor();
+  if ("error" in actor) return { success: false, disabled: false, error: actor.error };
+
+  const parsed = AiCaseFiltersSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, disabled: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const query = parsed.data.query;
+    const lower = query.toLowerCase();
+
+    // SLA wording and date windows are parsed deterministically — the model is
+    // not asked for them, so the phrasing stays reliable.
+    const derived: Record<string, string> = {};
+    if (/\b(approach\w*|nearing|near(ing)? (the )?(deadline|sla|expiry)|about to (breach|expire)|running out)\b/i.test(lower)) {
+      derived.sla_status = "APPROACHING";
+    } else if (/\b(breach\w*|overdue|past (the |its )?(deadline|sla|due date)|missed (the )?sla)\b/i.test(lower)) {
+      derived.sla_status = "BREACHED";
+    }
+    const olderThan = lower.match(/older than (\d{1,3}) days?/);
+    if (olderThan) {
+      const d = new Date();
+      d.setDate(d.getDate() - parseInt(olderThan[1], 10));
+      derived.date_to = d.toISOString().slice(0, 10);
+    }
+    const recentWindow = lower.match(/(?:last|past|within) (?:the )?(\d{1,3}) days?/);
+    if (recentWindow) {
+      const d = new Date();
+      d.setDate(d.getDate() - parseInt(recentWindow[1], 10));
+      derived.date_from = d.toISOString().slice(0, 10);
+    }
+
+    const result = await parseSearchQuery({
+      query,
+      categories: SLA_CONFIGS.map((c: any) => c.category),
+      regions: CASES_REGIONS,
+    });
+    if (result.disabled) {
+      return {
+        success: false,
+        disabled: true,
+        error: result.error || "AI features are not configured. Set GROQ_API_KEY.",
+      };
+    }
+    if (!result.ok || !result.data) {
+      return { success: false, disabled: false, error: result.error || "Failed to read that query." };
+    }
+
+    const p = result.data;
+    // Whitelist every AI-returned value against the query builder's enums.
+    const filters: Record<string, string> = {};
+    if (p.category && SLA_CONFIGS.some((c: any) => c.category === p.category)) {
+      filters.category = p.category;
+    }
+    if (p.bureau && (BureauEnum.options as readonly string[]).includes(p.bureau)) {
+      filters.bureau = p.bureau;
+    }
+    if (p.status && (CaseStatusEnum.options as readonly string[]).includes(p.status)) {
+      filters.status = p.status;
+    }
+    if (p.priority && (CasePriorityEnum.options as readonly string[]).includes(p.priority)) {
+      filters.priority = p.priority;
+    }
+    if (p.region && CASES_REGIONS.includes(p.region)) {
+      filters.region = p.region;
+    } else {
+      // Indian states are not a registry filter; map the common ones to the
+      // AICTE regional office named in the seed registry.
+      for (const [state, region] of Object.entries(STATE_TO_REGION)) {
+        if (lower.includes(state.toLowerCase())) {
+          filters.region = region;
+          break;
+        }
+      }
+    }
+
+    // Free text: model keywords + any institution name, sanitized for the URL.
+    const qParts = [p.q, p.institution_name].filter(Boolean) as string[];
+    const q = qParts.join(" ").replace(/["\\<>]/g, "").trim().slice(0, 80);
+    if (q) filters.q = q;
+
+    Object.assign(filters, derived);
+
+    if (Object.keys(filters).length === 0) {
+      return {
+        success: false,
+        disabled: false,
+        error:
+          "Could not map that to registry filters. Try naming a bureau, category, status, region, or SLA state.",
+      };
+    }
+
+    return {
+      success: true,
+      disabled: false,
+      data: { filters, reasoning: (p.reasoning ?? "").slice(0, 140) },
+    };
+  } catch (err: any) {
+    return { success: false, disabled: false, error: err.message || "Failed to read that query." };
+  }
+}
+
+/** Regions offered by the case explorer query builder. */
+const CASES_REGIONS = [
+  "Northern",
+  "Western",
+  "Southern",
+  "Eastern",
+  "Central",
+  "North-Western",
+  "South-Western",
+];
+
+/**
+ * State mentions in plain-language queries, mapped to the AICTE regional
+ * office that handles them in this registry (derived from the seeded
+ * institution registry, not administrative geography).
+ */
+const STATE_TO_REGION: Record<string, string> = {
+  "uttar pradesh": "Northern",
+  uttarakhand: "Northern",
+  bihar: "Northern",
+  maharashtra: "Western",
+  gujarat: "Western",
+  goa: "Western",
+  "tamil nadu": "Southern",
+  "andhra pradesh": "Southern",
+  telangana: "Southern",
+  kerala: "Southern",
+  puducherry: "Southern",
+  karnataka: "South-Western",
+  odisha: "Eastern",
+  "west bengal": "Eastern",
+  jharkhand: "Eastern",
+  assam: "Eastern",
+  meghalaya: "Eastern",
+  "madhya pradesh": "Central",
+  chhattisgarh: "Central",
+  delhi: "North-Western",
+  rajasthan: "North-Western",
+  punjab: "North-Western",
+  haryana: "North-Western",
+  chandigarh: "North-Western",
+};

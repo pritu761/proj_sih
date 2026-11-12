@@ -2422,6 +2422,36 @@ export class ComplaintRepository {
     };
   }
 
+  /**
+   * Citizens who asked to be notified when a tracked grievance changes state.
+   * Counted from the durable store keyed on the case's internal id.
+   */
+  public async getPublicWatcherCount(registryNo: string) {
+    const store = getInMemoryStore();
+    const key = registryNo.trim().toUpperCase();
+    const c = store.cases.find((item) => item.case_id.toUpperCase() === key);
+    if (!c) return 0;
+    try {
+      return await prisma.grievanceWatcher.count({ where: { case_id: c.id } });
+    } catch {
+      return 0;
+    }
+  }
+
+  /** Idempotent public watch subscription. Returns the new watcher count. */
+  public async subscribePublicWatcher(registryNo: string, email: string) {
+    const store = getInMemoryStore();
+    const key = registryNo.trim().toUpperCase();
+    const c = store.cases.find((item) => item.case_id.toUpperCase() === key);
+    if (!c) return null;
+    await prisma.grievanceWatcher.upsert({
+      where: { case_id_email: { case_id: c.id, email } },
+      create: { case_id: c.id, email },
+      update: {},
+    });
+    return await prisma.grievanceWatcher.count({ where: { case_id: c.id } });
+  }
+
   public async getAuditLogs() {
     // Ensure the in-memory store (and its seeded ledger) is initialised before
     // reading, so route handlers see the same history as the audit page.

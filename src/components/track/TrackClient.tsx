@@ -16,9 +16,13 @@ import {
   Landmark,
   ArrowRight,
   ReceiptText,
+  Printer,
+  MailPlus,
+  Loader2,
+  Users,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
-import { trackCaseAction } from "@/actions/track-actions";
+import { trackCaseAction, subscribeCaseWatchAction } from "@/actions/track-actions";
 import { StatusPill } from "@/components/ui/badges";
 import { TextReveal } from "@/components/ui/text-reveal";
 import { ProgressRing } from "@/components/ui/progress-ring";
@@ -85,6 +89,11 @@ export function TrackClient() {
   const [registryNo, setRegistryNo] = useState("");
   const [result, setResult] = useState<TrackingResult | null>(null);
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
+  const [watchers, setWatchers] = useState<number | null>(null);
+  const [watchEmail, setWatchEmail] = useState("");
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [watchDone, setWatchDone] = useState(false);
+  const [watchError, setWatchError] = useState("");
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState("");
 
@@ -106,15 +115,36 @@ export function TrackClient() {
     }
     if (code && !registryNo) setRegistryNo(code);
     setResult(res.tracking);
+    setWatchers(res.watchers ?? 0);
     setCheckedAt(res.checkedAt);
+    setWatchDone(false);
+    setWatchEmail("");
+    setWatchError("");
+  };
+
+  const handleSubscribe = async () => {
+    if (!result) return;
+    setIsSubscribing(true);
+    setWatchError("");
+    const res = await subscribeCaseWatchAction({
+      registryNo: result.registry_no,
+      email: watchEmail,
+    });
+    setIsSubscribing(false);
+    if (!res.success) {
+      setWatchError(res.error || "Could not subscribe right now.");
+      return;
+    }
+    setWatchers(res.watchers);
+    setWatchDone(true);
   };
 
   const sla = result ? slaMeta(result) : null;
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-ink-950 via-ink-900 to-ink-950 text-white">
+    <div className="print-page flex min-h-screen flex-col bg-gradient-to-b from-ink-950 via-ink-900 to-ink-950 text-white">
       {/* Sticky frosted header */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-ink-950/55 backdrop-blur-2xl backdrop-saturate-150">
+      <header className="no-print sticky top-0 z-40 border-b border-white/10 bg-ink-950/55 backdrop-blur-2xl backdrop-saturate-150">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-5">
           <Link
             href="/"
@@ -164,7 +194,7 @@ export function TrackClient() {
         </Reveal>
 
         {/* Lookup card */}
-        <Reveal delay={160}>
+        <Reveal delay={160} className="no-print">
           <div className="mt-9 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
             <label htmlFor="registry" className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/50">
               Registry number
@@ -232,7 +262,16 @@ export function TrackClient() {
 
             {/* Status hero */}
             <Reveal>
-              <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
+              <div className="print-card relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="no-print absolute right-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-[10.5px] font-bold text-white/70 transition-all duration-300 hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-[0.97]"
+                  title="Print or save this status report as PDF"
+                >
+                  <Printer className="h-3 w-3" />
+                  Print report
+                </button>
                 <div
                   className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full blur-3xl opacity-25"
                   style={{ background: `radial-gradient(circle, ${sla?.color ?? "#34d399"}, transparent 65%)` }}
@@ -277,7 +316,7 @@ export function TrackClient() {
                 </div>
 
                 <div className="relative mt-4 grid gap-3 text-[11px] sm:grid-cols-2">
-                  <div className="rounded-xl border border-white/10 bg-ink-900/40 p-3">
+                  <div className="rounded-xl print-soft border border-white/10 bg-ink-900/40 p-3">
                     <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">
                       <Building2 className="h-3 w-3" /> Institution
                     </p>
@@ -287,7 +326,7 @@ export function TrackClient() {
                       {result.institution_city}, {result.institution_state}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-ink-900/40 p-3">
+                  <div className="rounded-xl print-soft border border-white/10 bg-ink-900/40 p-3">
                     <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">
                       <Landmark className="h-3 w-3" /> Responsible wing
                     </p>
@@ -301,7 +340,7 @@ export function TrackClient() {
                   </div>
                 </div>
 
-                <p className="relative mt-3 rounded-xl border border-white/10 bg-ink-900/40 p-3 text-[11px] leading-relaxed text-white/70">
+                <p className="relative mt-3 rounded-xl print-soft border border-white/10 bg-ink-900/40 p-3 text-[11px] leading-relaxed text-white/70">
                   <span className="font-bold text-white">Latest update from the Council:</span>{" "}
                   {result.last_action}
                 </p>
@@ -310,7 +349,7 @@ export function TrackClient() {
 
             {/* Journey timeline */}
             <Reveal delay={120}>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-2xl">
+              <div className="print-card rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-2xl">
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/50">
                   Journey of your grievance
                 </p>
@@ -359,11 +398,81 @@ export function TrackClient() {
                 </p>
               </div>
             </Reveal>
+
+            {/* Watch subscription */}
+            <Reveal delay={200}>
+              <div className="print-card rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-2xl">
+                <div className="flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/50">
+                      <Users className="h-3 w-3" />
+                      Keep watching this grievance
+                    </p>
+                    <p className="mt-1 text-[11.5px] leading-relaxed text-white/60">
+                      {watchers !== null && watchers > 0 ? (
+                        <>
+                          <span className="font-bold text-white">{watchers}</span>{" "}
+                          {watchers === 1 ? "citizen is" : "citizens are"} tracking{" "}
+                          {watchers === 1 ? "it" : "them"}. Leave your email and the Council's
+                          disclosure desk will notify you when the status changes.
+                        </>
+                      ) : (
+                        "Leave your email and the Council's disclosure desk will notify you when the status of this grievance changes."
+                      )}
+                    </p>
+                  </div>
+                  <div className="no-print flex w-full shrink-0 flex-col gap-2 sm:w-72">
+                    {watchDone ? (
+                      <p className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2.5 text-[11px] font-bold text-emerald-300">
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                        You will be notified at {watchEmail}
+                      </p>
+                    ) : (
+                      <>
+                        <div className="flex gap-2">
+                          <input
+                            type="email"
+                            value={watchEmail}
+                            onChange={(e) => setWatchEmail(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSubscribe()}
+                            placeholder="you@example.com"
+                            className="w-full rounded-xl border border-white/15 bg-ink-900/60 px-3 py-2.5 text-[11.5px] font-semibold text-white placeholder:text-white/25 transition-all duration-300 focus:border-saffron-400/60 focus:shadow-[0_0_0_3.5px_rgba(251,191,36,0.12),0_0_28px_-8px_rgba(251,191,36,0.45)] focus:outline-none"
+                            aria-label="Email address for status notifications"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleSubscribe}
+                            disabled={isSubscribing}
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-saffron-400 px-3.5 py-2.5 text-[11px] font-extrabold text-ink-950 transition-all duration-300 hover:bg-saffron-300 active:scale-[0.97] disabled:opacity-50"
+                          >
+                            {isSubscribing ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <MailPlus className="h-3.5 w-3.5" />
+                            )}
+                            Notify me
+                          </button>
+                        </div>
+                        {watchError && (
+                          <p role="alert" className="text-[10.5px] font-semibold text-rose-300">
+                            {watchError}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-3 border-t border-white/10 pt-2.5 text-[10px] leading-relaxed text-white/30">
+                  Only the registry number and your email are stored. Unsubscribe by replying to any
+                  notification. This demo deployment does not send live email.
+                </p>
+              </div>
+            </Reveal>
           </div>
         )}
       </main>
 
-      <footer className="border-t border-white/10 py-5">
+      <footer className="no-print border-t border-white/10 py-5">
         <p className="mx-auto max-w-3xl px-5 text-center text-[10.5px] leading-relaxed text-white/35">
           AICTE public grievance disclosure · Demonstration deployment seeded with synthetic data.
         </p>

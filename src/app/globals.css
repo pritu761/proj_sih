@@ -1571,3 +1571,43 @@ textarea.input {
     opacity: 0;
   }
 }
+
+/* ============================================================================
+   Track page: citizen-printable status report
+   Interactive chrome is hidden (.no-print) and the always-dark page prints
+   as a clean white report (.print-page / .print-card / .print-soft).
+   ========================================================================== */
+@media print {
+  .print-page {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-page .no-print {
+    display: none !important;
+  }
+  /* Scroll reveals must never trap report content on paper. */
+  .print-page [class*="duration-[900ms]"] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .print-page .print-card,
+  .print-page .print-card * {
+    color: #0f172a !important;
+    border-color: #e2e8f0 !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+  }
+  .print-page .print-card {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+  }
+  .print-page .print-soft {
+    background: #f8fafc !important;
+  }
+  .print-page .print-card svg {
+    color: #334155 !important;
+  }
+}

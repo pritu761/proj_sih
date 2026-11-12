@@ -22,6 +22,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { BureauPill, PriorityPill, SlaPill, StatusPill } from "@/components/ui/badges";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ExportCsvButton } from "@/components/cases/export-csv-button";
+import { AiFilterBar } from "@/components/cases/AiFilterBar";
+import { SavedViews } from "@/components/cases/SavedViews";
 import { cn } from "@/lib/utils";
 
 interface CasesPageProps {
@@ -39,6 +41,7 @@ interface CasesPageProps {
     sortOrder?: "asc" | "desc";
     view?: "table" | "grid";
     page?: string;
+    nl?: string;
   }>;
 }
 
@@ -180,6 +183,8 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
           </span>
         </div>
 
+        <AiFilterBar nl={params.nl} view={params.view} />
+
         <form method="GET" action="/cases" className="space-y-3 p-4 sm:p-5">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -276,6 +281,12 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
             ))}
           </div>
         )}
+
+        <SavedViews
+          storageKey={`sentinel:saved-views:${user.email}`}
+          activeQuery={exportParams.toString()}
+          activeChips={filterEntries.map(([key, value]) => labelFor(key, value))}
+        />
       </div>
 
       {/* Table */}
