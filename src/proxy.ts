@@ -14,6 +14,7 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/apple-icon") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/track") ||
+    pathname.startsWith("/transparency") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/cron") ||
     /\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|xml|webmanifest)$/i.test(pathname)

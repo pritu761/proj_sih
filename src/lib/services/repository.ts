@@ -2452,6 +2452,142 @@ export class ComplaintRepository {
     return await prisma.grievanceWatcher.count({ where: { case_id: c.id } });
   }
 
+  /**
+   * Public transparency aggregates for the citizen-facing disclosure page.
+   * Derived strictly from the same public-safe data classes as the tracker —
+   * no internal desk notes, no officer identities, no complainant data.
+   */
+  public getPublicTransparencyStats() {
+    const store = getInMemoryStore();
+    const cases = store.cases;
+    const instById = new Map(store.institutions.map((i: any) => [i.id, i]));
+
+    const total = cases.length;
+    const disposedCases = cases.filter((c: any) => c.status === "DISPOSED");
+    const inProgress = cases.filter(
+      (c: any) => c.status === "PENDING" || c.status === "UNDER_PROCESS"
+    ).length;
+    const escalated = cases.filter((c: any) => c.status === "ESCALATED").length;
+    const transferred = cases.filter((c: any) => c.status === "TRANSFERRED").length;
+
+    const breached = cases.filter((c: any) => {
+      if (c.status === "DISPOSED") return false;
+      return calculateCaseSla(c.category, c.date_received, c.status).isBreached;
+    }).length;
+
+    const disposalRate = total ? Math.round((disposedCases.length / total) * 100) : 0;
+
+    const latestDisposedAt = (c: any) => {
+      const disposed = c.actions
+        .filter((a: any) => a.action_type === "DISPOSED")
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )[0];
+      return disposed ? new Date(disposed.timestamp) : new Date(c.last_action_date);
+    };
+
+    const resolutionDays = disposedCases.map((c: any) =>
+      Math.max(
+        1,
+        Math.round(
+          (latestDisposedAt(c).getTime() - new Date(c.date_received).getTime()) / 86400000
+        )
+      )
+    );
+    const avgResolutionDays = resolutionDays.length
+      ? Math.round(resolutionDays.reduce((s: number, d: number) => s + d, 0) / resolutionDays.length)
+      : 0;
+
+    // ── Per category ──
+    const categoryMap = new Map<string, { received: number; disposed: number; days: number[] }>();
+    for (const c of cases) {
+      const entry = categoryMap.get(c.category) ?? { received: 0, disposed: 0, days: [] as number[] };
+      entry.received += 1;
+      if (c.status === "DISPOSED") {
+        entry.disposed += 1;
+        entry.days.push(
+          Math.max(
+            1,
+            Math.round(
+              (latestDisposedAt(c).getTime() - new Date(c.date_received).getTime()) / 86400000
+            )
+          )
+        );
+      }
+      categoryMap.set(c.category, entry);
+    }
+    const perCategory = Array.from(categoryMap.entries())
+      .map(([category, v]) => ({
+        category,
+        received: v.received,
+        disposed: v.disposed,
+        avgDays: v.days.length
+          ? Math.round(v.days.reduce((s, d) => s + d, 0) / v.days.length)
+          : 0,
+      }))
+      .sort((a, b) => b.received - a.received)
+      .slice(0, 8);
+
+    // ── Per regional office ──
+    const regionMap = new Map<string, { received: number; disposed: number }>();
+    for (const c of cases) {
+      const region = instById.get(c.institution_id)?.region ?? "Unassigned";
+      const entry = regionMap.get(region) ?? { received: 0, disposed: 0 };
+      entry.received += 1;
+      if (c.status === "DISPOSED") entry.disposed += 1;
+      regionMap.set(region, entry);
+    }
+    const perRegion = Array.from(regionMap.entries())
+      .map(([region, v]) => ({ region, ...v }))
+      .sort((a, b) => b.received - a.received);
+
+    // ── Monthly flow, last 6 months ──
+    const months: { key: string; label: string }[] = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        key: `${d.getFullYear()}-${d.getMonth()}`,
+        label: d.toLocaleDateString("en-IN", { month: "short" }),
+      });
+    }
+    const flow = new Map<string, { received: number; disposed: number }>(
+      months.map((m) => [m.key, { received: 0, disposed: 0 }])
+    );
+    for (const c of cases) {
+      const r = new Date(c.date_received);
+      const rk = `${r.getFullYear()}-${r.getMonth()}`;
+      const entry = flow.get(rk);
+      if (entry) entry.received += 1;
+      if (c.status === "DISPOSED") {
+        const dt = latestDisposedAt(c);
+        const dk = `${dt.getFullYear()}-${dt.getMonth()}`;
+        const dEntry = flow.get(dk);
+        if (dEntry) dEntry.disposed += 1;
+      }
+    }
+    const monthly = months.map((m) => ({
+      month: m.label,
+      received: flow.get(m.key)!.received,
+      disposed: flow.get(m.key)!.disposed,
+    }));
+
+    return {
+      total,
+      disposed: disposedCases.length,
+      inProgress,
+      escalated,
+      transferred,
+      breached,
+      disposalRate,
+      avgResolutionDays,
+      perCategory,
+      perRegion,
+      monthly,
+    };
+  }
+
   public async getAuditLogs() {
     // Ensure the in-memory store (and its seeded ledger) is initialised before
     // reading, so route handlers see the same history as the audit page.

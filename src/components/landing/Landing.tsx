@@ -26,6 +26,55 @@ import { Reveal, useInViewOnce } from "@/components/ui/reveal";
 import { cn } from "@/lib/utils";
 
 /* ============================================================================
+   Landing copy: process steps & FAQ
+   ========================================================================== */
+
+const HOW_STEPS = [
+  {
+    icon: ScrollText,
+    title: "File & register",
+    body: "A complaint lands in the registry with a unique registry number. A statutory clock starts immediately — the deadline for disposal is fixed by category, not by convenience.",
+  },
+  {
+    icon: Timer,
+    title: "Statutory processing",
+    body: "The responsible bureau works the case with every action logged in an immutable timeline. A live SLA ring shows exactly how much of the legal window remains.",
+  },
+  {
+    icon: CheckCircle2,
+    title: "Disposal & public disclosure",
+    body: "Redressal is recorded with its full journey published on the public tracker. Citizens can watch for changes or print the final status report for their records.",
+  },
+];
+
+const FAQS = [
+  {
+    q: "Who can track a grievance?",
+    a: "Anyone holding the registry number printed on the acknowledgement slip. No account, no personal data — the status page is fully public.",
+  },
+  {
+    q: "What happens when the statutory deadline is breached?",
+    a: "The case is flagged and escalated to the competent authority. Breach and approaching-deadline states are visible on every case card and in the published transparency numbers.",
+  },
+  {
+    q: "Is complainant information public?",
+    a: "No. Public disclosure covers category, institution, bureau, timeline events and status only. Names, contacts, internal desk notes and evidence documents never leave the registry.",
+  },
+  {
+    q: "How are duplicate complaints about the same institution handled?",
+    a: "The overlap detector flags parallel open inquiries across bureaus and requires a lead bureau to be assigned before duplicate action is taken.",
+  },
+  {
+    q: "Which grievance categories does the Council accept?",
+    a: "Capitation fee & overcharging, faculty non-payment, infrastructure deficiencies, document withholding, approval irregularities and more — each with its own statutory timeline.",
+  },
+  {
+    q: "Is this an official AICTE product?",
+    a: "No — this is a Smart India Hackathon demonstration seeded with synthetic data, built to show how a statutory grievance desk could work in the open.",
+  },
+];
+
+/* ============================================================================
    Frosted-glass sticky nav
    ========================================================================== */
 
@@ -78,6 +127,9 @@ function LandingNav({ scrolled }: { scrolled: boolean }) {
           </a>
           <Link href="/track" className="transition-colors hover:text-white dark:hover:text-white">
             Tracker
+          </Link>
+          <Link href="/transparency" className="transition-colors hover:text-white dark:hover:text-white">
+            Transparency
           </Link>
         </div>
 
@@ -446,6 +498,90 @@ export function Landing() {
         </div>
       </section>
 
+      {/* ── How it works ─────────────────────────────────────────────────── */}
+      <section id="how" className="scroll-mt-20 px-5 py-24 sm:px-8">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-[1fr_1.15fr]">
+          <div className="lg:sticky lg:top-28 lg:self-start">
+            <Reveal>
+              <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                How it works
+              </p>
+              <h2 className="mt-3 font-display text-[clamp(1.9rem,4.5vw,3rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-slate-950 dark:text-white">
+                From complaint to closure, on the record.
+              </h2>
+              <p className="mt-4 max-w-md text-[13px] leading-relaxed text-slate-500 dark:text-slate-400">
+                Every grievance follows the same statutory path — registered, clocked, disposed and
+                published. Nothing happens off the record, and anyone can verify that.
+              </p>
+              <Link
+                href="/transparency"
+                className="group mt-5 inline-flex items-center gap-1.5 text-[12.5px] font-bold text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-300"
+              >
+                See the published numbers
+                <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+              </Link>
+            </Reveal>
+          </div>
+
+          <div className="space-y-4">
+            {HOW_STEPS.map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <Reveal key={step.title} delay={i * 90}>
+                  <div className="panel group flex gap-5 rounded-[22px] p-6 transition-all duration-500 hover:-translate-y-0.5">
+                    <div className="flex flex-col items-center">
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 text-slate-700 shadow-inner transition-colors duration-500 group-hover:from-saffron-50 group-hover:text-saffron-600 dark:from-white/[0.06] dark:to-white/[0.02] dark:text-slate-300 dark:group-hover:from-saffron-400/15 dark:group-hover:text-saffron-400">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      {i < HOW_STEPS.length - 1 && (
+                        <span className="mt-3 w-px flex-1 bg-gradient-to-b from-slate-200 to-transparent dark:from-white/10" aria-hidden />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
+                        Step {i + 1}
+                      </p>
+                      <h3 className="mt-1 font-display text-[15.5px] font-extrabold tracking-tight text-slate-900 dark:text-white">
+                        {step.title}
+                      </h3>
+                      <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-500 dark:text-slate-400">
+                        {step.body}
+                      </p>
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ ──────────────────────────────────────────────────────────── */}
+      <section id="faq" className="scroll-mt-20 px-5 pb-28 sm:px-8">
+        <div className="mx-auto max-w-3xl">
+          <Reveal>
+            <h2 className="text-center font-display text-[clamp(1.9rem,4.5vw,3rem)] font-extrabold leading-[1.05] tracking-[-0.04em] text-slate-950 dark:text-white">
+              Questions, answered.
+            </h2>
+          </Reveal>
+          <div className="mt-10 space-y-3">
+            {FAQS.map((f, i) => (
+              <Reveal key={f.q} delay={i * 55}>
+                <details className="panel group rounded-2xl px-5 py-4 transition-colors duration-300 open:border-brand-200 dark:open:border-brand-400/30">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[13px] font-bold text-slate-900 dark:text-white [&::-webkit-details-marker]:hidden">
+                    {f.q}
+                    <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-300 group-open:rotate-180" />
+                  </summary>
+                  <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500 dark:text-slate-400">
+                    {f.a}
+                  </p>
+                </details>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Access / final CTA ───────────────────────────────────────────── */}
       <section id="access" className="scroll-mt-20 px-5 py-24 sm:px-8">
         <div className="mx-auto max-w-6xl">
@@ -520,6 +656,9 @@ export function Landing() {
           <div className="flex items-center gap-6 text-[11.5px] font-semibold text-slate-500 dark:text-slate-400">
             <Link href="/track" className="transition-colors hover:text-slate-900 dark:hover:text-white">
               Public tracker
+            </Link>
+            <Link href="/transparency" className="transition-colors hover:text-slate-900 dark:hover:text-white">
+              Transparency
             </Link>
             <Link href="/login" className="transition-colors hover:text-slate-900 dark:hover:text-white">
               Sign in
