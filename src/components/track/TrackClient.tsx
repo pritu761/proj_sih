@@ -22,6 +22,8 @@ import {
   Users,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { LangProvider, useLang, LanguageToggle } from "@/components/ui/language";
+import { track } from "@/lib/i18n";
 import { trackCaseAction, subscribeCaseWatchAction } from "@/actions/track-actions";
 import { StatusPill } from "@/components/ui/badges";
 import { TextReveal } from "@/components/ui/text-reveal";
@@ -49,10 +51,7 @@ interface TrackingResult {
   }[];
 }
 
-const DEMO_REGISTRIES = [
-  { code: "AICTE/PGRC/2026/00101", note: "Capitation fee grievance — SLA breached" },
-  { code: "AICTE/RB/2026/00042", note: "Document withholding — coordination in progress" },
-];
+const DEMO_REGISTRY_CODES = ["AICTE/PGRC/2026/00101", "AICTE/RB/2026/00042"];
 
 const timelineIcon: Record<string, typeof Inbox> = {
   RECEIVED: ReceiptText,
@@ -60,14 +59,6 @@ const timelineIcon: Record<string, typeof Inbox> = {
   DISPOSED: CheckCircle2,
   ESCALATED: Flame,
   HEARING_SCHEDULED: Gavel,
-};
-
-const timelineLabel: Record<string, string> = {
-  RECEIVED: "Grievance registered",
-  STATUS_CHANGED: "Status updated",
-  DISPOSED: "Grievance redressed (disposed)",
-  ESCALATED: "Escalated to competent authority",
-  HEARING_SCHEDULED: "Hearing scheduled",
 };
 
 function slaMeta(result: TrackingResult) {
@@ -86,6 +77,16 @@ function slaMeta(result: TrackingResult) {
 }
 
 export function TrackClient() {
+  return (
+    <LangProvider>
+      <TrackClientContent />
+    </LangProvider>
+  );
+}
+
+function TrackClientContent() {
+  const { lang } = useLang();
+  const t = track[lang];
   const [registryNo, setRegistryNo] = useState("");
   const [result, setResult] = useState<TrackingResult | null>(null);
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
@@ -100,7 +101,7 @@ export function TrackClient() {
   const handleTrack = async (code?: string) => {
     const target = (code ?? registryNo).trim();
     if (target.length < 10) {
-      setError("Enter the full registry number exactly as printed on your acknowledgement slip.");
+      setError(t.lookup.shortError);
       return;
     }
     setIsChecking(true);
@@ -110,7 +111,7 @@ export function TrackClient() {
 
     if (!res.success) {
       setResult(null);
-      setError(res.error || "Lookup failed. Please try again.");
+      setError(res.error || t.errors.lookupFail);
       return;
     }
     if (code && !registryNo) setRegistryNo(code);
@@ -132,7 +133,7 @@ export function TrackClient() {
     });
     setIsSubscribing(false);
     if (!res.success) {
-      setWatchError(res.error || "Could not subscribe right now.");
+      setWatchError(res.error || t.errors.subscribeFail);
       return;
     }
     setWatchers(res.watchers);
@@ -164,15 +165,16 @@ export function TrackClient() {
           <div className="flex items-center gap-3">
             <span className="hidden items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-saffron-400 sm:inline-flex">
               <Landmark className="h-3.5 w-3.5" />
-              Government of India
+              {t.header.goi}
             </span>
             <Link
               href="/login"
               className="group inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1.5 text-[11px] font-bold text-white/80 transition-all duration-300 hover:border-white/25 hover:bg-white/10 hover:text-white active:scale-[0.97]"
             >
-              Officer sign-in
+              {t.header.officerSignIn}
               <ArrowRight className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5" />
             </Link>
+            <LanguageToggle overHero />
             <ThemeToggle />
           </div>
         </div>
@@ -182,14 +184,13 @@ export function TrackClient() {
         {/* Hero */}
         <Reveal className="text-center">
           <p className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-white/40">
-            Public disclosure · No sign-in required
+            {t.hero.eyebrow}
           </p>
           <h1 className="mt-3 font-display text-[clamp(1.9rem,5.5vw,2.9rem)] font-extrabold leading-[1.04] tracking-[-0.04em]">
-            <TextReveal text="Where is my grievance?" />
+            <TextReveal key={lang} text={t.hero.title} />
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-[13px] leading-relaxed text-white/60">
-            Track any grievance you filed with AICTE using the registry number on your acknowledgement
-            slip. No account or personal data is needed.
+            {t.hero.sub}
           </p>
         </Reveal>
 
@@ -197,7 +198,7 @@ export function TrackClient() {
         <Reveal delay={160} className="no-print">
           <div className="mt-9 rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_24px_60px_-30px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
             <label htmlFor="registry" className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/50">
-              Registry number
+              {t.lookup.label}
             </label>
             <div className="mt-2 flex flex-col gap-2.5 sm:flex-row">
               <div className="relative flex-1">
@@ -217,7 +218,7 @@ export function TrackClient() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-saffron-400 px-5 py-2.5 text-[12px] font-extrabold text-ink-950 transition-all duration-300 hover:scale-[1.02] hover:bg-saffron-300 active:scale-[0.97] disabled:opacity-50"
               >
                 <Search className="h-4 w-4" />
-                {isChecking ? "Checking…" : "Track status"}
+                {isChecking ? t.lookup.checking : t.lookup.button}
               </button>
             </div>
 
@@ -230,20 +231,20 @@ export function TrackClient() {
 
             <div className="mt-4 border-t border-white/10 pt-3.5">
               <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/40">
-                Demo registry numbers
+                {t.lookup.demoLabel}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                {DEMO_REGISTRIES.map((d) => (
+                {DEMO_REGISTRY_CODES.map((code, i) => (
                   <button
-                    key={d.code}
-                    onClick={() => handleTrack(d.code)}
+                    key={code}
+                    onClick={() => handleTrack(code)}
                     disabled={isChecking}
                     className="lift rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-left hover:border-saffron-400/50 hover:bg-white/10"
                   >
                     <span className="block font-mono text-[10.5px] font-bold text-white">
-                      {d.code}
+                      {code}
                     </span>
-                    <span className="block text-[10.5px] text-white/40">{d.note}</span>
+                    <span className="block text-[10.5px] text-white/40">{t.lookup.demoNotes[i]}</span>
                   </button>
                 ))}
               </div>
@@ -256,7 +257,7 @@ export function TrackClient() {
           <div className="mt-6 animate-[fadeSlideIn_0.4s_ease-out] space-y-4">
             {checkedAt && (
               <p className="text-center text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/35">
-                Status as on {formatDateTime(checkedAt)}
+                {t.statusAsOn} {formatDateTime(checkedAt)}
               </p>
             )}
 
@@ -267,10 +268,10 @@ export function TrackClient() {
                   type="button"
                   onClick={() => window.print()}
                   className="no-print absolute right-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 text-[10.5px] font-bold text-white/70 transition-all duration-300 hover:border-white/30 hover:bg-white/10 hover:text-white active:scale-[0.97]"
-                  title="Print or save this status report as PDF"
+                  title={t.result.printTitle}
                 >
                   <Printer className="h-3 w-3" />
-                  Print report
+                  {t.result.printReport}
                 </button>
                 <div
                   className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full blur-3xl opacity-25"
@@ -305,7 +306,7 @@ export function TrackClient() {
                       </ProgressRing>
                       <div>
                         <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-white/40">
-                          Statutory window
+                          {t.result.statutoryWindow}
                         </p>
                         <p className="mt-0.5 text-[11.5px] font-bold text-white">
                           {formatDate(result.date_received)} → {formatDate(result.expected_disposal_date)}
@@ -318,7 +319,7 @@ export function TrackClient() {
                 <div className="relative mt-4 grid gap-3 text-[11px] sm:grid-cols-2">
                   <div className="rounded-xl print-soft border border-white/10 bg-ink-900/40 p-3">
                     <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">
-                      <Building2 className="h-3 w-3" /> Institution
+                      <Building2 className="h-3 w-3" /> {t.result.institution}
                     </p>
                     <p className="mt-1 font-bold leading-snug text-white">{result.institution_name}</p>
                     <p className="mt-0.5 inline-flex items-center gap-1 text-white/50">
@@ -328,20 +329,21 @@ export function TrackClient() {
                   </div>
                   <div className="rounded-xl print-soft border border-white/10 bg-ink-900/40 p-3">
                     <p className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-white/40">
-                      <Landmark className="h-3 w-3" /> Responsible wing
+                      <Landmark className="h-3 w-3" /> {t.result.responsibleWing}
                     </p>
                     <p className="mt-1 font-bold leading-snug text-white">
                       {result.assigned_bureau.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (m) => m.toUpperCase())}
                     </p>
                     <p className="mt-0.5 inline-flex items-center gap-1 text-white/50">
                       <Gavel className="h-2.5 w-2.5" />
-                      Hearing: {result.hearing_date ? formatDate(result.hearing_date) : "not yet scheduled"}
+                      {t.result.hearing}{" "}
+                      {result.hearing_date ? formatDate(result.hearing_date) : t.result.hearingNone}
                     </p>
                   </div>
                 </div>
 
                 <p className="relative mt-3 rounded-xl print-soft border border-white/10 bg-ink-900/40 p-3 text-[11px] leading-relaxed text-white/70">
-                  <span className="font-bold text-white">Latest update from the Council:</span>{" "}
+                  <span className="font-bold text-white">{t.result.latestFrom}</span>{" "}
                   {result.last_action}
                 </p>
               </div>
@@ -351,7 +353,7 @@ export function TrackClient() {
             <Reveal delay={120}>
               <div className="print-card rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-2xl">
                 <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/50">
-                  Journey of your grievance
+                  {t.journey.heading}
                 </p>
                 <div className="relative mt-5">
                   {/* Gradient spine */}
@@ -360,10 +362,10 @@ export function TrackClient() {
                     aria-hidden
                   />
                   <div className="space-y-5">
-                    {result.timeline.map((t, idx) => {
-                      const Icon = timelineIcon[t.action_type] ?? Clock;
+                    {result.timeline.map((entry, idx) => {
+                      const Icon = timelineIcon[entry.action_type] ?? Clock;
                       const latest = idx === 0;
-                      const done = t.action_type === "DISPOSED";
+                      const done = entry.action_type === "DISPOSED";
                       return (
                         <Reveal key={idx} delay={idx * 110} className="relative pl-10">
                           <div
@@ -379,13 +381,13 @@ export function TrackClient() {
                             <Icon className="h-3 w-3" />
                           </div>
                           <p className={cn("text-[12.5px] font-bold", latest ? "text-white" : "text-white/80")}>
-                            {timelineLabel[t.action_type] ?? t.action_type}
+                            {t.journey.labels[entry.action_type] ?? entry.action_type}
                           </p>
                           <p className="text-[10.5px] font-semibold text-white/40">
-                            {formatDateTime(t.timestamp)}
+                            {formatDateTime(entry.timestamp)}
                           </p>
                           <p className="mt-1 text-[11.5px] leading-relaxed text-white/60">
-                            {t.remarks}
+                            {entry.remarks}
                           </p>
                         </Reveal>
                       );
@@ -393,8 +395,7 @@ export function TrackClient() {
                   </div>
                 </div>
                 <p className="mt-5 border-t border-white/10 pt-3 text-[10.5px] leading-relaxed text-white/30">
-                  Coordination notes, officer attributions and evidence documents are internal records
-                  and are not part of public disclosure.
+                  {t.journey.note}
                 </p>
               </div>
             </Reveal>
@@ -406,18 +407,17 @@ export function TrackClient() {
                   <div className="min-w-0">
                     <p className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/50">
                       <Users className="h-3 w-3" />
-                      Keep watching this grievance
+                      {t.watch.heading}
                     </p>
                     <p className="mt-1 text-[11.5px] leading-relaxed text-white/60">
                       {watchers !== null && watchers > 0 ? (
                         <>
                           <span className="font-bold text-white">{watchers}</span>{" "}
-                          {watchers === 1 ? "citizen is" : "citizens are"} tracking{" "}
-                          {watchers === 1 ? "it" : "them"}. Leave your email and the Council's
-                          disclosure desk will notify you when the status changes.
+                          {watchers === 1 ? t.watch.countSingle : t.watch.countPlural}.{" "}
+                          {t.watch.watchSub}
                         </>
                       ) : (
-                        "Leave your email and the Council's disclosure desk will notify you when the status of this grievance changes."
+                        t.watch.bodyPlain
                       )}
                     </p>
                   </div>
@@ -425,7 +425,7 @@ export function TrackClient() {
                     {watchDone ? (
                       <p className="flex items-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2.5 text-[11px] font-bold text-emerald-300">
                         <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                        You will be notified at {watchEmail}
+                        {t.watch.successNote(watchEmail)}
                       </p>
                     ) : (
                       <>
@@ -450,7 +450,7 @@ export function TrackClient() {
                             ) : (
                               <MailPlus className="h-3.5 w-3.5" />
                             )}
-                            Notify me
+                            {t.watch.button}
                           </button>
                         </div>
                         {watchError && (
@@ -463,8 +463,7 @@ export function TrackClient() {
                   </div>
                 </div>
                 <p className="mt-3 border-t border-white/10 pt-2.5 text-[10px] leading-relaxed text-white/30">
-                  Only the registry number and your email are stored. Unsubscribe by replying to any
-                  notification. This demo deployment does not send live email.
+                  {t.watch.privacy}
                 </p>
               </div>
             </Reveal>
@@ -474,7 +473,7 @@ export function TrackClient() {
 
       <footer className="no-print border-t border-white/10 py-5">
         <p className="mx-auto max-w-3xl px-5 text-center text-[10.5px] leading-relaxed text-white/35">
-          AICTE public grievance disclosure · Demonstration deployment seeded with synthetic data.
+          {t.footer.note}
         </p>
       </footer>
     </div>
