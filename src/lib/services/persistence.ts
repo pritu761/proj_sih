@@ -19,7 +19,7 @@ import type {
  * guarantee) when it is not.
  */
 
-export const SNAPSHOT_VERSION = 4;
+export const SNAPSHOT_VERSION = 5;
 
 /** Users known to the platform (mirrors the `User` table content). */
 export interface StoreUser {

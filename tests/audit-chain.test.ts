@@ -115,9 +115,10 @@ describe("Tamper-evident audit chain", () => {
 });
 
 describe("Seeded audit ledger stays append-only", () => {
-  // The seed generator uses a fixed reference date; every historical action it
-  // emits must fall on or before it so live session events always append.
-  const SEED_REFERENCE = new Date("2026-10-26T12:00:00Z");
+  // The seed generator anchors every historical action to the seed-run clock
+  // (all of them sit days in the past), so live session events can always
+  // append newer blocks without breaking the chain.
+  const newestAllowed = Date.now();
 
   function seededLogs() {
     const seed = generateSeedData();
@@ -149,7 +150,7 @@ describe("Seeded audit ledger stays append-only", () => {
     const logs = seededLogs();
     expect(logs.length).toBeGreaterThan(0);
     const newest = Math.max(...logs.map((l) => new Date(l.timestamp).getTime()));
-    expect(newest).toBeLessThanOrEqual(SEED_REFERENCE.getTime());
+    expect(newest).toBeLessThanOrEqual(newestAllowed);
   });
 
   it("keeps the anchored prefix valid when a newer login/logout is appended", () => {
@@ -158,6 +159,8 @@ describe("Seeded audit ledger stays append-only", () => {
     const history = buildAuditChain(logs);
     expect(history.valid).toBe(true);
 
+    // Live session events occur after the seeded history, so they must always
+    // append on top of the anchored prefix.
     logs.unshift(
       entry({
         user: "admin@aicte.gov.in",
@@ -166,7 +169,7 @@ describe("Seeded audit ledger stays append-only", () => {
         entity_id: "u_admin",
         before: null,
         after: { role: "ADMIN" },
-        timestamp: new Date(SEED_REFERENCE.getTime() + 60 * 60 * 1000),
+        timestamp: new Date(newestAllowed + 60 * 60 * 1000),
       })
     );
     const afterLogin = buildAuditChain(logs);
@@ -181,7 +184,7 @@ describe("Seeded audit ledger stays append-only", () => {
         entity_id: "u_admin",
         before: null,
         after: { role: "ADMIN" },
-        timestamp: new Date(SEED_REFERENCE.getTime() + 61 * 60 * 1000),
+        timestamp: new Date(newestAllowed + 61 * 60 * 1000),
       })
     );
     const afterLogout = buildAuditChain(logs);

@@ -1,4 +1,4 @@
-import { normalizeInstitutionName, SLA_CONFIGS } from "./demo-data";
+import { normalizeInstitutionName, SLA_CONFIGS, ALL_KNOWN_USERS } from "./demo-data";
 import type { TrilayerBreakdown } from "./services/overlap-detector";
 
 export interface SeedInstitution {
@@ -178,6 +178,58 @@ export function generateSeedData() {
     { name: "Jodhpur Technical Polytechnic", aicte_id: "1-8901192800", city: "Jodhpur", state: "Rajasthan", pincode: "342001", region: "North-Western", type: "Polytechnic" },
     { name: "Mangaluru Institute of Marine & Tech Studies", aicte_id: "1-9012293811", city: "Mangaluru", state: "Karnataka", pincode: "575001", region: "South-Western", type: "Engineering & Technology" },
     { name: "Jabalpur College of Engineering & Research", aicte_id: "1-9123394822", city: "Jabalpur", state: "Madhya Pradesh", pincode: "482001", region: "Central", type: "Engineering & Technology" },
+
+    // ── Extended registry (indices 61+): broader regional coverage so the
+    //    bureaus, overlap detector and AI briefs work on a realistic volume ──
+    // Northern
+    { name: "Prayagraj Institute of Engineering & Management", aicte_id: "1-9224494933", city: "Prayagraj", state: "Uttar Pradesh", pincode: "211016", region: "Northern", type: "Engineering & Technology" },
+    { name: "Bareilly College of Pharmacy & Research", aicte_id: "1-9325595044", city: "Bareilly", state: "Uttar Pradesh", pincode: "243005", region: "Northern", type: "Pharmacy" },
+    { name: "Jhansi Institute of Technology & Polytechnic", aicte_id: "1-9426695155", city: "Jhansi", state: "Uttar Pradesh", pincode: "284128", region: "Northern", type: "Polytechnic" },
+    { name: "Gaya College of Engineering & Skills", aicte_id: "1-9527795266", city: "Gaya", state: "Bihar", pincode: "823003", region: "Northern", type: "Engineering & Technology" },
+    { name: "Darbhanga Institute of Management Studies", aicte_id: "1-9628895377", city: "Darbhanga", state: "Bihar", pincode: "846004", region: "Northern", type: "Management" },
+    { name: "Haridwar Institute of Technology & Sciences", aicte_id: "1-9729995488", city: "Haridwar", state: "Uttarakhand", pincode: "249403", region: "Northern", type: "Engineering & Technology" },
+    // Western
+    { name: "Kolhapur Institute of Engineering & Technology", aicte_id: "1-9830095599", city: "Kolhapur", state: "Maharashtra", pincode: "416004", region: "Western", type: "Engineering & Technology" },
+    { name: "Solapur College of Pharmacy", aicte_id: "1-9931195600", city: "Solapur", state: "Maharashtra", pincode: "413004", region: "Western", type: "Pharmacy" },
+    { name: "Amravati Institute of Technology & Management", aicte_id: "1-1032209611", city: "Amravati", state: "Maharashtra", pincode: "444602", region: "Western", type: "Management" },
+    { name: "Bhavnagar Engineering & Polytechnic Institute", aicte_id: "1-1042309722", city: "Bhavnagar", state: "Gujarat", pincode: "364002", region: "Western", type: "Polytechnic" },
+    { name: "Gandhinagar Institute of Technology & Design", aicte_id: "1-1052409833", city: "Gandhinagar", state: "Gujarat", pincode: "382421", region: "Western", type: "Architecture" },
+    { name: "Vasai Institute of Management & Research", aicte_id: "1-1062509944", city: "Vasai-Virar", state: "Maharashtra", pincode: "401202", region: "Western", type: "Management" },
+    // Southern
+    { name: "Salem College of Engineering & Technology", aicte_id: "1-1072600055", city: "Salem", state: "Tamil Nadu", pincode: "636008", region: "Southern", type: "Engineering & Technology" },
+    { name: "Tiruchirappalli Institute of Technology & Science", aicte_id: "1-1082700166", city: "Tiruchirappalli", state: "Tamil Nadu", pincode: "620017", region: "Southern", type: "Engineering & Technology" },
+    { name: "Vijayawada Institute of Engineering & Pharmacy", aicte_id: "1-1092800277", city: "Vijayawada", state: "Andhra Pradesh", pincode: "520008", region: "Southern", type: "Pharmacy" },
+    { name: "Thrissur College of Architecture & Planning", aicte_id: "1-1102900388", city: "Thrissur", state: "Kerala", pincode: "680004", region: "Southern", type: "Architecture" },
+    { name: "Kannur Institute of Technology & Management", aicte_id: "1-1113000499", city: "Kannur", state: "Kerala", pincode: "670001", region: "Southern", type: "Management" },
+    { name: "Nellore Polytechnic & Skill Institute", aicte_id: "1-1123100500", city: "Nellore", state: "Andhra Pradesh", pincode: "524001", region: "Southern", type: "Polytechnic" },
+    // Eastern
+    { name: "Asansol Institute of Technology & Mining Studies", aicte_id: "1-1133200611", city: "Asansol", state: "West Bengal", pincode: "713305", region: "Eastern", type: "Engineering & Technology" },
+    { name: "Sambalpur College of Engineering & Technology", aicte_id: "1-1143300722", city: "Sambalpur", state: "Odisha", pincode: "768004", region: "Eastern", type: "Engineering & Technology" },
+    { name: "Silchar Institute of Management & Technology", aicte_id: "1-1153400833", city: "Silchar", state: "Assam", pincode: "788005", region: "Eastern", type: "Management" },
+    { name: "Dibrugarh Polytechnic & Engineering Institute", aicte_id: "1-1163500944", city: "Dibrugarh", state: "Assam", pincode: "786003", region: "Eastern", type: "Polytechnic" },
+    { name: "Agartala College of Pharmacy & Health Sciences", aicte_id: "1-1173601055", city: "Agartala", state: "Tripura", pincode: "799004", region: "Eastern", type: "Pharmacy" },
+    { name: "Hazaribagh Institute of Technology", aicte_id: "1-1183701166", city: "Hazaribagh", state: "Jharkhand", pincode: "825301", region: "Eastern", type: "Engineering & Technology" },
+    // Central
+    { name: "Raipur Institute of Technology & Sciences", aicte_id: "1-1193801277", city: "Raipur", state: "Chhattisgarh", pincode: "492010", region: "Central", type: "Engineering & Technology" },
+    { name: "Bilaspur College of Pharmacy & Research", aicte_id: "1-1203901388", city: "Bilaspur", state: "Chhattisgarh", pincode: "495001", region: "Central", type: "Pharmacy" },
+    { name: "Ujjain Institute of Engineering & Management", aicte_id: "1-1214001499", city: "Ujjain", state: "Madhya Pradesh", pincode: "456010", region: "Central", type: "Management" },
+    { name: "Rewa Engineering & Polytechnic College", aicte_id: "1-1224101500", city: "Rewa", state: "Madhya Pradesh", pincode: "486001", region: "Central", type: "Polytechnic" },
+    { name: "Satna Institute of Technology & Skills", aicte_id: "1-1234201611", city: "Satna", state: "Madhya Pradesh", pincode: "485001", region: "Central", type: "Engineering & Technology" },
+    { name: "Bhilai Institute of Technology & Research", aicte_id: "1-1244301722", city: "Bhilai", state: "Chhattisgarh", pincode: "490006", region: "Central", type: "Engineering & Technology" },
+    // North-Western
+    { name: "Ludhiana College of Engineering & Technology", aicte_id: "1-1254401833", city: "Ludhiana", state: "Punjab", pincode: "141004", region: "North-Western", type: "Engineering & Technology" },
+    { name: "Patiala Institute of Pharmacy & Sciences", aicte_id: "1-1264501944", city: "Patiala", state: "Punjab", pincode: "147002", region: "North-Western", type: "Pharmacy" },
+    { name: "Hisar Institute of Technology & Management", aicte_id: "1-1274602055", city: "Hisar", state: "Haryana", pincode: "125001", region: "North-Western", type: "Management" },
+    { name: "Kota Institute of Engineering & Polytechnic", aicte_id: "1-1284702166", city: "Kota", state: "Rajasthan", pincode: "324005", region: "North-Western", type: "Polytechnic" },
+    { name: "Udaipur College of Architecture & Design", aicte_id: "1-1294802277", city: "Udaipur", state: "Rajasthan", pincode: "313002", region: "North-Western", type: "Architecture" },
+    { name: "Karnal Institute of Technology & Skills", aicte_id: "1-1304902388", city: "Karnal", state: "Haryana", pincode: "132001", region: "North-Western", type: "Engineering & Technology" },
+    // South-Western
+    { name: "Hubballi Institute of Technology & Management", aicte_id: "1-1315002499", city: "Hubballi", state: "Karnataka", pincode: "580021", region: "South-Western", type: "Engineering & Technology" },
+    { name: "Belagavi College of Engineering & Pharmacy", aicte_id: "1-1325102500", city: "Belagavi", state: "Karnataka", pincode: "590008", region: "South-Western", type: "Pharmacy" },
+    { name: "Shivamogga Institute of Technology & Sciences", aicte_id: "1-1335202611", city: "Shivamogga", state: "Karnataka", pincode: "577202", region: "South-Western", type: "Engineering & Technology" },
+    { name: "Davanagere Polytechnic & Skill Institute", aicte_id: "1-1345302722", city: "Davanagere", state: "Karnataka", pincode: "577004", region: "South-Western", type: "Polytechnic" },
+    { name: "Tumakuru College of Engineering & Technology", aicte_id: "1-1355402833", city: "Tumakuru", state: "Karnataka", pincode: "572103", region: "South-Western", type: "Engineering & Technology" },
+    { name: "Hassan Institute of Management & Technology", aicte_id: "1-1365502944", city: "Hassan", state: "Karnataka", pincode: "573201", region: "South-Western", type: "Management" },
   ];
 
   // Build institutions array with normalized names
@@ -206,8 +258,12 @@ export function generateSeedData() {
     "student", "faculty", "stakeholder", "public", "other"
   ];
 
-  // Helper date generators
-  const now = new Date("2026-10-26T12:00:00Z");
+  // Reference clock: seed-run time. All generated history sits in the past
+  // relative to this moment, so every re-seed produces a fresh, coherent
+  // demo timeline (hearings ahead, SLA breaches live, disposals closed).
+  const now = new Date();
+  const daysAgo = (n: number) => new Date(now.getTime() - n * 86400000);
+  const daysAhead = (n: number) => new Date(now.getTime() + n * 86400000);
 
   // 1. SPECIFIC OVERLAP SCENARIO 1 (from problem statement):
   // Apex Institute of Engineering & Technology (inst_1)
@@ -217,7 +273,7 @@ export function generateSeedData() {
     id: "case_00101",
     case_id: "AICTE/PGRC/2026/00101",
     institution_id: "inst_1",
-    date_received: new Date("2026-09-20T10:00:00Z"), // ~36 days ago
+    date_received: daysAgo(38), // statutory clock already exhausted
     source: "student",
     category: "Capitation Fee & Overcharging",
     description: "Final year B.Tech students allege the institute is demanding an unauthorized development and lab fee of Rs 45,000 per student prior to issuing hall tickets for university semester examinations.",
@@ -225,20 +281,20 @@ export function generateSeedData() {
     assigned_bureau: "PGRC",
     assigned_officer: "pgrc.officer@aicte.gov.in",
     last_action: "Show Cause Notice dispatched to Principal via portal",
-    last_action_date: new Date("2026-10-10T14:30:00Z"),
+    last_action_date: daysAgo(16),
     next_action_required: "Hearing before Standing Grievance Committee",
-    expected_disposal_date: new Date("2026-10-20T18:00:00Z"), // SLA breached!
+    expected_disposal_date: daysAgo(8), // SLA breached!
     priority: "HIGH",
     complainant_name: "Rohit Sharma (Student Union President)",
     complainant_contact: "+91 9811712233",
-    hearing_date: new Date("2026-10-28T11:00:00Z"),
+    hearing_date: daysAhead(6),
     actions: [
       {
         actor_user: "pgrc.officer@aicte.gov.in",
         actor_bureau: "PGRC",
         action_type: "RECEIVED",
         remarks: "Grievance received from Student Union with signed representation of 42 students.",
-        timestamp: new Date("2026-09-20T10:00:00Z"),
+        timestamp: daysAgo(38),
         attachments: ["https://blob.vercel-storage.com/complaints/student_petition_apex.pdf"],
       },
       {
@@ -246,7 +302,7 @@ export function generateSeedData() {
         actor_bureau: "PGRC",
         action_type: "ASSIGNED",
         remarks: "Assigned to Assistant Director PGRC for verification.",
-        timestamp: new Date("2026-09-22T11:00:00Z"),
+        timestamp: daysAgo(36),
         attachments: [],
       },
       {
@@ -254,7 +310,7 @@ export function generateSeedData() {
         actor_bureau: "PGRC",
         action_type: "STATUS_CHANGED",
         remarks: "Show Cause Notice issued under AICTE (Establishment of Mechanism for Grievance Redressal) Regulations. Institution response awaited.",
-        timestamp: new Date("2026-10-10T14:30:00Z"),
+        timestamp: daysAgo(16),
         attachments: ["https://blob.vercel-storage.com/notices/SCN_PGRC_2026_101.pdf"],
       },
     ],
@@ -264,7 +320,7 @@ export function generateSeedData() {
     id: "case_00042",
     case_id: "AICTE/RB/2026/00042",
     institution_id: "inst_1",
-    date_received: new Date("2026-10-02T11:15:00Z"), // ~24 days ago
+    date_received: daysAgo(24), // statutory window approaching
     source: "faculty",
     category: "Capitation Fee & Overcharging",
     description: "Faculty members submitted internal accounts showing capitation fees collected under the head of special training and building fund, violating AICTE fee regulations.",
@@ -272,9 +328,9 @@ export function generateSeedData() {
     assigned_bureau: "REGULATION_BUREAU",
     assigned_officer: "rb.officer@aicte.gov.in",
     last_action: "Action Initiated",
-    last_action_date: new Date("2026-10-05T09:45:00Z"),
+    last_action_date: daysAgo(21),
     next_action_required: "Expert Visit Committee (EVC) Inspection appointment",
-    expected_disposal_date: new Date("2026-11-01T18:00:00Z"),
+    expected_disposal_date: daysAhead(6),
     priority: "CRITICAL",
     complainant_name: "Rohit Sharma (Student Union President)",
     complainant_contact: "+91 9811712233",
@@ -284,7 +340,7 @@ export function generateSeedData() {
         actor_bureau: "REGULATION_BUREAU",
         action_type: "RECEIVED",
         remarks: "Complaint received regarding systematic capitation fee collection.",
-        timestamp: new Date("2026-10-02T11:15:00Z"),
+        timestamp: daysAgo(24),
         attachments: ["https://blob.vercel-storage.com/evidence/audited_statements_apex.pdf"],
       },
       {
@@ -292,7 +348,7 @@ export function generateSeedData() {
         actor_bureau: "REGULATION_BUREAU",
         action_type: "STATUS_CHANGED",
         remarks: "Action Initiated. File moved to Standing Hearing Committee (SHC) for surprise inspection.",
-        timestamp: new Date("2026-10-05T09:45:00Z"),
+        timestamp: daysAgo(21),
         attachments: [],
       },
     ],
@@ -311,7 +367,7 @@ export function generateSeedData() {
       { rule: "CATEGORY_MATCH", description: "Same category: 'Capitation Fee & Overcharging' reported by both student body and faculty members." },
       { rule: "CONFIDENCE_SCORE", description: "High risk of duplicate inquiry / contradictory orders to institution.", score: 98 },
     ],
-    detected_at: new Date("2026-10-05T10:00:00Z"),
+    detected_at: daysAgo(21),
     status: "OPEN",
     coordination_note: null,
     dismissed_reason: null,
@@ -430,29 +486,112 @@ export function generateSeedData() {
   const UNIQUE_LAST = ["Gupta", "Nair", "Kulkarni", "Reddy", "Chatterjee", "Saini", "Pillai", "Khan", "Joshi", "Rao"];
 
   let currentCaseNum = 1000;
+  let commentSeq = 0;
+  let documentSeq = 0;
+
+  // Officers the enriched store attributes actions and comments to (mirrors
+  // the demo officer roster in demo-data so identities stay coherent).
+  const OFFICER_POOL = ALL_KNOWN_USERS
+    .filter((u) => u.bureau !== "ALL")
+    .map((u) => ({ email: u.email, name: u.name, bureau: u.bureau as string }));
+
+  // Category-specific grievance narratives — the AI intake layer needs real
+  // textual signal, not placeholder sentences, to classify and summarize.
+  const DESCRIPTIONS: Record<string, [string, string]> = {
+    "Ragging & Safety Violations": [
+      "A first-year hostel resident reported repeated ragging incidents in Block C during orientation week. The anti-ragging committee of {inst} has not convened a single sitting this semester despite written complaints to the warden.",
+      "Parents of a first-year diploma student at {inst} allege physical ragging and intimidation by senior students near the hostel mess on three separate dates. CCTV footage for those dates is being withheld by the institution.",
+    ],
+    "Withholding Certificates": [
+      "{inst} is withholding the original TC, mark sheets and migration certificate of passed-out students until a pending fee dispute is settled, despite a written undertaking already furnished. Placement offers of affected students are on hold.",
+      "Students of {inst} report that original documents deposited at admission are not returned after course completion; the office demands an undocumented clearing amount of Rs 5,000 per certificate set.",
+    ],
+    "Capitation Fee & Overcharging": [
+      "{inst} is demanding Rs 42,000 per student as a one-time development fee before hall tickets are issued, over and above the state fee-committee-approved structure. Receipts are being issued in the name of an unregistered trust.",
+      "An internal accounts extract from {inst} shows capitation collected under the heads of training fund and building corpus from the 2026 admission batch, exceeding the sanctioned fee structure by nearly 31%.",
+    ],
+    "Unapproved Courses & Seats": [
+      "{inst} is running a B.Tech (AI & Data Science) programme and admitting 60 seats without AICTE extension of approval for the current academic year; the affiliation status of the course is not disclosed to admitted students.",
+      "The prospectus of {inst} lists an MBA (Business Analytics) intake of 120 seats against an approved intake of 60, with excess admissions routed through a partner training institute.",
+    ],
+    "Admission Irregularities": [
+      "Counselling records indicate {inst} admitted candidates below the notified cutoff in the management quota without publishing the seat matrix, and the vacant-seat disclosure on the portal was never updated.",
+      "{inst} collected spot-admission fees in cash for diploma lateral-entry seats before the state counselling round concluded, bypassing the centralized admission procedure entirely.",
+    ],
+    "Faculty Non-Payment & Harassment": [
+      "Eight assistant professors at {inst} have not received salaries for the last four months; the institution cites an internal audit as the reason, while senior management continues to draw full pay.",
+      "A faculty member at {inst} reports termination without notice after raising laboratory safety deficiencies in writing, with terminal dues withheld for over two months.",
+    ],
+    "Infrastructure & Lab Deficiencies": [
+      "A laboratory inspection at {inst} found the workshop, physics lab and computer centre non-operational; equipment listed in the approval letter is either absent or non-functional, affecting 640 students.",
+      "The library and workshop at {inst} remain uncommissioned two years after the building was shown as ready in compliance filings, and the hostel water supply fails daily.",
+    ],
+    "Other Institutional Grievances": [
+      "{inst} has failed to constitute the statutory grievance redressal committee and the SC/ST cell as required under AICTE regulations; written reminders from the student council have gone unanswered.",
+      "Alumni of {inst} report ambiguous refund commitments for withdrawn admissions, and the ombudsman appointment notification was never published on the institute website.",
+    ],
+  };
+
+  const RECEIVED_REMARKS = [
+    "Grievance received on the central portal ({source} channel) and cataloged under standard SOP.",
+    "Representation received by post ({source}); registered in the regional intake register.",
+    "Complaint forwarded by the Regional Office ({source} origin); fresh registry number allotted.",
+    "Grievance e-mailed to the bureau desk ({source}); contact details verified and cataloged.",
+  ];
+  const INTERIM_REMARKS = [
+    "Institution response called for within 7 working days under the grievance redressal regulations.",
+    "Compliance verification visit planned; regional office informed of the inspection window.",
+    "Interim compliance report received; discrepancies noted and clarification sought from the Principal.",
+    "Record verification in progress against the approval-letter conditions for AY 2026-27.",
+  ];
+  const DISPOSED_REMARKS = [
+    "Matter thoroughly investigated and closed with a reasoned speaking order; directions issued to the institution.",
+    "Institution complied with the committee directions; disposal order uploaded to the portal with compliance annexures.",
+    "Resolved on merits after hearing both sides; compliance certificate placed on record.",
+  ];
+  const ESCALATED_REMARKS = [
+    "SLA threshold exceeded; file submitted to the Competent Authority for urgent direction.",
+    "Statutory window exhausted without compliance; escalated to the Member Secretary's office.",
+  ];
+
+  const COMMENT_BODIES: { scope: "COORDINATION" | "INTERNAL"; body: string }[] = [
+    { scope: "COORDINATION", body: "Regional office inputs received on this file; sharing for cross-bureau visibility so notices to the institution stay consistent." },
+    { scope: "INTERNAL", body: "Desk note: institution response verified against the approval-letter conditions; escalation draft prepared for the bureau head." },
+    { scope: "COORDINATION", body: "Requesting the assigned bureau to confirm the hearing date so the complainant side can be intimated jointly." },
+    { scope: "INTERNAL", body: "Compliance annexures scanned and linked to the file; one annexure is illegible — re-submission called for." },
+    { scope: "COORDINATION", body: "Parallel-proceedings check completed — no other open file found for this institution this quarter." },
+    { scope: "INTERNAL", body: "Hearing panel composition proposed; awaiting the director's approval before intimation goes out." },
+  ];
+
+  const bump = (n: number) => Math.max(1, n);
+
   institutions.forEach((inst, iIdx) => {
-    // Generate 4 to 6 cases per institution to reach ~300 total
-    const casesForThisInst = (iIdx % 3 === 0 ? 6 : 4);
+    // Enriched volume: 9-12 cases per institution (~1,040 files) so the
+    // bureaus, regional offices and AI surfaces work on a realistic load.
+    const casesForThisInst = (iIdx % 3 === 0 ? 12 : 9);
     for (let k = 0; k < casesForThisInst; k++) {
       currentCaseNum++;
       const assigned = officers[(iIdx + k) % officers.length];
       const category = categories[(iIdx * 2 + k) % categories.length];
       const status = statuses[(currentCaseNum + k) % statuses.length];
       const source = sources[(currentCaseNum + iIdx) % sources.length];
-      // Keep every generated action in the past. The second action is dated
-      // `dateReceived + 5 days`, so an age below 6 would place seeded audit
-      // events after the seed reference `now` and (on a live install) after
-      // real wall-clock events, which would reorder the audit chain.
-      const daysAgo = 6 + (currentCaseNum % 82); // Ages 6 to 87 days ago
-      const dateReceived = new Date(now.getTime() - daysAgo * 86400000);
+      // Keep every generated action in the past relative to the seed clock.
+      const daysAgoN = 6 + (currentCaseNum % 125); // Ages 6 to 130 days
+      const dateReceived = daysAgo(daysAgoN);
       const slaConfig = SLA_CONFIGS.find(c => c.category === category) || SLA_CONFIGS[0];
-      const expectedDisposal = new Date(dateReceived.getTime() + slaConfig.timeline_days * 86400000);
-      const isPastExpected = expectedDisposal.getTime() < now.getTime();
+      const slaDays = slaConfig.timeline_days;
+      const expectedDisposal = new Date(dateReceived.getTime() + slaDays * 86400000);
 
+      // Priority reflects the live statutory-clock pressure, not a coin flip.
+      const elapsedFrac = daysAgoN / Math.max(1, slaDays);
       const priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" =
-        isPastExpected && status !== "DISPOSED"
-          ? "CRITICAL"
-          : (daysAgo > 40 ? "HIGH" : (k % 2 === 0 ? "MEDIUM" : "LOW"));
+        status === "DISPOSED"
+          ? currentCaseNum % 3 === 0 ? "MEDIUM" : "LOW"
+          : status === "ESCALATED" || elapsedFrac >= 1
+            ? "CRITICAL"
+            : elapsedFrac >= 0.75
+              ? "HIGH"
+              : elapsedFrac >= 0.35 ? "MEDIUM" : (k % 2 === 0 ? "MEDIUM" : "LOW");
 
       const bureauCode = assigned.bureau === "REGULATION_BUREAU" ? "RB" : assigned.bureau === "APPROVAL_BUREAU" ? "AB" : assigned.bureau === "SKILL_CELL" ? "SDC" : "PGRC";
       const caseCode = `AICTE/${bureauCode}/2026/${String(currentCaseNum).padStart(5, "0")}`;
@@ -474,12 +613,92 @@ export function generateSeedData() {
       const isActive = status !== "DISPOSED" && status !== "TRANSFERRED";
       const hearingDate =
         isActive && currentCaseNum % 11 === 2
-          ? new Date(now.getTime() + (2 + (currentCaseNum % 26)) * 86400000)
+          ? daysAhead(2 + (currentCaseNum % 26))
           : null;
 
       // Every fifth live file lands at the bureau desk without a named officer
       // yet, so the officer work-queue has a genuine allocation backlog.
       const isUnassigned = isActive && currentCaseNum % 5 === 0;
+
+      const template = DESCRIPTIONS[category] ?? ["Grievance submitted regarding {inst}."];
+      const description = template[(currentCaseNum + k) % template.length].replace(/\{inst\}/g, inst.name);
+
+      // ── Rich action ledger (3-6 events per case) ──
+      const actions: SeedCase["actions"] = [
+        {
+          actor_user: assigned.email,
+          actor_bureau: assigned.bureau,
+          action_type: "RECEIVED",
+          remarks: RECEIVED_REMARKS[(currentCaseNum + k) % RECEIVED_REMARKS.length].replace(/\{source\}/g, source),
+          timestamp: dateReceived,
+          attachments: currentCaseNum % 7 === 3
+            ? ["https://blob.vercel-storage.com/complaints/representation.pdf"]
+            : [],
+        },
+      ];
+      if (!isUnassigned) {
+        actions.push({
+          actor_user: assigned.email,
+          actor_bureau: assigned.bureau,
+          action_type: "ASSIGNED",
+          remarks: "File assigned to the bureau desk for preliminary verification.",
+          timestamp: new Date(dateReceived.getTime() + 1 * 86400000),
+          attachments: [],
+        });
+      }
+      if (status === "TRANSFERRED") {
+        const toBureau = officers[(iIdx + k + 1) % officers.length].bureau;
+        actions.push({
+          actor_user: assigned.email,
+          actor_bureau: assigned.bureau,
+          action_type: "STATUS_CHANGED",
+          remarks: "File transferred after bureau-level jurisdiction review for coordinated disposal.",
+          timestamp: new Date(dateReceived.getTime() + 3 * 86400000),
+          attachments: [],
+          from_bureau: assigned.bureau,
+          to_bureau: toBureau,
+        });
+      } else if (status !== "DISPOSED" && status !== "ESCALATED") {
+        actions.push({
+          actor_user: assigned.email,
+          actor_bureau: assigned.bureau,
+          action_type: "REMARK",
+          remarks: INTERIM_REMARKS[(currentCaseNum + k) % INTERIM_REMARKS.length],
+          timestamp: new Date(dateReceived.getTime() + 3 * 86400000),
+          attachments: [],
+        });
+      }
+      if (hearingDate) {
+        actions.push({
+          actor_user: assigned.email,
+          actor_bureau: assigned.bureau,
+          action_type: "HEARING_SCHEDULED",
+          remarks: "Hearing scheduled before the Standing Grievance Committee; institution and complainant sides to be intimated.",
+          timestamp: new Date(dateReceived.getTime() + 5 * 86400000),
+          attachments: [],
+        });
+      }
+      if (status === "DISPOSED") {
+        actions.push({
+          actor_user: assigned.email,
+          actor_bureau: assigned.bureau,
+          action_type: "DISPOSED",
+          remarks: DISPOSED_REMARKS[(currentCaseNum + k) % DISPOSED_REMARKS.length],
+          timestamp: new Date(dateReceived.getTime() + bump(Math.min(daysAgoN - 1, Math.round(slaDays * 0.9) + (currentCaseNum % 5))) * 86400000),
+          attachments: ["https://blob.vercel-storage.com/orders/disposal_order.pdf"],
+        });
+      } else if (status === "ESCALATED") {
+        actions.push({
+          actor_user: assigned.email,
+          actor_bureau: assigned.bureau,
+          action_type: "ESCALATED",
+          remarks: ESCALATED_REMARKS[(currentCaseNum + k) % ESCALATED_REMARKS.length],
+          timestamp: new Date(dateReceived.getTime() + bump(Math.min(daysAgoN - 1, slaDays + 3)) * 86400000),
+          attachments: [],
+        });
+      }
+
+      const lastActionDate = actions[actions.length - 1].timestamp;
 
       const generatedCase: SeedCase = {
         id: `case_${currentCaseNum}`,
@@ -488,45 +707,74 @@ export function generateSeedData() {
         date_received: dateReceived,
         source,
         category,
-        description: `Grievance submitted regarding ${category.toLowerCase()} at ${inst.name}. Comprehensive documentation submitted by complainant.`,
+        description,
         status,
         assigned_bureau: assigned.bureau as any,
         assigned_officer: isUnassigned ? "" : assigned.email,
         last_action: isUnassigned
           ? "Received at Bureau desk — awaiting officer allocation"
-          : status === "DISPOSED" ? "Final Disposal Order uploaded to AICTE portal" : status === "ESCALATED" ? "Escalated to Member Secretary" : "Notice issued to Head of Institution",
-        last_action_date: new Date(dateReceived.getTime() + 4 * 86400000),
+          : status === "DISPOSED" ? "Final Disposal Order uploaded to AICTE portal"
+          : status === "ESCALATED" ? "Escalated to Member Secretary"
+          : status === "TRANSFERRED" ? "File transferred between bureaus for coordinated handling"
+          : "Notice issued to Head of Institution",
+        last_action_date: lastActionDate,
         next_action_required: isUnassigned ? "Assign investigating officer" : status === "DISPOSED" ? null : "Verification of compliance report",
         expected_disposal_date: expectedDisposal,
         priority,
         complainant_name: complainantName,
         complainant_contact: complainantContact,
         hearing_date: hearingDate,
-        actions: [
-          {
-            actor_user: assigned.email,
-            actor_bureau: assigned.bureau,
-            action_type: "RECEIVED",
-            remarks: "Grievance received and cataloged under standard SOP.",
-            timestamp: dateReceived,
-            attachments: [],
-          },
-          {
-            actor_user: assigned.email,
-            actor_bureau: assigned.bureau,
-            action_type: status === "DISPOSED" ? "DISPOSED" : status === "ESCALATED" ? "ESCALATED" : "REMARK",
-            remarks: status === "DISPOSED"
-              ? "Matter thoroughly investigated and closed with reasoned speaking order."
-              : status === "ESCALATED"
-              ? "SLA threshold exceeded; submitted to Competent Authority for urgent direction."
-              : "Interim compliance report called within 7 working days.",
-            timestamp: new Date(dateReceived.getTime() + 5 * 86400000),
-            attachments: status === "DISPOSED" ? ["https://blob.vercel-storage.com/orders/disposal_order.pdf"] : [],
-          },
-        ],
+        actions,
       };
 
       cases.push(generatedCase);
+
+      // ── Bureau coordination / internal desk threads on a slice of files ──
+      if (!isUnassigned && currentCaseNum % 9 < 2) {
+        const threadLength = 2 + (currentCaseNum % 2);
+        for (let cIdx = 0; cIdx < threadLength; cIdx++) {
+          const seedComment = COMMENT_BODIES[(currentCaseNum + cIdx) % COMMENT_BODIES.length];
+          const author = OFFICER_POOL[(currentCaseNum * 3 + cIdx * 5 + iIdx) % OFFICER_POOL.length];
+          comments.push({
+            id: `cm_g_${commentSeq++}`,
+            case_id: caseCode,
+            author_email: author.email,
+            author_name: author.name,
+            author_bureau: author.bureau,
+            body: seedComment.body,
+            scope: seedComment.scope,
+            created_at: new Date(dateReceived.getTime() + (2 + cIdx * 3) * 86400000),
+          });
+        }
+      }
+    }
+
+    // ── Institution document vault entries for every third institution ──
+    if (iIdx % 3 === 0) {
+      const vaultUploaders = ["ab.officer@aicte.gov.in", "rb.officer@aicte.gov.in", "pgrc.officer@aicte.gov.in"];
+      documents.push({
+        id: `doc_g_${documentSeq++}`,
+        institution_id: inst.id,
+        title: `Extension of Approval 2026-27 (${inst.institution_type}, ${60 + (iIdx % 5) * 30} seats)`,
+        doc_type: "APPROVAL_LETTER",
+        blob_url: `https://blob.vercel-storage.com/vault/inst${iIdx + 1}_eoa_2026_27.pdf`,
+        file_name: `inst${iIdx + 1}_eoa_2026_27.pdf`,
+        file_size: 300_000 + ((iIdx * 7919) % 400_000),
+        uploaded_by: vaultUploaders[iIdx % vaultUploaders.length],
+        notes: "Sanctioned intake letter with standard pre-approval conditions for the current academic year.",
+        uploaded_at: daysAgo(40 + ((iIdx * 7) % 100)),
+      });
+      documents.push({
+        id: `doc_g_${documentSeq++}`,
+        institution_id: inst.id,
+        title: "Compliance Report on AY 2025-26 Disposal Orders",
+        doc_type: "COMPLIANCE_REPORT",
+        blob_url: `https://blob.vercel-storage.com/vault/inst${iIdx + 1}_compliance_2025_26.pdf`,
+        file_name: `inst${iIdx + 1}_compliance_2025_26.pdf`,
+        file_size: 150_000 + ((iIdx * 3571) % 250_000),
+        uploaded_by: vaultUploaders[(iIdx + 2) % vaultUploaders.length],
+        uploaded_at: daysAgo(20 + ((iIdx * 11) % 90)),
+      });
     }
   });
 
@@ -553,21 +801,21 @@ export function generateSeedData() {
   localizeCases(
     (c) => c.category === "Capitation Fee & Overcharging" && c.status !== "DISPOSED" &&
       ["Northern", "Central", "North-Western"].includes(institutions.find((i) => i.id === c.institution_id)!.region),
-    2,
+    6,
     HINDI_CAPITATION,
     "hi"
   );
   localizeCases(
     (c) => c.category === "Withholding Certificates" && c.status !== "DISPOSED" &&
       ["Southern", "South-Western"].includes(institutions.find((i) => i.id === c.institution_id)!.region),
-    2,
+    5,
     TAMIL_CERTIFICATES,
     "ta"
   );
   localizeCases(
     (c) => c.category === "Withholding Certificates" && c.language !== "ta" && c.status !== "DISPOSED" &&
       ["Northern", "Central", "Eastern"].includes(institutions.find((i) => i.id === c.institution_id)!.region),
-    1,
+    3,
     HINDI_CERTIFICATES,
     "hi"
   );
@@ -582,7 +830,7 @@ export function generateSeedData() {
       author_bureau: "REGULATION_BUREAU",
       body: "Regulation Bureau has an active parallel file on capitation collection at the same institution. Requesting PGRC to share the show-cause response so both files can proceed as one record and the institution does not face contradictory notices.",
       scope: "COORDINATION",
-      created_at: new Date("2026-10-08T09:30:00Z"),
+      created_at: daysAgo(12),
     },
     {
       id: "cm_002",
@@ -592,7 +840,7 @@ export function generateSeedData() {
       author_bureau: "PGRC",
       body: "Shared. Institution response is due by the Standing Grievance Committee hearing; joint agenda item is proposed so the master docket can be established in that sitting.",
       scope: "COORDINATION",
-      created_at: new Date("2026-10-09T12:10:00Z"),
+      created_at: daysAgo(10),
     },
     {
       id: "cm_003",
@@ -602,7 +850,7 @@ export function generateSeedData() {
       author_bureau: "PGRC",
       body: "Internal desk note: hearing panel composition confirmed; complainant representation (Student Union) verified on record before the sitting.",
       scope: "INTERNAL",
-      created_at: new Date("2026-10-12T15:45:00Z"),
+      created_at: daysAgo(6),
     },
     {
       id: "cm_004",
@@ -612,7 +860,7 @@ export function generateSeedData() {
       author_bureau: "REGULATION_BUREAU",
       body: "Noted PGRC's parallel proceeding. Holding the surprise EVC inspection until a master docket is established to avoid two committees landing on campus in the same week.",
       scope: "COORDINATION",
-      created_at: new Date("2026-10-10T10:00:00Z"),
+      created_at: daysAgo(9),
     },
     {
       id: "cm_005",
@@ -622,7 +870,7 @@ export function generateSeedData() {
       author_bureau: "REGULATION_BUREAU",
       body: "Desk level: compiled the fee-committee register extracts for the last two academic years; will be tabled when the committee sitting is fixed.",
       scope: "INTERNAL",
-      created_at: new Date("2026-10-14T11:20:00Z"),
+      created_at: daysAgo(4),
     }
   );
 
@@ -638,7 +886,7 @@ export function generateSeedData() {
       file_size: 428_610,
       uploaded_by: "ab.officer@aicte.gov.in",
       notes: "Sanctioned intake letter for Computer Science & Engineering with standard pre-approval conditions.",
-      uploaded_at: new Date("2026-07-14T10:00:00Z"),
+      uploaded_at: daysAgo(120),
     },
     {
       id: "doc_002",
@@ -651,7 +899,7 @@ export function generateSeedData() {
       uploaded_by: "rb.officer@aicte.gov.in",
       case_id: "AICTE/PGRC/2026/00101",
       notes: "Referenced in the capitation enquiry as the statutory fee ceiling.",
-      uploaded_at: new Date("2026-09-24T09:15:00Z"),
+      uploaded_at: daysAgo(49),
     },
     {
       id: "doc_003",
@@ -663,7 +911,7 @@ export function generateSeedData() {
       file_size: 512_904,
       uploaded_by: "rb.officer@aicte.gov.in",
       case_id: "AICTE/RB/2026/00042",
-      uploaded_at: new Date("2026-10-06T14:40:00Z"),
+      uploaded_at: daysAgo(20),
     },
     {
       id: "doc_004",
@@ -674,7 +922,7 @@ export function generateSeedData() {
       file_name: "stxavier_compliance.pdf",
       file_size: 188_212,
       uploaded_by: "pgrc.officer@aicte.gov.in",
-      uploaded_at: new Date("2026-08-02T12:30:00Z"),
+      uploaded_at: daysAgo(102),
     },
     {
       id: "doc_005",
@@ -685,7 +933,7 @@ export function generateSeedData() {
       file_name: "hbtu_sln_copy.pdf",
       file_size: 119_942,
       uploaded_by: "rb.officer@aicte.gov.in",
-      uploaded_at: new Date("2026-09-12T16:05:00Z"),
+      uploaded_at: daysAgo(61),
     },
     {
       id: "doc_006",
@@ -696,7 +944,7 @@ export function generateSeedData() {
       file_name: "dehradun_deed.pdf",
       file_size: 764_331,
       uploaded_by: "ab.officer@aicte.gov.in",
-      uploaded_at: new Date("2026-06-21T11:00:00Z"),
+      uploaded_at: daysAgo(144),
     },
     {
       id: "doc_007",
@@ -707,7 +955,7 @@ export function generateSeedData() {
       file_name: "coimbatore_arc.pdf",
       file_size: 97_500,
       uploaded_by: "pgrc.officer@aicte.gov.in",
-      uploaded_at: new Date("2026-07-30T15:20:00Z"),
+      uploaded_at: daysAgo(105),
     },
     {
       id: "doc_008",
@@ -718,7 +966,7 @@ export function generateSeedData() {
       file_name: "kolkata_wp_8412.pdf",
       file_size: 301_760,
       uploaded_by: "ro.north@aicte.gov.in",
-      uploaded_at: new Date("2026-09-19T10:10:00Z"),
+      uploaded_at: daysAgo(54),
     }
   );
 
