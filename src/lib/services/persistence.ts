@@ -67,6 +67,8 @@ export interface StoreState {
   comments: SeedComment[];
   documents: SeedDocument[];
   users: StoreUser[];
+  /** UTC day (YYYY-MM-DD) the synthetic daily intake last ran for. */
+  lastDailyIntake?: string;
 }
 
 interface SnapshotPayload {

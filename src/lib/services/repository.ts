@@ -14,6 +14,7 @@ import {
   StoreState,
   StoreUser,
 } from "./persistence";
+import { ensureDailyIntake } from "./daily-intake";
 import { SessionUser, assertCanActOnCase, canCoordinateOverlap, canViewCase, canActOnCase } from "@/lib/rbac";
 
 export interface CaseFilterOptions {
@@ -104,7 +105,16 @@ function getInMemoryStore() {
   if (!globalRepo.snapshotWired) {
     globalRepo.snapshotWired = true;
     // One-shot hydration + write-behind persistence (no-op without a DB).
-    void hydrateFromSnapshot(store, inMemoryAuditLogs);
+    void hydrateFromSnapshot(store, inMemoryAuditLogs)
+      .then(() => {
+        // Daily synthetic intake runs strictly after hydration so the revived
+        // snapshot (including its `lastDailyIntake` marker and prior arrivals)
+        // is never clobbered by revival. Best-effort: any failure leaves the
+        // seeded store fully functional.
+        if (process.env.NEXT_PHASE === "phase-production-build") return;
+        return ensureDailyIntake({ store, schedule: true });
+      })
+      .catch(() => undefined);
     registerSnapshotSource(() =>
       globalRepo.inMemoryData
         ? { store: globalRepo.inMemoryData, auditLogs: inMemoryAuditLogs }
@@ -1218,6 +1228,15 @@ export class ComplaintRepository {
     });
 
     return newCase;
+  }
+
+  /**
+   * Manual daily-intake trigger (admin API / verification). Force registers
+   * today's batch even if the marker says it already ran.
+   */
+  public async runDailyIntakeNow(force = false) {
+    const store = getInMemoryStore();
+    return ensureDailyIntake({ store, force });
   }
 
   /**
