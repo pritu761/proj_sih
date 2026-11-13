@@ -15,6 +15,16 @@ import {
   StoreUser,
 } from "./persistence";
 import { ensureDailyIntake } from "./daily-intake";
+import { runAutoEscalation } from "./escalation-engine";
+import { findMergeSuggestions, type MergeSuggestion } from "./merge-suggester";
+import {
+  computeBacklogForecast,
+  computeBreachHeatmap,
+  computePrecedentStats,
+  type BacklogForecastResult,
+  type BreachHeatmap,
+  type PrecedentStats,
+} from "./analytics";
 import { SessionUser, assertCanActOnCase, canCoordinateOverlap, canViewCase, canActOnCase } from "@/lib/rbac";
 
 export interface CaseFilterOptions {
@@ -112,7 +122,13 @@ function getInMemoryStore() {
         // is never clobbered by revival. Best-effort: any failure leaves the
         // seeded store fully functional.
         if (process.env.NEXT_PHASE === "phase-production-build") return;
-        return ensureDailyIntake({ store, schedule: true });
+        return ensureDailyIntake({ store, schedule: true })
+          .then(() =>
+            // The auto-escalation sweep chains after the intake so files that
+            // aged into the grace window overnight are escalated the same
+            // morning. Deterministic + day-marked, like the intake.
+            runAutoEscalation({ store }).catch(() => undefined)
+          );
       })
       .catch(() => undefined);
     registerSnapshotSource(() =>
@@ -1240,6 +1256,16 @@ export class ComplaintRepository {
   }
 
   /**
+   * Manual auto-escalation trigger (cron / admin). Force sweeps again even if
+   * the day marker says it already ran; without force it is a no-op after the
+   * first sweep of the UTC day.
+   */
+  public async runAutoEscalationNow(force = false) {
+    const store = getInMemoryStore();
+    return runAutoEscalation({ store, force });
+  }
+
+  /**
    * Overlap Actions: Acknowledge, Coordinate, Dismiss
    */
   public async coordinateOverlapAlert(
@@ -1442,11 +1468,182 @@ export class ComplaintRepository {
     return alert;
   }
 
+  /* ── Possible-duplicate (merge) queue ────────────────────────────────────
+   * Same-bureau counterpart to the cross-bureau overlap alerts: same
+   * institution + category + similar narrative among OPEN desk files.
+   * Suggestions are recomputed deterministically from the live store on
+   * every read; only the officer's review decisions are persisted.
+   */
+
+  /** Whether the actor may merge/dismiss this suggestion (both files). */
+  private canManageSuggestion(actor: SessionUser, suggestion: MergeSuggestion): boolean {
+    return (
+      canActOnCase(actor, { assigned_bureau: suggestion.a.bureau }) &&
+      canActOnCase(actor, { assigned_bureau: suggestion.b.bureau })
+    );
+  }
+
+  /**
+   * Live merge-suggestion queue for the alerts workspace. Suggestions are
+   * derived, never stored; `dismissedMergeSuggestions` on the store keeps an
+   * officer's "not duplicates" decisions durable.
+   */
+  public getMergeSuggestions(user?: SessionUser) {
+    const store = getInMemoryStore();
+    const suggestions = findMergeSuggestions({
+      cases: store.cases,
+      institutions: store.institutions,
+      dismissedKeys: store.dismissedMergeSuggestions ?? [],
+    });
+
+    // Regional officers observe; bureau actors get action flags per pair.
+    return suggestions.map((s) => ({
+      ...s,
+      canManage: user ? this.canManageSuggestion(user, s) : false,
+    }));
+  }
+
+  /** Records an officer's review: these two files are not duplicates. */
+  public async dismissMergeSuggestion(
+    pairKey: string,
+    reason: string,
+    actor: SessionUser
+  ) {
+    const store = getInMemoryStore();
+    const [aId, bId] = pairKey.split("::");
+    const caseA = store.cases.find((c) => c.id === aId);
+    const caseB = store.cases.find((c) => c.id === bId);
+    if (!caseA || !caseB) throw new Error("Suggestion pair is no longer in the registry.");
+
+    const suggestion = findMergeSuggestions({
+      cases: [caseA, caseB],
+      institutions: store.institutions,
+    }).find((s) => s.key === pairKey);
+    if (suggestion && !this.canManageSuggestion(actor, suggestion)) {
+      throw new Error(
+        `Unauthorized: ${actor.email} (${actor.bureau}) cannot review filings owned by ${caseA.assigned_bureau} / ${caseB.assigned_bureau}.`
+      );
+    }
+
+    store.dismissedMergeSuggestions ??= [];
+    if (!store.dismissedMergeSuggestions.includes(pairKey)) {
+      store.dismissedMergeSuggestions.push(pairKey);
+    }
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "DISMISS_MERGE_SUGGESTION",
+      entity: "CasePair",
+      entity_id: `${caseA.case_id} <-> ${caseB.case_id}`,
+      after: { reason },
+    });
+
+    return { key: pairKey };
+  }
+
+  /**
+   * Merges a suggested duplicate pair into one master docket. The oldest
+   * file (suggestion.a) is the default master; the officer confirms the
+   * choice in the UI. Mirrors mergeOverlapAlert's mechanics without an
+   * alert record: DUPLICATE link, LINKED actions, notification, audit.
+   */
+  public async mergeSuggestionCases(
+    pairKey: string,
+    masterCaseRef: string,
+    mergeNote: string,
+    actor: SessionUser
+  ) {
+    const store = getInMemoryStore();
+    const [aId, bId] = pairKey.split("::");
+    const pairCases = [aId, bId]
+      .map((id) => store.cases.find((c) => c.id === id))
+      .filter((c): c is SeedCase => Boolean(c));
+
+    if (pairCases.length < 2) throw new Error("Suggestion pair is no longer in the registry.");
+
+    const suggestion = findMergeSuggestions({
+      cases: pairCases,
+      institutions: store.institutions,
+    }).find((s) => s.key === pairKey);
+    if (suggestion && !this.canManageSuggestion(actor, suggestion)) {
+      throw new Error(
+        `Unauthorized: ${actor.email} (${actor.bureau}) cannot merge filings owned by ${pairCases[0].assigned_bureau} / ${pairCases[1].assigned_bureau}.`
+      );
+    }
+
+    const master = pairCases.find(
+      (c) => c.case_id === masterCaseRef || c.id === masterCaseRef
+    );
+    if (!master) throw new Error("Selected master docket is not part of this suggestion.");
+
+    const mergedCases = pairCases.filter((c) => c.id !== master.id);
+    const now = new Date();
+
+    master.last_action = `Master docket established for ${mergedCases.length} duplicate filing(s)`;
+    master.last_action_date = now;
+    master.actions.unshift({
+      actor_user: actor.email,
+      actor_bureau: actor.bureau,
+      action_type: "LINKED",
+      remarks: `Master docket ${master.case_id} established. Merged duplicate filing: ${mergedCases
+        .map((c) => c.case_id)
+        .join(", ")}. ${mergeNote}`,
+      timestamp: now,
+      attachments: [],
+    });
+
+    for (const mergedCase of mergedCases) {
+      this.upsertCaseLink(master.case_id, mergedCase.case_id, "DUPLICATE", mergeNote, actor.email);
+      mergedCase.last_action = `Merged into master docket ${master.case_id}`;
+      mergedCase.last_action_date = now;
+      mergedCase.actions.unshift({
+        actor_user: actor.email,
+        actor_bureau: actor.bureau,
+        action_type: "LINKED",
+        remarks: `Merged into master docket ${master.case_id}. Single inquiry will proceed under the master file. ${mergeNote}`,
+        timestamp: now,
+        attachments: [],
+      });
+    }
+
+    store.notifications.unshift({
+      id: `notif_${now.getTime()}_suggmerge`,
+      type: "OVERLAP",
+      case_id: master.case_id,
+      target_bureau: "ALL",
+      title: `Duplicate filings merged: ${master.case_id}`,
+      message: `${mergedCases.length} same-bureau duplicate(s) merged by ${actor.name}. ${mergeNote}`,
+      read: false,
+      created_at: now,
+    });
+
+    // A reviewed pair never resurfaces in the queue.
+    store.dismissedMergeSuggestions ??= [];
+    if (!store.dismissedMergeSuggestions.includes(pairKey)) {
+      store.dismissedMergeSuggestions.push(pairKey);
+    }
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "MERGE_SUGGESTION",
+      entity: "CasePair",
+      entity_id: `${master.case_id} <- ${mergedCases.map((c) => c.case_id).join(", ")}`,
+      after: { masterCaseId: master.case_id, mergedCaseIds: mergedCases.map((c) => c.case_id), mergeNote },
+    });
+
+    return {
+      masterCaseId: master.case_id,
+      masterInternalId: master.id,
+      mergedCaseIds: mergedCases.map((c) => c.case_id),
+    };
+  }
+
   /**
    * Overlap alerts enriched with institution details for the alerts workspace.
    */
-  public async getOverlapAlerts(user?: SessionUser) {
-    const store = getInMemoryStore();
+  public async getOverlapAlerts(user?: SessionUser) {    const store = getInMemoryStore();
     const instMap = new Map(store.institutions.map((i) => [i.id, i]));
     const caseMap = new Map(store.cases.map((c) => [c.case_id, c]));
 
@@ -2439,6 +2636,35 @@ export class ComplaintRepository {
       last_action: c.last_action,
       timeline,
     };
+  }
+
+  /**
+   * Precedent cards for the case detail page: how were comparable closed
+   * files of the same category resolved (durations, on-time rate, outcomes)?
+   */
+  public getPrecedentStats(caseItem: { id: string; case_id: string; category: string }): PrecedentStats {
+    const store = getInMemoryStore();
+    return computePrecedentStats({
+      category: caseItem.category,
+      excludeCaseId: caseItem.id,
+      cases: store.cases,
+      institutions: store.institutions,
+    });
+  }
+
+  /**
+   * Linear backlog projection for Reports & Analytics: observed intake and
+   * disposal rates over the trailing window projected 30/60/90 days ahead.
+   */
+  public getBacklogForecast(): BacklogForecastResult {
+    const store = getInMemoryStore();
+    return computeBacklogForecast(store.cases);
+  }
+
+  /** Region × category breach-density grid for Reports & Analytics. */
+  public getBreachHeatmap(): BreachHeatmap {
+    const store = getInMemoryStore();
+    return computeBreachHeatmap(store.cases, store.institutions);
   }
 
   /**

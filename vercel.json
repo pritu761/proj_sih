@@ -6,6 +6,10 @@
       "schedule": "30 3 * * *"
     },
     {
+      "path": "/api/cron/escalation",
+      "schedule": "0 4 * * *"
+    },
+    {
       "path": "/api/cron/sla-check",
       "schedule": "0 0 * * *"
     },

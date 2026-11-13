@@ -70,6 +70,19 @@ export const MergeOverlapSchema = z.object({
     .min(10, "Provide a merge justification of at least 10 characters"),
 });
 
+export const MergeSuggestionActionSchema = z.object({
+  pairKey: z.string().min(1, "Suggestion pair is required"),
+  masterCaseId: z.string().min(1, "Select the master docket"),
+  mergeNote: z
+    .string()
+    .min(10, "Provide a merge justification of at least 10 characters"),
+});
+
+export const DismissMergeSuggestionSchema = z.object({
+  pairKey: z.string().min(1, "Suggestion pair is required"),
+  reason: z.string().min(5, "Reason for dismissal must be at least 5 characters long"),
+});
+
 export const IngestionChannelEnum = z.enum([
   "CPGRAMS",
   "UGC_ESAMADHAN",

@@ -31,6 +31,7 @@ import {
   Inbox,
   RefreshCw,
   ChevronRight,
+  Scale,
 } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import {
@@ -58,6 +59,7 @@ import { ComplainantCard } from "./ComplainantCard";
 import { CaseThreadPanel, CaseCommentView } from "./CaseThreadPanel";
 import type { CaseInsight } from "@/lib/services/risk-engine";
 import type { ComplianceAssessment } from "@/lib/services/aph-engine";
+import type { PrecedentStats } from "@/lib/services/analytics";
 import { cn } from "@/lib/utils";
 
 interface CaseDetailClientProps {
@@ -67,6 +69,7 @@ interface CaseDetailClientProps {
   collidingCase?: any;
   currentUser: SessionUser;
   insight?: CaseInsight | null;
+  precedents?: PrecedentStats | null;
   compliance?: ComplianceAssessment | null;
   comments: CaseCommentView[];
   complainant: {
@@ -137,6 +140,7 @@ export function CaseDetailClient({
   collidingCase,
   currentUser,
   insight,
+  precedents,
   compliance,
   comments,
   complainant,
@@ -751,6 +755,107 @@ export function CaseDetailClient({
               </p>
             </div>
           </div>
+
+          {/* Precedent cards — how comparable grievances of this category were actually resolved */}
+          {precedents && precedents.similarDisposed > 0 && (
+            <div className="panel overflow-hidden">
+              <div className="panel-head">
+                <div>
+                  <h2 className="panel-title flex items-center gap-2">
+                    <Scale className="h-3.5 w-3.5 text-brand-600" />
+                    Precedents — comparable resolutions
+                  </h2>
+                  <p className="mt-0.5 text-[10.5px] font-medium text-slate-400">
+                    Closed {caseItem.category} files, counted straight from the registry —
+                    no AI inference involved.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10.5px] font-bold text-slate-500">
+                  {precedents.similarDisposed} comparable file
+                  {precedents.similarDisposed === 1 ? "" : "s"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100 bg-slate-50/60">
+                {[
+                  {
+                    label: "Median disposal",
+                    value: `${precedents.medianDays}d`,
+                    note: "of comparable files",
+                  },
+                  {
+                    label: "Closed on time",
+                    value: `${precedents.onTimeRate}%`,
+                    note: "within the statutory window",
+                  },
+                  {
+                    label: "Top outcome",
+                    value:
+                      precedents.outcomeDistribution[0]?.outcome.split(" ").slice(0, 2).join(" ") ??
+                      "—",
+                    note: precedents.outcomeDistribution[0]?.outcome ?? "no data yet",
+                  },
+                ].map((cell) => (
+                  <div key={cell.label} className="px-4 py-3">
+                    <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                      {cell.label}
+                    </p>
+                    <p className="mt-1 font-display text-[17px] font-extrabold leading-none tracking-[-0.02em] text-slate-900">
+                      {cell.value}
+                    </p>
+                    <p className="mt-1 text-[9.5px] font-medium text-slate-400">{cell.note}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {precedents.examples.map((p) => (
+                  <div key={p.id} className="flex items-start gap-3 px-5 py-3">
+                    <div
+                      className={cn(
+                        "mt-0.5 flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-xl border text-center",
+                        p.onTime
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                          : "border-rose-200 bg-rose-50 text-rose-700"
+                      )}
+                    >
+                      <span className="text-[12px] font-extrabold leading-none">{p.days}</span>
+                      <span className="text-[7.5px] font-bold uppercase leading-tight">days</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/cases/${p.id}`}
+                          className="font-display text-[12.5px] font-bold tracking-tight text-slate-900 hover:text-brand-700"
+                        >
+                          {p.case_id}
+                        </Link>
+                        <span
+                          className={cn(
+                            "rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide",
+                            p.onTime
+                              ? "bg-emerald-50 text-emerald-700"
+                              : "bg-rose-50 text-rose-700"
+                          )}
+                        >
+                          {p.onTime ? "On time" : "Late close"}
+                        </span>
+                        <span className="text-[10px] font-medium text-slate-400">
+                          {p.outcome}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 truncate text-[10.5px] font-medium text-slate-500">
+                        {p.institution_name} · closed {formatDate(p.disposedAt)}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-[10.5px] leading-relaxed text-slate-500">
+                        {p.outcomeNote}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Milestones */}
           <div className="panel">

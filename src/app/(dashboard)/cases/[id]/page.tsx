@@ -46,6 +46,13 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
     repository.getAssignableOfficers(user),
   ]);
 
+  // Precedent cards: how comparable closed files of this category were resolved.
+  const precedents = repository.getPrecedentStats({
+    id: data.caseItem.id,
+    case_id: data.caseItem.case_id,
+    category: data.caseItem.category,
+  });
+
   return (
     <CaseDetailClient
       caseItem={data.caseItem}
@@ -54,6 +61,7 @@ export default async function CaseDetailPage({ params }: CaseDetailPageProps) {
       collidingCase={data.collidingCase}
       currentUser={user}
       insight={insight}
+      precedents={precedents}
       compliance={compliance}
       comments={comments}
       complainant={complainant}

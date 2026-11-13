@@ -69,6 +69,10 @@ export interface StoreState {
   users: StoreUser[];
   /** UTC day (YYYY-MM-DD) the synthetic daily intake last ran for. */
   lastDailyIntake?: string;
+  /** UTC day (YYYY-MM-DD) the auto-escalation sweep last ran for. */
+  lastAutoEscalation?: string;
+  /** Merge-suggestion pair keys an officer already reviewed ("not duplicates"). */
+  dismissedMergeSuggestions?: string[];
 }
 
 interface SnapshotPayload {

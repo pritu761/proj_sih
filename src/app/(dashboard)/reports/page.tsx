@@ -20,10 +20,20 @@ import { SessionUser } from "@/lib/rbac";
 import { PageHeader } from "@/components/ui/page-header";
 import { BureauPill } from "@/components/ui/badges";
 import { ReportsClient, RegionBars } from "@/components/reports/ReportsClient";
+import { BacklogForecastChart } from "@/components/reports/BacklogForecastChart";
 import { AiReportSummary } from "@/components/reports/AiReportSummary";
 import { computeBureauScorecard } from "@/lib/services/scorecard";
 import { cn } from "@/lib/utils";
 import { CalendarClock } from "lucide-react";
+
+/** Colour scale for the breach heatmap cells (density = breached ÷ open). */
+function heatmapCellClass(cell: { active: number; density: number }): string {
+  if (cell.active === 0 || cell.density === 0) return "bg-slate-100 text-slate-400";
+  if (cell.density < 25) return "bg-emerald-100 text-emerald-800";
+  if (cell.density < 50) return "bg-amber-100 text-amber-800";
+  if (cell.density < 75) return "bg-orange-200 text-orange-900";
+  return "bg-rose-200 text-rose-900";
+}
 
 export default async function ReportsPage() {
   const session = await auth();
@@ -32,6 +42,8 @@ export default async function ReportsPage() {
   }
   const user = session.user as unknown as SessionUser;
   const metrics = await repository.getDashboardMetrics(user);
+  const forecast = repository.getBacklogForecast();
+  const heatmap = repository.getBreachHeatmap();
 
   // Bureau scorecard input — same region-safe view the weekly digest uses.
   const casePage = await repository.getCases({ limit: 1000, page: 1 }, user);
@@ -207,6 +219,97 @@ export default async function ReportsPage() {
 
       {/* Charts */}
       <ReportsClient metrics={metrics} />
+
+      {/* Backlog forecast — deterministic intake-vs-disposal projection */}
+      <BacklogForecastChart forecast={forecast} />
+
+      {/* Breach heatmap — statutory-breach density per regional office × category */}
+      <div className="panel overflow-hidden">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">Breach heatmap — regional office × category</h2>
+            <p className="mt-0.5 text-[10.5px] font-medium text-slate-400">
+              Share of open files already past the statutory window in each cell.
+              Disposed files are excluded — they are no longer under SLA pressure.
+            </p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[10.5px] font-bold text-rose-700">
+            {heatmap.cells.filter((c) => c.breached > 0).length} cells under pressure
+          </span>
+        </div>
+
+        <div className="overflow-x-auto px-5 py-4">
+          <table className="w-full border-separate" style={{ borderSpacing: "3px" }}>
+            <thead>
+              <tr>
+                <th className="pb-1 text-left text-[9.5px] font-bold uppercase tracking-[0.1em] text-slate-400">
+                  Regional office
+                </th>
+                {heatmap.categories.map((cat) => (
+                  <th
+                    key={cat}
+                    title={cat}
+                    className="min-w-[74px] pb-1 text-center text-[9px] font-bold uppercase tracking-wide text-slate-400"
+                  >
+                    {cat.length > 12 ? cat.slice(0, 11) + "…" : cat}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {heatmap.regions.map((region) => (
+                <tr key={region}>
+                  <td className="whitespace-nowrap pr-2 text-[10.5px] font-bold text-slate-700">
+                    {region}
+                  </td>
+                  {heatmap.categories.map((cat) => {
+                    const cell = heatmap.cells.find(
+                      (c) => c.region === region && c.category === cat
+                    )!;
+                    return (
+                      <td key={cat}>
+                        <div
+                          title={`${cell.breached} breached of ${cell.active} open file(s)`}
+                          className={cn(
+                            "rounded-md px-1.5 py-1.5 text-center",
+                            heatmapCellClass(cell)
+                          )}
+                        >
+                          <span className="block text-[11px] font-extrabold leading-none">
+                            {cell.active > 0 ? `${cell.density}%` : "–"}
+                          </span>
+                          <span className="block text-[8.5px] font-semibold opacity-70">
+                            {cell.active > 0 ? `${cell.breached}/${cell.active}` : ""}
+                          </span>
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 px-5 py-2.5 text-[9.5px] font-semibold text-slate-400">
+          <span>Breach density:</span>
+          {[
+            { label: "0", cls: "bg-slate-100 text-slate-400" },
+            { label: "<25%", cls: "bg-emerald-100 text-emerald-800" },
+            { label: "<50%", cls: "bg-amber-100 text-amber-800" },
+            { label: "<75%", cls: "bg-orange-200 text-orange-900" },
+            { label: "≥75%", cls: "bg-rose-200 text-rose-900" },
+          ].map((chip) => (
+            <span
+              key={chip.label}
+              className={cn("rounded-md px-2 py-0.5 text-[9px] font-bold", chip.cls)}
+            >
+              {chip.label}
+            </span>
+          ))}
+          <span className="ml-auto">cell text: breached / open</span>
+        </div>
+      </div>
 
       {/* Bureau scorecard — statutory performance grading */}
       <div className="panel overflow-hidden">
