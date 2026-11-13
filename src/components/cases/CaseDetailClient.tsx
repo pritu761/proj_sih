@@ -32,6 +32,12 @@ import {
   RefreshCw,
   ChevronRight,
   Scale,
+  ScanText,
+  Loader2,
+  ThumbsUp,
+  MinusCircle,
+  ThumbsDown,
+  EyeOff,
 } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import {
@@ -45,6 +51,7 @@ import {
   fieldVerificationAction,
 } from "@/actions/case-actions";
 import { coordinateOverlapAction } from "@/actions/overlap-actions";
+import { aiAnalyzeResponseAction } from "@/actions/ai-actions";
 import { canActOnCase, canAddFieldVerification, SessionUser } from "@/lib/rbac";
 import { LANGUAGE_BADGE } from "@/lib/services/language-detect";
 import { Breadcrumbs } from "@/components/ui/page-header";
@@ -179,6 +186,12 @@ export function CaseDetailClient({
   // Regional field verification
   const [fieldFindings, setFieldFindings] = useState("");
 
+  // Institution response analyzer (left column panel)
+  const [responseText, setResponseText] = useState("");
+  const [responseAnalysis, setResponseAnalysis] = useState<any>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState("");
+
   const isAuthorizedToAct = canActOnCase(currentUser, caseItem);
   const canFieldVerify = canAddFieldVerification(currentUser, caseItem);
   const closed = caseItem.status === "DISPOSED";
@@ -186,6 +199,57 @@ export function CaseDetailClient({
   const languageBadge = caseItem.language
     ? LANGUAGE_BADGE[caseItem.language as string]
     : null;
+
+  const analyzeResponse = async () => {
+    if (responseText.trim().length < 40) return;
+    setIsAnalyzing(true);
+    setAnalyzeError("");
+    setResponseAnalysis(null);
+    try {
+      const res = await aiAnalyzeResponseAction({
+        caseId: caseItem.id,
+        responseText: responseText,
+      });
+      if (res.disabled) {
+        setAnalyzeError(res.error || "AI features are not configured. Set GROQ_API_KEY.");
+      } else if (!res.success) {
+        setAnalyzeError(res.error || "Failed to analyze the response.");
+      } else {
+        setResponseAnalysis(res.data);
+      }
+    } catch (err: any) {
+      setAnalyzeError(err?.message || "Failed to analyze the response.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const addAnalysisAsRemark = async () => {
+    if (!responseAnalysis) return;
+    setIsLoading(true);
+    setErrorMsg("");
+    try {
+      const stance = responseAnalysis.stance.replaceAll("_", " ");
+      const res = await addRemarkAction({
+        caseId: caseItem.id,
+        remarks:
+          `Response analyzer — institution response reads as ${stance}. ` +
+          `${responseAnalysis.stance_reason} ` +
+          `Next step: ${responseAnalysis.recommended_action}`,
+      });
+      if (res.success) {
+        setResponseAnalysis(null);
+        setResponseText("");
+        router.refresh();
+      } else {
+        setErrorMsg(res.error || "Failed to add the remark.");
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Failed to add the remark.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -856,6 +920,134 @@ export function CaseDetailClient({
               </div>
             </div>
           )}
+
+          {/* Institution response analyzer */}
+          <div className="panel overflow-hidden">
+            <div className="panel-head">
+              <div>
+                <h2 className="panel-title flex items-center gap-2">
+                  <ScanText className="h-3.5 w-3.5 text-brand-600" />
+                  Response analyzer
+                </h2>
+                <p className="mt-0.5 text-[10.5px] font-medium text-slate-400">
+                  Paste the institution's written reply — the analyzer classifies the
+                  stance, pulls out commitments and flags what it dodges.
+                </p>
+              </div>
+            </div>
+            <div className="space-y-3 px-5 py-4">
+              <textarea
+                value={responseText}
+                onChange={(e) => setResponseText(e.target.value)}
+                rows={5}
+                maxLength={6000}
+                placeholder="Paste the compliance / reply text received from the institution (email, letter, portal response)…"
+                className="w-full rounded-xl border border-slate-200 bg-white p-3 text-[12px] leading-relaxed text-slate-800 outline-none focus:border-brand-400"
+              />
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={analyzeResponse}
+                  disabled={isAnalyzing || responseText.trim().length < 40}
+                  className="btn btn-primary btn-sm"
+                >
+                  {isAnalyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {isAnalyzing ? "Reading the reply…" : "Analyze response"}
+                </button>
+                {responseAnalysis && isAuthorizedToAct && (
+                  <button onClick={addAnalysisAsRemark} disabled={isLoading} className="btn btn-secondary btn-sm">
+                    <ClipboardCheck className="h-3.5 w-3.5" />
+                    Add as remark
+                  </button>
+                )}
+                <span className="text-[10px] font-medium text-slate-400">
+                  {responseText.trim().length}/6000 characters
+                </span>
+              </div>
+
+              {analyzeError && (
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-800">
+                  {analyzeError}
+                </p>
+              )}
+
+              {responseAnalysis && (
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-3.5">
+                  {(() => {
+                    const stanceMeta: Record<string, { icon: typeof ThumbsUp; cls: string; label: string }> = {
+                      COMPLIANT: { icon: ThumbsUp, cls: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Compliant" },
+                      PARTIALLY_COMPLIANT: { icon: MinusCircle, cls: "bg-amber-50 text-amber-700 border-amber-200", label: "Partially compliant" },
+                      NON_COMPLIANT: { icon: ThumbsDown, cls: "bg-rose-50 text-rose-700 border-rose-200", label: "Non-compliant" },
+                      EVASIVE: { icon: EyeOff, cls: "bg-violet-50 text-violet-700 border-violet-200", label: "Evasive" },
+                    };
+                    const meta = stanceMeta[responseAnalysis.stance] ?? stanceMeta.EVASIVE;
+                    const StanceIcon = meta.icon;
+                    return (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wide", meta.cls)}>
+                          <StanceIcon className="h-3 w-3" />
+                          {meta.label}
+                        </span>
+                        <span
+                          className={cn(
+                            "rounded-full border px-2 py-0.5 text-[10px] font-bold",
+                            responseAnalysis.urgency === "HIGH"
+                              ? "border-rose-200 bg-rose-50 text-rose-700"
+                              : responseAnalysis.urgency === "MEDIUM"
+                                ? "border-amber-200 bg-amber-50 text-amber-700"
+                                : "border-slate-200 bg-white text-slate-500"
+                          )}
+                        >
+                          {responseAnalysis.urgency} urgency
+                        </span>
+                      </div>
+                    );
+                  })()}
+
+                  <p className="text-[11.5px] leading-relaxed text-slate-700">
+                    {responseAnalysis.summary}
+                  </p>
+                  <p className="text-[10.5px] italic leading-relaxed text-slate-500">
+                    {responseAnalysis.stance_reason}
+                  </p>
+
+                  {responseAnalysis.commitments?.length > 0 && (
+                    <div>
+                      <p className="flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-[0.1em] text-emerald-700">
+                        <CheckCircle2 className="h-3 w-3" /> Commitments found
+                      </p>
+                      <ul className="mt-1 space-y-0.5">
+                        {responseAnalysis.commitments.map((c: string, i: number) => (
+                          <li key={i} className="text-[11px] leading-relaxed text-slate-600">
+                            · {c}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {responseAnalysis.gaps?.length > 0 && (
+                    <div>
+                      <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-rose-700">
+                        Not addressed
+                      </p>
+                      <ul className="mt-1 space-y-0.5">
+                        {responseAnalysis.gaps.map((g: string, i: number) => (
+                          <li key={i} className="text-[11px] leading-relaxed text-slate-600">
+                            · {g}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <p className="rounded-lg border border-brand-100 bg-brand-50/70 px-3 py-2 text-[11px] leading-relaxed text-brand-900">
+                    <strong className="font-bold">Recommended next step:</strong>{" "}
+                    {responseAnalysis.recommended_action}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Milestones */}
           <div className="panel">

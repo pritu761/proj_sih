@@ -11,6 +11,8 @@ import {
   AiDraftReplySchema,
   AiTranslateSchema,
   AiExplainOverlapSchema,
+  AiHearingBriefSchema,
+  AiAnalyzeResponseSchema,
   AiCaseFiltersSchema,
   BureauEnum,
   CaseStatusEnum,
@@ -26,6 +28,8 @@ import {
   adviseQueue,
   summarizeReports,
   parseSearchQuery,
+  briefHearing,
+  analyzeInstitutionResponse,
 } from "@/lib/services/ai-engine";
 
 async function requireActor(): Promise<SessionUser | { error: string }> {
@@ -586,6 +590,124 @@ const CASES_REGIONS = [
   "North-Western",
   "South-Western",
 ];
+
+/**
+ * Pre-hearing brief for one board sitting: the AI organises the file's own
+ * record (facts, statutory position, likely questions, directions to seek)
+ * into a one-page brief the officer can walk into the hearing with.
+ */
+export async function aiHearingBriefAction(data: { caseId: string }) {
+  const actor = await requireActor();
+  if ("error" in actor) return { success: false, disabled: false, error: actor.error };
+
+  const parsed = AiHearingBriefSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, disabled: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const user = actor as SessionUser;
+    const data_ = await repository.getCaseById(parsed.data.caseId, user);
+    if (!data_?.caseItem) {
+      return { success: false, disabled: false, error: "Case not found." };
+    }
+
+    const caseItem = data_.caseItem;
+    const result = await briefHearing({
+      caseCode: caseItem.case_id,
+      category: caseItem.category,
+      status: caseItem.status,
+      bureau: caseItem.assigned_bureau,
+      institutionName: caseItem.institution?.name ?? null,
+      city: caseItem.institution?.city ?? null,
+      state: caseItem.institution?.state ?? null,
+      hearingDate: caseItem.hearing_date
+        ? new Date(caseItem.hearing_date).toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          })
+        : "unscheduled",
+      description: caseItem.description,
+      slaRemainingDays: caseItem.sla?.remainingDays ?? 0,
+      slaBreached: Boolean(caseItem.sla?.isBreached),
+      actions: (caseItem.actions ?? []).slice(0, 12).map((a: any) => ({
+        action_type: a.action_type,
+        actor_bureau: a.actor_bureau,
+        remarks: a.remarks,
+        timestamp:
+          a.timestamp?.toISOString?.() ?? new Date(a.timestamp ?? Date.now()).toISOString(),
+      })),
+    });
+
+    if (result.disabled) {
+      return {
+        success: false,
+        disabled: true,
+        error: result.error || "AI features are not configured. Set GROQ_API_KEY.",
+      };
+    }
+    if (!result.ok || !result.data) {
+      return { success: false, disabled: false, error: result.error || "Failed to brief." };
+    }
+
+    return { success: true, disabled: false, data: result.data };
+  } catch (err: any) {
+    return { success: false, disabled: false, error: err.message || "Failed to generate the brief." };
+  }
+}
+
+/**
+ * Classify an institution's written compliance response (stance, commitments,
+ * gaps, recommended next step). Text-input based: the demo's response documents
+ * are scanned blobs, so the officer pastes the response text instead.
+ */
+export async function aiAnalyzeResponseAction(data: { caseId: string; responseText: string }) {
+  const actor = await requireActor();
+  if ("error" in actor) return { success: false, disabled: false, error: actor.error };
+
+  const parsed = AiAnalyzeResponseSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, disabled: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const user = actor as SessionUser;
+    const data_ = await repository.getCaseById(parsed.data.caseId, user);
+    if (!data_?.caseItem) {
+      return { success: false, disabled: false, error: "Case not found." };
+    }
+
+    const caseItem = data_.caseItem;
+    const result = await analyzeInstitutionResponse({
+      caseCode: caseItem.case_id,
+      category: caseItem.category,
+      bureau: caseItem.assigned_bureau,
+      institutionName: caseItem.institution?.name ?? null,
+      status: caseItem.status,
+      grievanceText: caseItem.description,
+      responseText: parsed.data.responseText,
+    });
+
+    if (result.disabled) {
+      return {
+        success: false,
+        disabled: true,
+        error: result.error || "AI features are not configured. Set GROQ_API_KEY.",
+      };
+    }
+    if (!result.ok || !result.data) {
+      return { success: false, disabled: false, error: result.error || "Failed to analyze." };
+    }
+
+    return { success: true, disabled: false, data: result.data };
+  } catch (err: any) {
+    return { success: false, disabled: false, error: err.message || "Failed to analyze the response." };
+  }
+}
 
 /**
  * State mentions in plain-language queries, mapped to the AICTE regional

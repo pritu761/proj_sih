@@ -292,3 +292,14 @@ export const AiExplainOverlapSchema = z.object({
   alertId: z.string().min(1, "Alert ID is required"),
 });
 
+export const AiHearingBriefSchema = z.object({
+  caseId: z.string().min(1, "Case ID is required"),
+});
+
+export const AiAnalyzeResponseSchema = z.object({
+  caseId: z.string().min(1, "Case ID is required"),
+  responseText: z
+    .string()
+    .min(40, "Paste the institution's response text (at least 40 characters)"),
+});
+

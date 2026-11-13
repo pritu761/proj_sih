@@ -12,6 +12,13 @@ import {
   MapPin,
   Clock,
   AlertTriangle,
+  Sparkles,
+  ClipboardList,
+  HelpCircle,
+  FileCheck2,
+  FileWarning,
+  Scale,
+  Loader2,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusPill, PriorityPill, BureauPill } from "@/components/ui/badges";
@@ -19,6 +26,7 @@ import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
 import { EmptyState } from "@/components/ui/empty-state";
 import { scheduleHearingAction } from "@/actions/case-actions";
+import { aiHearingBriefAction } from "@/actions/ai-actions";
 import { canActOnCase, SessionUser } from "@/lib/rbac";
 import { formatDate, formatDateTime, cn } from "@/lib/utils";
 
@@ -62,6 +70,12 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Hearing-prep brief state
+  const [briefTarget, setBriefTarget] = useState<HearingItem | null>(null);
+  const [brief, setBrief] = useState<any>(null);
+  const [isBriefing, setIsBriefing] = useState(false);
+  const [briefError, setBriefError] = useState("");
+
   const groups = useMemo(() => {
     const overdue = hearings.filter((h) => h.isPast);
     const thisWeek = hearings.filter((h) => !h.isPast && h.isThisWeek);
@@ -97,6 +111,55 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
     toast.success("Hearing updated", `${rescheduleTarget.case_id}`);
     router.refresh();
   };
+
+  const openBrief = async (h: HearingItem) => {
+    setBriefTarget(h);
+    setBrief(null);
+    setBriefError("");
+    setIsBriefing(true);
+    try {
+      const res = await aiHearingBriefAction({ caseId: h.internal_id });
+      if (res.disabled) {
+        setBriefError(res.error || "AI features are not configured. Set GROQ_API_KEY.");
+      } else if (!res.success) {
+        setBriefError(res.error || "Failed to generate the brief.");
+      } else {
+        setBrief(res.data);
+      }
+    } catch (err: any) {
+      setBriefError(err?.message || "Failed to generate the brief.");
+    } finally {
+      setIsBriefing(false);
+    }
+  };
+
+  const BriefSection = ({
+    icon: Icon,
+    title,
+    items,
+    tone,
+  }: {
+    icon: typeof ClipboardList;
+    title: string;
+    items: string[];
+    tone: string;
+  }) =>
+    items?.length ? (
+      <div>
+        <p className={cn("flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em]", tone)}>
+          <Icon className="h-3 w-3" />
+          {title}
+        </p>
+        <ul className="mt-1.5 space-y-1">
+          {items.map((item, i) => (
+            <li key={i} className="flex items-start gap-1.5 text-[11.5px] leading-relaxed text-slate-600">
+              <span className={cn("mt-1.5 h-1 w-1 shrink-0 rounded-full", tone.replace("text-", "bg-"))} />
+              {item}
+            </li>
+          ))}
+        </ul>
+      </div>
+    ) : null;
 
   const renderHearing = (h: HearingItem) => {
     const date = new Date(h.hearing_date);
@@ -195,7 +258,7 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
         </div>
 
         {/* Actions */}
-        <div className="shrink-0">
+        <div className="flex shrink-0 flex-col gap-2 sm:w-[128px]">
           {canReschedule ? (
             <button onClick={() => openReschedule(h)} className="btn btn-secondary btn-sm">
               <CalendarPlus className="h-3.5 w-3.5" />
@@ -205,6 +268,12 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
             <span className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10.5px] font-semibold italic text-slate-400">
               {h.isPast ? "Concluded sitting" : "Not your bureau's file"}
             </span>
+          )}
+          {!h.isPast && (
+            <button onClick={() => openBrief(h)} className="btn btn-primary btn-sm">
+              <Sparkles className="h-3.5 w-3.5" />
+              Prep brief
+            </button>
           )}
         </div>
       </div>
@@ -286,6 +355,109 @@ export function HearingCalendarClient({ hearings, currentUser }: HearingCalendar
         "text-slate-400",
         "badge border-slate-200 bg-slate-50 text-slate-600"
       )}
+
+      {/* Hearing-prep brief modal */}
+      <Modal
+        open={Boolean(briefTarget)}
+        onClose={() => setBriefTarget(null)}
+        title="Hearing-prep brief"
+        description={
+          briefTarget
+            ? `${briefTarget.case_id} · ${briefTarget.institution_name} · ${formatDateTime(briefTarget.hearing_date)}`
+            : undefined
+        }
+        icon={<Sparkles className="h-4 w-4" />}
+        tone="violet"
+        size="lg"
+        footer={
+          <button onClick={() => setBriefTarget(null)} className="btn btn-secondary btn-sm">
+            Close
+          </button>
+        }
+      >
+        {isBriefing && (
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
+            <p className="mt-3 text-[12px] font-semibold text-slate-700">
+              Organising the file record into a sitting brief…
+            </p>
+            <p className="mt-1 text-[10.5px] text-slate-400">
+              Facts, statutory position, likely questions — grounded in the case timeline only.
+            </p>
+          </div>
+        )}
+
+        {!isBriefing && briefError && (
+          <div className="space-y-3">
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11.5px] font-medium text-amber-800">
+              {briefError}
+            </p>
+            <p className="text-[10.5px] text-slate-400">
+              The brief is generated by the interactive AI model from this file's record;
+              everything else on the calendar keeps working without it.
+            </p>
+          </div>
+        )}
+
+        {!isBriefing && brief && briefTarget && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-violet-700">
+                Opening summary
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-slate-800">
+                {brief.opening_summary}
+              </p>
+            </div>
+
+            <BriefSection
+              icon={ClipboardList}
+              title="Key facts on record"
+              items={brief.key_facts}
+              tone="text-slate-600"
+            />
+
+            <div>
+              <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-brand-600">
+                <Scale className="h-3 w-3" />
+                Statutory position
+              </p>
+              <p className="mt-1.5 text-[11.5px] leading-relaxed text-slate-700">
+                {brief.statutory_position}
+              </p>
+            </div>
+
+            <BriefSection
+              icon={HelpCircle}
+              title="Questions the panel may ask"
+              items={brief.likely_questions}
+              tone="text-fuchsia-600"
+            />
+
+            <BriefSection
+              icon={Gavel}
+              title="Directions to seek"
+              items={brief.directions_to_seek}
+              tone="text-emerald-600"
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <BriefSection
+                icon={FileCheck2}
+                title="Documents ready"
+                items={brief.documents_ready}
+                tone="text-emerald-600"
+              />
+              <BriefSection
+                icon={FileWarning}
+                title="Documents pending"
+                items={brief.documents_pending}
+                tone="text-amber-600"
+              />
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* Reschedule modal */}
       <Modal

@@ -671,3 +671,158 @@ Return a JSON object with exactly these keys:
 
   return groqJson<ParsedSearchQuery>({ messages, temperature: 0.1, maxTokens: 1500 });
 }
+
+/* ── Hearing-prep brief ──────────────────────────────────────────────────── */
+
+export interface HearingBrief {
+  opening_summary: string;
+  key_facts: string[];
+  statutory_position: string;
+  likely_questions: string[];
+  directions_to_seek: string[];
+  documents_ready: string[];
+  documents_pending: string[];
+}
+
+/**
+ * Pre-hearing brief for a board sitting: grounded strictly in the file's
+ * record — description, SLA position, action history and coordination
+ * remarks. The officer walks into the sitting with a one-page brief; the
+ * model organises, it does not invent.
+ */
+export async function briefHearing(payload: {
+  caseCode: string;
+  category: string;
+  status: string;
+  bureau: string;
+  institutionName: string | null;
+  city: string | null;
+  state: string | null;
+  hearingDate: string;
+  description: string;
+  slaRemainingDays: number;
+  slaBreached: boolean;
+  actions: Array<{
+    action_type: string;
+    actor_bureau: string;
+    remarks: string;
+    timestamp: string;
+  }>;
+}): Promise<{
+  ok: boolean;
+  data?: HearingBrief;
+  disabled?: boolean;
+  error?: string;
+}> {
+  const actionLines =
+    payload.actions
+      .slice(0, 12)
+      .map(
+        (a) =>
+          `- [${a.timestamp.slice(0, 10)}] ${a.action_type} by ${a.actor_bureau}: ${a.remarks.slice(0, 220)}`
+      )
+      .join("\n") || "No recorded actions yet.";
+
+  const messages: GroqMessage[] = [
+    { role: "system", content: SYSTEM_PREFIX },
+    {
+      role: "user",
+      content: `Prepare the officer's brief for an upcoming AICTE hearing.
+
+File: ${payload.caseCode} (${payload.category}, bureau ${payload.bureau})
+Institution: ${payload.institutionName ?? "—"} (${payload.city ?? "—"}, ${payload.state ?? "—"})
+Hearing date: ${payload.hearingDate}
+Current status: ${payload.status}
+Statutory clock: ${payload.slaBreached ? `BREACHED — ${Math.abs(payload.slaRemainingDays)} days overdue` : `${payload.slaRemainingDays} days remaining of the statutory window`}
+
+Grievance:
+"""${payload.description.slice(0, 1600)}"""
+
+Action & coordination history (newest first):
+${actionLines}
+
+Return a JSON object with exactly these keys:
+- opening_summary: 2-3 sentences the presiding officer can open the sitting with
+- key_facts: array of 4-6 short factual bullets (dates, claims, actions taken) — no speculation
+- statutory_position: 2-3 sentences on where the file stands against the statutory timeline and what is still owed
+- likely_questions: array of 3-5 questions the hearing panel is likely to ask the bureau
+- directions_to_seek: array of 2-4 concrete directions the bureau should ask the panel to issue
+- documents_ready: array of document/record types already on file that support the case
+- documents_pending: array of document/record types still to be obtained before the sitting
+Keep every string grounded in the provided facts; mark anything unknown as "not on record".`,
+    },
+  ];
+
+  return groqJson<HearingBrief>({ messages, temperature: 0.3, maxTokens: 3500 });
+}
+
+/* ── Institution response analyzer ──────────────────────────────────────── */
+
+export type ResponseStance = "COMPLIANT" | "PARTIALLY_COMPLIANT" | "NON_COMPLIANT" | "EVASIVE";
+
+export interface ResponseAnalysis {
+  stance: ResponseStance;
+  stance_reason: string;
+  summary: string;
+  commitments: string[];
+  gaps: string[];
+  recommended_action: string;
+  urgency: "LOW" | "MEDIUM" | "HIGH";
+}
+
+/**
+ * Reads an institution's written compliance response against the grievance
+ * it answers, and classifies the stance: compliant, partially compliant,
+ * non-compliant, or evasive (acknowledging without committing). Deterministic
+ * inputs; the model only classifies and structures what is written.
+ */
+export async function analyzeInstitutionResponse(payload: {
+  caseCode: string;
+  category: string;
+  bureau: string;
+  institutionName: string | null;
+  status: string;
+  grievanceText: string;
+  responseText: string;
+}): Promise<{
+  ok: boolean;
+  data?: ResponseAnalysis;
+  disabled?: boolean;
+  error?: string;
+}> {
+  const messages: GroqMessage[] = [
+    { role: "system", content: SYSTEM_PREFIX },
+    {
+      role: "user",
+      content: `Analyze an institution's written response to an AICTE grievance.
+
+File: ${payload.caseCode} (${payload.category}, bureau ${payload.bureau})
+Institution: ${payload.institutionName ?? "—"}
+Desk status: ${payload.status}
+
+The grievance it answers:
+"""${payload.grievanceText.slice(0, 1400)}"""
+
+The institution's response to analyze:
+"""${payload.responseText.slice(0, 3000)}"""
+
+Classify the stance:
+- COMPLIANT: specific, verifiable remediation already done or dated commitments covering every demand
+- PARTIALLY_COMPLIANT: some demands addressed, others deferred or unanswered
+- NON_COMPLIANT: denies the grievance or refuses remediation outright
+- EVASIVE: acknowledges receipt but commits to nothing specific, blames others, or only promises "review"
+
+Return a JSON object with exactly these keys:
+- stance: one of COMPLIANT, PARTIALLY_COMPLIANT, NON_COMPLIANT, EVASIVE
+- stance_reason: 1-2 sentences citing what in the text drives the classification
+- summary: 2-3 sentence neutral summary of what the institution actually says
+- commitments: array of specific, dated or verifiable commitments found (empty if none)
+- gaps: array of grievances demands the response does not address
+- recommended_action: the single next step the bureau should take, grounded in the stance
+- urgency: LOW, MEDIUM or HIGH — how quickly the bureau must react
+Do not invent commitments or dates that are not in the response text.`,
+    },
+  ];
+
+  return groqJson<ResponseAnalysis>({ messages, temperature: 0.2, maxTokens: 3000 });
+}

@@ -138,6 +138,12 @@ export function Sidebar({
           icon: ChartSpline,
           active: pathname.startsWith("/reports"),
         },
+        {
+          name: "Registry Copilot",
+          href: "/copilot",
+          icon: Sparkles,
+          active: pathname.startsWith("/copilot"),
+        },
         ...(user.role === "ADMIN" || user.role === "COMPETENT_AUTHORITY"
           ? [
               {
