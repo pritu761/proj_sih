@@ -14,6 +14,7 @@ import {
   ScheduleHearingSchema,
   AddCaseCommentSchema,
   FieldVerificationSchema,
+  BulkUpdateCasesSchema,
 } from "@/lib/validations";
 import { SessionUser } from "@/lib/rbac";
 
@@ -49,6 +50,43 @@ export async function updateCaseStatusAction(data: {
     return { success: true, data: updated };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to update status." };
+  }
+}
+
+/**
+ * Bulk desk actions from the case explorer's table view: apply a status
+ * and/or priority change to the selected files in one pass. Authorization is
+ * enforced per case inside the repository — files outside the actor's bureau
+ * writ are skipped and reported back, never silently ignored.
+ */
+export async function bulkUpdateCasesAction(data: {
+  ids: string[];
+  patch: { status?: string; priority?: string };
+}) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  const parsed = BulkUpdateCasesSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const actor = session.user as unknown as SessionUser;
+    const result = await repository.bulkUpdateCases(
+      parsed.data.ids,
+      parsed.data.patch as any,
+      actor
+    );
+
+    revalidatePath("/dashboard");
+    revalidatePath("/cases");
+    revalidatePath("/workqueue");
+    return { success: true, data: result };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Bulk update failed." };
   }
 }
 

@@ -1,7 +1,11 @@
 "use server";
 
 import repository from "@/lib/services/repository";
-import { TrackCaseSchema, SubscribeCaseWatchSchema } from "@/lib/validations";
+import {
+  TrackCaseSchema,
+  SubscribeCaseWatchSchema,
+  SubmitFeedbackSchema,
+} from "@/lib/validations";
 import {
   checkLoginRateLimit,
   recordLoginFailure,
@@ -15,6 +19,7 @@ import {
  */
 const TRACK_PREFIX = "public-track:";
 const WATCH_PREFIX = "public-watch:";
+const FEEDBACK_PREFIX = "public-feedback:";
 
 export async function trackCaseAction(registryNo: string) {
   const parsed = TrackCaseSchema.safeParse({ registryNo });
@@ -90,5 +95,41 @@ export async function subscribeCaseWatchAction(data: {
       success: false as const,
       error: "Could not save the subscription right now. Please try again later.",
     };
+  }
+}
+
+/**
+ * Citizen feedback on the redressal of a closed grievance. Throttled per
+ * registry number like the tracker; stores only the rating and the optional
+ * comment against the case — no session, no personal profile. The latest
+ * submission wins, so citizens can revise their rating.
+ */
+export async function submitFeedbackAction(data: {
+  registryNo: string;
+  rating: number;
+  comment?: string;
+}) {
+  const parsed = SubmitFeedbackSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false as const, error: parsed.error.issues[0].message };
+  }
+
+  const throttleKey = `${FEEDBACK_PREFIX}${parsed.data.registryNo}`;
+  const limit = checkLoginRateLimit(throttleKey);
+  if (!limit.allowed) {
+    return {
+      success: false as const,
+      error: `Too many submissions for this registry number. Please retry in ${Math.ceil(limit.retryAfterMs / 60000)} minutes.`,
+    };
+  }
+
+  try {
+    const result = repository.submitPublicFeedback(parsed.data.registryNo, {
+      rating: parsed.data.rating,
+      comment: parsed.data.comment,
+    });
+    return { success: true as const, ...result };
+  } catch (err: any) {
+    return { success: false as const, error: err.message || "Could not record the feedback right now." };
   }
 }

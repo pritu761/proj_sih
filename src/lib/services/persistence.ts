@@ -99,6 +99,7 @@ const DATE_KEYS = new Set([
   "hearing_date",
   "merged_at",
   "updated_at",
+  "feedback_at",
 ]);
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})?$/;

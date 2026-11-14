@@ -839,6 +839,88 @@ export class ComplaintRepository {
   }
 
   /**
+   * Bulk desk actions from the case explorer's table view: apply a status
+   * and/or priority change to many files in one pass. Authorization is
+   * enforced per case (bureau writ applies); unauthorized or missing files
+   * are skipped and reported, never silently ignored. Every touched file
+   * gets its own timeline entry and audit record.
+   */
+  public async bulkUpdateCases(
+    ids: string[],
+    patch: { status?: "PENDING" | "UNDER_PROCESS" | "DISPOSED" | "TRANSFERRED" | "ESCALATED"; priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" },
+    actor: SessionUser
+  ): Promise<{
+    updated: Array<{ id: string; case_id: string; status: string; priority: string }>;
+    skipped: Array<{ id: string; case_id: string | null; reason: string }>;
+  }> {
+    const store = getInMemoryStore();
+    const updated: Array<{ id: string; case_id: string; status: string; priority: string }> = [];
+    const skipped: Array<{ id: string; case_id: string | null; reason: string }> = [];
+
+    for (const id of ids) {
+      const c = store.cases.find((item) => item.id === id || item.case_id === id);
+      if (!c) {
+        skipped.push({ id, case_id: null, reason: "Case not found." });
+        continue;
+      }
+      if (!canActOnCase(actor, c)) {
+        skipped.push({
+          id,
+          case_id: c.case_id,
+          reason: `Outside your bureau's writ (${c.assigned_bureau.replaceAll("_", " ")}).`,
+        });
+        continue;
+      }
+
+      const previous = { status: c.status, priority: c.priority };
+      const patchBits: string[] = [];
+
+      if (patch.status && patch.status !== c.status) {
+        c.status = patch.status;
+        patchBits.push(`status → ${patch.status}`);
+      }
+      if (patch.priority && patch.priority !== c.priority) {
+        c.priority = patch.priority;
+        patchBits.push(`priority → ${patch.priority}`);
+      }
+
+      if (patchBits.length === 0) {
+        skipped.push({ id, case_id: c.case_id, reason: "Already in the requested state." });
+        continue;
+      }
+
+      c.last_action = `Bulk desk action: ${patchBits.join(", ")}`;
+      c.last_action_date = new Date();
+
+      c.actions.unshift({
+        actor_user: actor.email,
+        actor_bureau: actor.bureau,
+        action_type: patch.status && patch.status !== previous.status ? (patch.status === "DISPOSED" ? "DISPOSED" : "STATUS_CHANGED") : "REMARK",
+        remarks: `Bulk desk action by ${actor.name} (${actor.bureau.replaceAll("_", " ")}): ${patchBits.join(", ")}.`,
+        timestamp: new Date(),
+        attachments: [],
+      });
+
+      await logAuditEvent({
+        user: actor.email,
+        action: "BULK_UPDATE_CASE",
+        entity: "Case",
+        entity_id: c.case_id,
+        before: previous,
+        after: { status: c.status, priority: c.priority },
+      });
+
+      updated.push({ id: c.id, case_id: c.case_id, status: c.status, priority: c.priority });
+    }
+
+    if (updated.length > 0) {
+      markStoreDirty();
+    }
+
+    return { updated, skipped };
+  }
+
+  /**
    * Action: Transfer Case to Another Bureau
    */
   public async transferCase(
@@ -2635,6 +2717,47 @@ export class ComplaintRepository {
       sla_status: sla.statusText,
       last_action: c.last_action,
       timeline,
+      // Citizen feedback loop — the complainant's own rating of the redressal.
+      feedback_rating: typeof c.feedback_rating === "number" ? c.feedback_rating : null,
+      feedback_comment: c.feedback_comment ?? null,
+      feedback_at: c.feedback_at ?? null,
+    };
+  }
+
+  /**
+   * Citizen feedback on the redressal of a closed grievance ("how well was
+   * your grievance handled?"). Only DISPOSED files accept feedback; the
+   * latest submission wins (a citizen may revise their rating). Stored on
+   * the canonical case record — no personal data, no session required.
+   */
+  public submitPublicFeedback(
+    registryNo: string,
+    input: { rating: number; comment?: string }
+  ): { ok: true; rating: number; comment: string | null; submittedAt: string } {
+    const store = getInMemoryStore();
+    const key = registryNo.trim().toUpperCase();
+    const c = store.cases.find((item) => item.case_id.toUpperCase() === key);
+    if (!c) {
+      throw new Error(`No grievance is registered under ${registryNo}.`);
+    }
+    if (c.status !== "DISPOSED") {
+      throw new Error(
+        "Feedback can be shared once the grievance is disposed (redressal completed)."
+      );
+    }
+
+    const submittedAt = new Date();
+    c.feedback_rating = input.rating;
+    c.feedback_comment = input.comment?.trim() || undefined;
+    c.feedback_at = submittedAt;
+
+    markStoreDirty();
+
+    return {
+      ok: true,
+      rating: input.rating,
+      comment: c.feedback_comment ?? null,
+      submittedAt: submittedAt.toISOString(),
     };
   }
 
@@ -2818,6 +2941,21 @@ export class ComplaintRepository {
       disposed: flow.get(m.key)!.disposed,
     }));
 
+    // ── Quality of redressal (citizen feedback loop) ──
+    const rated = cases.filter((c: any) => typeof c.feedback_rating === "number");
+    const ratingSum = rated.reduce((s: number, c: any) => s + (c.feedback_rating ?? 0), 0);
+    const avgFeedback = rated.length
+      ? Math.round((ratingSum / rated.length) * 10) / 10
+      : 0;
+    const satisfiedCount = rated.filter((c: any) => (c.feedback_rating ?? 0) >= 4).length;
+    const satisfactionRate = rated.length
+      ? Math.round((satisfiedCount / rated.length) * 100)
+      : 0;
+    const ratingMix = [5, 4, 3, 2, 1].map((stars) => ({
+      stars,
+      count: rated.filter((c: any) => c.feedback_rating === stars).length,
+    }));
+
     return {
       total,
       disposed: disposedCases.length,
@@ -2830,6 +2968,10 @@ export class ComplaintRepository {
       perCategory,
       perRegion,
       monthly,
+      feedbackCount: rated.length,
+      avgFeedback,
+      satisfactionRate,
+      ratingMix,
     };
   }
 

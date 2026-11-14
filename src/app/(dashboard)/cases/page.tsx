@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ExportCsvButton } from "@/components/cases/export-csv-button";
 import { AiFilterBar } from "@/components/cases/AiFilterBar";
 import { SavedViews } from "@/components/cases/SavedViews";
+import { CasesBulkTable } from "@/components/cases/CasesBulkTable";
 import { cn } from "@/lib/utils";
 
 interface CasesPageProps {
@@ -436,7 +437,7 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
               </div>
             ))}
           </div>
-        ) : (
+        ) : user.role === "REGIONAL_OFFICER" ? (
           <div className="overflow-x-auto">
             <table className="data-table">
               <thead>
@@ -525,6 +526,8 @@ export default async function CasesPage({ searchParams }: CasesPageProps) {
               </tbody>
             </table>
           </div>
+        ) : (
+          <CasesBulkTable cases={data.cases as any} currentUser={user} />
         )}
 
         {data.totalPages > 1 && (

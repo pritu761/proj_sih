@@ -377,12 +377,29 @@ const trackEn = {
     privacy:
       "Only the registry number and your email are stored. Unsubscribe by replying to any notification. This demo deployment does not send live email.",
   },
+  feedback: {
+    heading: "How well was your grievance redressed?",
+    sub: "Your feedback goes straight into the Council's published quality-of-redressal statistics. Rating the redressal takes a minute — no sign-in, no personal data.",
+    rateLabel: "Tap a star to rate the redressal (1 = poor, 5 = excellent)",
+    commentLabel: "Anything to add? (optional)",
+    commentPlaceholder: "What went well, or what could the Council improve…",
+    submit: "Share feedback",
+    submitting: "Recording…",
+    update: "Update feedback",
+    recordedLabel: "Your feedback is recorded",
+    recordedNote: (date: string) => `Last recorded ${date}. You can revise it below.`,
+    thankYou: "Thank you — your rating is now part of this grievance's public record.",
+    notDisposed:
+      "Feedback opens once the grievance is disposed (redressal completed). You will be able to rate it then.",
+    privacy: "Only the rating and this note are stored against the registry number — no name, no email, no profile.",
+  },
   footer: {
     note: "AICTE public grievance disclosure · Demonstration deployment seeded with synthetic data.",
   },
   errors: {
     lookupFail: "Lookup failed. Please try again.",
     subscribeFail: "Could not subscribe right now. Please try again later.",
+    feedbackFail: "Could not record the feedback right now. Please try again later.",
   },
 };
 
@@ -435,14 +452,137 @@ const trackHi: typeof trackEn = {
     privacy:
       "केवल पंजिका संख्या और आपका ईमेल संग्रहित होता है। किसी भी सूचना का उत्तर देकर सदस्यता हटाएँ। यह डेमो लाइव ईमेल नहीं भेजता।",
   },
+  feedback: {
+    heading: "आपकी शिकायत कितनी अच्छी तरह निपटाई गई?",
+    sub: "आपकी प्रतिक्रिया सीधे परिषद के प्रकाशित निपटान-गुणवत्ता आंकड़ों में जुड़ती है। एक मिनट में रेटिंग दें — न साइन-इन, न व्यक्तिगत डेटा।",
+    rateLabel: "निपटान की रेटिंग देने के लिए तारा चुनें (1 = खराब, 5 = उत्कृष्ट)",
+    commentLabel: "और कुछ बताना चाहेंगे? (वैकल्पिक)",
+    commentPlaceholder: "क्या अच्छा लगा, या परिषद क्या सुधार कर सकती है…",
+    submit: "प्रतिक्रिया भेजें",
+    submitting: "दर्ज हो रहा है…",
+    update: "प्रतिक्रिया अद्यतन करें",
+    recordedLabel: "आपकी प्रतिक्रिया दर्ज हो गई है",
+    recordedNote: (date: string) => `अंतिम रूप से ${date} को दर्ज। नीचे से आप इसे बदल सकते हैं।`,
+    thankYou: "धन्यवाद — आपकी रेटिंग अब इस शिकायत के सार्वजनिक रिकॉर्ड का हिस्सा है।",
+    notDisposed:
+      "प्रतिक्रिया तब खुलेगी जब शिकायत निपटाई (निस्तारित) जा चुकी होगी। तब आप इसे रेट कर सकेंगे।",
+    privacy: "पंजिका संख्या के साथ केवल रेटिंग और यह टिप्पणी संग्रहित होती है — नाम, ईमेल या प्रोफ़ाइल नहीं।",
+  },
   footer: {
     note: "AICTE सार्वजनिक शिकायत प्रकटीकरण · सिंथेटिक डेटा वाला प्रदर्शन डिप्लॉयमेंट।",
   },
   errors: {
     lookupFail: "लुकअप विफल। कृपया पुनः प्रयास करें।",
     subscribeFail: "अभी सदस्यता नहीं ले सकते। कृपया पुनः प्रयास करें।",
+    feedbackFail: "प्रतिक्रिया अभी दर्ज नहीं हो सकी। कृपया पुनः प्रयास करें।",
   },
 };
 
 export const track = { en: trackEn, hi: trackHi };
 export type TrackDict = typeof trackEn;
+
+/* ── Public transparency page ────────────────────────────────────────────── */
+
+const transparencyEn = {
+  header: {
+    goi: "Government of India",
+    trackCta: "Track a grievance",
+  },
+  hero: {
+    eyebrow: "Statutory disclosure · Updated live",
+    title: "The numbers behind every grievance.",
+    sub: "How much grievance traffic AICTE receives, how fast the Council disposes cases, and where the pressure sits — published openly, no sign-in required.",
+  },
+  kpis: {
+    received: { label: "Grievances received", sub: "since the registry opened" },
+    disposed: { label: "Disposed", sub: "redressal completed" },
+    disposalRate: { label: "Disposal rate", sub: "of all registered cases" },
+    avgResolution: { label: "Avg resolution", sub: "received → disposed" },
+    inProcess: { label: "In process", sub: "open across bureaus" },
+    breached: { label: "SLA breached", sub: "past statutory deadline" },
+  },
+  monthly: {
+    heading: "Grievances received vs disposed · last 6 months",
+    received: "Received",
+    disposed: "Disposed",
+  },
+  categories: { heading: "Disposal by grievance category" },
+  regions: {
+    heading: "Volume by regional office",
+    disposedOf: (disposed: number, received: number) => `${disposed}/${received} disposed`,
+    regionSuffix: " region",
+    escalatedNote: (escalated: number, transferred: number) =>
+      `${escalated} escalated to the competent authority · ${transferred} transferred between bureaus for coordinated handling.`,
+  },
+  quality: {
+    heading: "Quality of redressal — citizens' verdict",
+    sub: "After a grievance is disposed, its complainant can rate the redressal from the public tracker. These ratings come straight from that feedback loop.",
+    avgLabel: "Average rating",
+    satisfactionLabel: "Rated 4+ of 5",
+    countLabel: "Ratings received",
+    distributionLabel: "Rating distribution",
+    empty:
+      "No citizen ratings have been recorded yet. Ratings appear here as disposed grievances receive feedback through the tracker.",
+  },
+  cta: {
+    title: "Filed a grievance with the Council?",
+    sub: "Follow its journey through the statutory process with the registry number on your acknowledgement slip.",
+    button: "Track your grievance",
+  },
+  footer: {
+    note: "AICTE public grievance disclosure · Demonstration deployment seeded with synthetic data.",
+  },
+};
+
+const transparencyHi: typeof transparencyEn = {
+  header: {
+    goi: "भारत सरकार",
+    trackCta: "शिकायत ट्रैक करें",
+  },
+  hero: {
+    eyebrow: "वैधानिक प्रकटीकरण · लाइव अद्यतन",
+    title: "हर शिकायत के पीछे के आंकड़े।",
+    sub: "AICTE को कितनी शिकायतें मिलती हैं, परिषद उन्हें कितनी तेज़ी से निपटाती है, और दबाव कहाँ है — पूरी तरह खुला, बिना साइन-इन।",
+  },
+  kpis: {
+    received: { label: "प्राप्त शिकायतें", sub: "पंजिका खुलने से अब तक" },
+    disposed: { label: "निस्तारित", sub: "निपटान पूर्ण" },
+    disposalRate: { label: "निस्तारण दर", sub: "सभी दर्ज मामलों में" },
+    avgResolution: { label: "औसत अवधि", sub: "प्राप्ति → निस्तारण" },
+    inProcess: { label: "प्रक्रिया में", sub: "विभिन्न प्रकोष्ठों में खुले" },
+    breached: { label: "SLA उल्लंघित", sub: "वैधानिक समय-सीमा के बाद" },
+  },
+  monthly: {
+    heading: "प्राप्त बनाम निस्तारित शिकायतें · पिछले 6 महीने",
+    received: "प्राप्त",
+    disposed: "निस्तारित",
+  },
+  categories: { heading: "शिकायत श्रेणी अनुसार निस्तारण" },
+  regions: {
+    heading: "क्षेत्रीय कार्यालय अनुसार मात्रा",
+    disposedOf: (disposed: number, received: number) => `${received} में ${disposed} निस्तारित`,
+    regionSuffix: " क्षेत्र",
+    escalatedNote: (escalated: number, transferred: number) =>
+      `${escalated} सक्षम प्राधिकारी को अधिरोहित · ${transferred} समन्वित निपटान हेतु प्रकोष्ठों के बीच स्थानांतरित।`,
+  },
+  quality: {
+    heading: "निपटान की गुणवत्ता — नागरिकों का निर्णय",
+    sub: "शिकायत निस्तारित होने के बाद शिकायतकर्ता सार्वजनिक ट्रैकर से निपटान को रेट कर सकता है। ये रेटिंग सीधे उसी प्रतिक्रिया चक्र से आती हैं।",
+    avgLabel: "औसत रेटिंग",
+    satisfactionLabel: "5 में 4+ रेट",
+    countLabel: "प्राप्त रेटिंग",
+    distributionLabel: "रेटिंग वितरण",
+    empty:
+      "अभी कोई नागरिक रेटिंग दर्ज नहीं हुई है। ट्रैकर के जरिए निस्तारित शिकायतों पर प्रतिक्रिया मिलने पर रेटिंग यहाँ दिखेंगी।",
+  },
+  cta: {
+    title: "परिषद में शिकायत दर्ज कराई है?",
+    sub: "पावती पर्ची पर छपी पंजिका संख्या से वैधानिक प्रक्रिया में इसकी यात्रा देखें।",
+    button: "अपनी शिकायत ट्रैक करें",
+  },
+  footer: {
+    note: "AICTE सार्वजनिक शिकायत प्रकटीकरण · सिंथेटिक डेटा वाला प्रदर्शन डिप्लॉयमेंट।",
+  },
+};
+
+export const transparency = { en: transparencyEn, hi: transparencyHi };

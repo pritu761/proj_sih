@@ -36,6 +36,10 @@ export interface SeedCase {
   complainant_contact?: string;
   language?: string;
   hearing_date?: Date | null;
+  /** Citizen feedback on the redressal (public tracker, DISPOSED files). */
+  feedback_rating?: number;
+  feedback_comment?: string;
+  feedback_at?: Date | null;
   actions: {
     actor_user: string;
     actor_bureau: string;
@@ -726,6 +730,43 @@ export function generateSeedData() {
         hearing_date: hearingDate,
         actions,
       };
+
+      // ── Citizen feedback on the redressal, for a slice of closed files ──
+      // Ratings are seeded deterministically so the transparency page's
+      // "quality of redressal" metric has data on a cold boot. Demo track
+      // numbers stay untouched (they are open files).
+      if (status === "DISPOSED" && currentCaseNum % 3 === 0 && currentCaseNum !== 101 && currentCaseNum !== 42) {
+        const ratings = [5, 4, 4, 3, 5, 2, 4, 1, 5, 4, 3, 5];
+        const rating = ratings[(currentCaseNum / 3) % ratings.length];
+        const feedbackComments: Record<number, string[]> = {
+          5: [
+            "Grievance was redressed fully and the refund reached my account. Very satisfied with the process.",
+            "Council acted on time, the compliance order was clear, and the institution complied quickly.",
+          ],
+          4: [
+            "Issue was resolved, though the update on the tracker came a little late.",
+            "Redressal order was fair; the process took slightly longer than expected.",
+          ],
+          3: [
+            "Partial relief was given. The main demand was addressed but one point remains open.",
+            "Order was issued, but I am still waiting for the institution to implement it fully.",
+          ],
+          2: [
+            "Only an acknowledgment was received; the actual relief is still awaited.",
+            "The order directed the institution to act, but there is no follow-up visible yet.",
+          ],
+          1: [
+            "The grievance was closed without the relief I sought. Considering a fresh representation.",
+            "The disposal order did not address the core grievance.",
+          ],
+        };
+        const pool = feedbackComments[rating];
+        generatedCase.feedback_rating = rating;
+        generatedCase.feedback_comment = pool[(currentCaseNum + rating) % pool.length];
+        generatedCase.feedback_at = new Date(
+          lastActionDate.getTime() + 2 * 86400000
+        );
+      }
 
       cases.push(generatedCase);
 

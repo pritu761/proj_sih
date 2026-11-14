@@ -70,6 +70,38 @@ export const MergeOverlapSchema = z.object({
     .min(10, "Provide a merge justification of at least 10 characters"),
 });
 
+export const SubmitFeedbackSchema = z.object({
+  registryNo: z
+    .string()
+    .min(6, "Registry number is required")
+    .max(40, "Registry number looks too long"),
+  rating: z
+    .number({ message: "Pick a rating from 1 to 5 stars" })
+    .int()
+    .min(1, "Pick a rating from 1 to 5 stars")
+    .max(5, "Pick a rating from 1 to 5 stars"),
+  comment: z
+    .string()
+    .max(600, "Keep the comment under 600 characters")
+    .optional(),
+});
+
+export const BulkUpdateCasesSchema = z.object({
+  ids: z
+    .array(z.string().min(1))
+    .min(1, "Select at least one case")
+    .max(50, "Bulk actions are limited to 50 cases at a time"),
+  patch: z
+    .object({
+      status: CaseStatusEnum.optional(),
+      priority: CasePriorityEnum.optional(),
+    })
+    .refine(
+      (p) => p.status !== undefined || p.priority !== undefined,
+      { message: "Choose a status or a priority to apply" }
+    ),
+});
+
 export const MergeSuggestionActionSchema = z.object({
   pairKey: z.string().min(1, "Suggestion pair is required"),
   masterCaseId: z.string().min(1, "Select the master docket"),

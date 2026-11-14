@@ -20,11 +20,17 @@ import {
   MailPlus,
   Loader2,
   Users,
+  Star,
+  MessageSquareQuote,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LangProvider, useLang, LanguageToggle } from "@/components/ui/language";
 import { track } from "@/lib/i18n";
-import { trackCaseAction, subscribeCaseWatchAction } from "@/actions/track-actions";
+import {
+  trackCaseAction,
+  subscribeCaseWatchAction,
+  submitFeedbackAction,
+} from "@/actions/track-actions";
 import { StatusPill } from "@/components/ui/badges";
 import { TextReveal } from "@/components/ui/text-reveal";
 import { ProgressRing } from "@/components/ui/progress-ring";
@@ -49,6 +55,10 @@ interface TrackingResult {
     remarks: string;
     timestamp: Date | string;
   }[];
+  /** Citizen feedback on the redressal (present once submitted). */
+  feedback_rating?: number | null;
+  feedback_comment?: string | null;
+  feedback_at?: string | Date | null;
 }
 
 const DEMO_REGISTRY_CODES = ["AICTE/PGRC/2026/00101", "AICTE/RB/2026/00042"];
@@ -98,6 +108,18 @@ function TrackClientContent() {
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState("");
 
+  // Citizen feedback on the redressal (DISPOSED files only)
+  const [fbRating, setFbRating] = useState(0);
+  const [fbHover, setFbHover] = useState(0);
+  const [fbComment, setFbComment] = useState("");
+  const [fbSubmitted, setFbSubmitted] = useState<{
+    rating: number;
+    comment: string | null;
+    at: string;
+  } | null>(null);
+  const [isSendingFeedback, setIsSendingFeedback] = useState(false);
+  const [feedbackError, setFeedbackError] = useState("");
+
   const handleTrack = async (code?: string) => {
     const target = (code ?? registryNo).trim();
     if (target.length < 10) {
@@ -121,6 +143,38 @@ function TrackClientContent() {
     setWatchDone(false);
     setWatchEmail("");
     setWatchError("");
+    // Reset (and prefill) the redressal feedback form for this file.
+    setFbRating(res.tracking?.feedback_rating ?? 0);
+    setFbHover(0);
+    setFbComment(res.tracking?.feedback_comment ?? "");
+    setFbSubmitted(
+      res.tracking?.feedback_rating
+        ? {
+            rating: res.tracking.feedback_rating,
+            comment: res.tracking.feedback_comment ?? null,
+            at: String(res.tracking.feedback_at ?? ""),
+          }
+        : null
+    );
+    setIsSendingFeedback(false);
+    setFeedbackError("");
+  };
+
+  const handleSendFeedback = async () => {
+    if (!result || fbRating < 1) return;
+    setIsSendingFeedback(true);
+    setFeedbackError("");
+    const res = await submitFeedbackAction({
+      registryNo: result.registry_no,
+      rating: fbRating,
+      comment: fbComment.trim() || undefined,
+    });
+    setIsSendingFeedback(false);
+    if (!res.success) {
+      setFeedbackError(res.error || t.errors.feedbackFail);
+      return;
+    }
+    setFbSubmitted({ rating: res.rating, comment: res.comment, at: res.submittedAt });
   };
 
   const handleSubscribe = async () => {
@@ -467,6 +521,129 @@ function TrackClientContent() {
                 </p>
               </div>
             </Reveal>
+
+            {/* Citizen feedback on the redressal (DISPOSED files only) */}
+            {result.status === "DISPOSED" && (
+              <Reveal delay={260}>
+                <div className="no-print rounded-2xl border border-saffron-400/25 bg-saffron-400/[0.06] p-5 backdrop-blur-2xl">
+                  <p className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-saffron-300">
+                    <MessageSquareQuote className="h-3.5 w-3.5" />
+                    {t.feedback.heading}
+                  </p>
+                  <p className="mt-1.5 text-[11.5px] leading-relaxed text-white/60">
+                    {t.feedback.sub}
+                  </p>
+
+                  {fbSubmitted && (
+                    <p className="mt-3 flex items-start gap-2 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-3 py-2.5 text-[11px] font-bold text-emerald-300">
+                      <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>
+                        {t.feedback.recordedLabel} ·{" "}
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "inline h-3 w-3",
+                              i < fbSubmitted.rating ? "fill-saffron-400 text-saffron-400" : "text-white/20"
+                            )}
+                          />
+                        ))}
+                        <br />
+                        <span className="font-semibold text-emerald-200/80">
+                          {fbSubmitted.at
+                            ? t.feedback.recordedNote(
+                                new Date(fbSubmitted.at).toLocaleDateString(lang === "hi" ? "hi-IN" : "en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                              )
+                            : t.feedback.thankYou}
+                        </span>
+                      </span>
+                    </p>
+                  )}
+
+                  <div className="mt-4">
+                    <p className="text-[10.5px] font-semibold text-white/45">{t.feedback.rateLabel}</p>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          aria-label={`${star} star${star === 1 ? "" : "s"}`}
+                          onMouseEnter={() => setFbHover(star)}
+                          onMouseLeave={() => setFbHover(0)}
+                          onClick={() => setFbRating(star)}
+                          className="active:scale-90 transition-transform duration-150"
+                        >
+                          <Star
+                            className={cn(
+                              "h-7 w-7 transition-colors duration-150",
+                              (fbHover || fbRating) >= star
+                                ? "fill-saffron-400 text-saffron-400"
+                                : "text-white/25"
+                            )}
+                          />
+                        </button>
+                      ))}
+                      {fbRating > 0 && (
+                        <span className="ml-2 text-[11px] font-bold text-saffron-300">
+                          {fbRating}/5
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <label
+                      htmlFor="feedback-comment"
+                      className="text-[10.5px] font-semibold text-white/45"
+                    >
+                      {t.feedback.commentLabel}
+                    </label>
+                    <textarea
+                      id="feedback-comment"
+                      value={fbComment}
+                      onChange={(e) => setFbComment(e.target.value)}
+                      rows={3}
+                      maxLength={600}
+                      placeholder={t.feedback.commentPlaceholder}
+                      className="mt-1.5 w-full rounded-xl border border-white/15 bg-ink-900/60 px-3 py-2.5 text-[11.5px] font-medium text-white placeholder:text-white/25 transition-all duration-300 focus:border-saffron-400/60 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSendFeedback}
+                      disabled={fbRating < 1 || isSendingFeedback}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-saffron-400 px-4 py-2.5 text-[11px] font-extrabold text-ink-950 transition-all duration-300 hover:bg-saffron-300 active:scale-[0.97] disabled:opacity-50"
+                    >
+                      {isSendingFeedback ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Star className="h-3.5 w-3.5" />
+                      )}
+                      {isSendingFeedback
+                        ? t.feedback.submitting
+                        : fbSubmitted
+                          ? t.feedback.update
+                          : t.feedback.submit}
+                    </button>
+                    <p className="text-[10px] leading-relaxed text-white/30">
+                      {t.feedback.privacy}
+                    </p>
+                  </div>
+
+                  {feedbackError && (
+                    <p role="alert" className="mt-2 text-[10.5px] font-semibold text-rose-300">
+                      {feedbackError}
+                    </p>
+                  )}
+                </div>
+              </Reveal>
+            )}
           </div>
         )}
       </main>
