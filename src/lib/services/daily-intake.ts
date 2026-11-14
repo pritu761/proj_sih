@@ -14,9 +14,9 @@ import { markStoreDirty, type StoreState } from "./persistence";
  * (6-10 files), so dashboards, SLA watches and the AI surfaces show a
  * portfolio that visibly grows day after day. Where GROQ_API_KEY is
  * configured, the day's narratives are *written by the LLM* (one JSON
- * batch call on the intake's DEDICATED model — qwen/qwen3.8-27b — so the
- * intake never competes with the interactive AI features for the same
- * model's rate-limit bucket; override with GROQ_INTAKE_MODEL). Without a
+ * batch call on the intake's DEDICATED model — openai/gpt-oss-20b — so
+ * the intake never competes with the interactive AI features for the
+ * same model's rate-limit bucket; override with GROQ_INTAKE_MODEL). Without a
  * key — or on any API failure — the engine falls back to deterministic
  * local templates, so the demo never stalls.
  *
@@ -131,29 +131,45 @@ function pick<T>(items: readonly T[]): T {
 async function generateNarratives(
   count: number
 ): Promise<{ list: GroqComplaint[]; usedGroq: boolean }> {
-  const result = await groqJson<{ complaints?: GroqComplaint[] }>({
-    model: process.env.GROQ_INTAKE_MODEL ?? "qwen/qwen3.8-27b",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You write synthetic complaints for AICTE Sentinel, a demonstration grievance-monitoring environment for Indian technical education. " +
-          "Every complaint must concern exactly ONE of these categories: " +
-          CATEGORIES.map((c) => `"${c}"`).join(", ") +
-          ". " +
-          "Style: 45-80 words, factual and specific (amounts in Rs, seat counts, departments, dates). Do NOT invent an institution name inside the text — refer only to 'the institution'; the registry attaches the institution separately. " +
-          'Output JSON only: {"complaints":[{"category":"<one of the categories>","description":"<text>","source":"student|faculty|stakeholder|public","language":"en|hi|ta"}]}',
-      },
-      {
-        role: "user",
-        content: `Write ${count} distinct grievances filed today. Vary the categories (no repeats unless unavoidable), vary the complainant type, and make at most one complaint in Hindi (Devanagari script, language "hi").`,
-      },
-    ],
-    temperature: 0.75,
-    maxTokens: 3000,
-  });
+  const model = process.env.GROQ_INTAKE_MODEL ?? "openai/gpt-oss-20b";
+  const buildCall = (batchCount: number) =>
+    groqJson<{ complaints?: GroqComplaint[] }>({
+      model,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write synthetic complaints for AICTE Sentinel, a demonstration grievance-monitoring environment for Indian technical education. " +
+            "Every complaint must concern exactly ONE of these categories: " +
+            CATEGORIES.map((c) => `"${c}"`).join(", ") +
+            ". " +
+            "Style: 45-80 words, factual and specific (amounts in Rs, seat counts, departments, dates). Do NOT invent an institution name inside the text — refer only to 'the institution'; the registry attaches the institution separately. " +
+            'Output JSON only: {"complaints":[{"category":"<one of the categories>","description":"<text>","source":"student|faculty|stakeholder|public","language":"en|hi|ta"}]}',
+        },
+        {
+          role: "user",
+          content: `Write ${batchCount} distinct grievances filed today. Vary the categories (no repeats unless unavoidable), vary the complainant type, and make at most one complaint in Hindi (Devanagari script, language "hi").`,
+        },
+      ],
+      temperature: 0.75,
+      // Reasoning models spend completion tokens on internal thinking before
+      // the JSON lands; a batch can legitimately exceed 3000 tokens and get
+      // truncated mid-JSON (Groq then rejects it with json_validate_failed).
+      // Intake is a background job — give it real headroom.
+      maxTokens: 8000,
+    });
 
-  const list = (result.ok ? result.data?.complaints : undefined) ?? [];
+  // One bounded retry with a smaller batch: a failed attempt (truncation,
+  // transient 4xx) falls back to fewer AI narratives rather than zero — the
+  // deterministic filler covers whatever is still missing.
+  const callFailure = { ok: false, data: undefined, error: "network" } as const;
+  let result = await buildCall(count).catch(() => callFailure);
+  if (!result.ok) {
+    console.warn(`[intake] Groq batch failed: ${result.error} — retrying with a smaller batch.`);
+    result = await buildCall(Math.max(3, Math.ceil(count / 2))).catch(() => callFailure);
+  }
+
+  const list: GroqComplaint[] = result.data?.complaints ?? [];
   const cleaned = list
     .filter((c) => typeof c.description === "string" && c.description.trim().length >= 40)
     .slice(0, count)
@@ -163,9 +179,11 @@ async function generateNarratives(
       source: SOURCES.includes((c.source ?? "") as SourceKey) ? c.source : undefined,
       language: ["en", "hi", "ta"].includes(c.language ?? "") ? c.language : undefined,
     }));
+  console.info(
+    `[intake] ${cleaned.length}/${count} narratives via ${result.ok ? `Groq (${model})` : "deterministic fallback"}`
+  );
   return { list: cleaned, usedGroq: result.ok && cleaned.length > 0 };
 }
-
 /** Fill any shortfall with local deterministic narratives. The {inst}
  *  placeholder is resolved against each case's actual institution at build
  *  time, so the narrative always matches the file it lands on. */

@@ -87,8 +87,8 @@ export async function groqChat(options: GroqChatOptions): Promise<GroqChatResult
     ...(options.jsonMode ? { response_format: { type: "json_object" } } : {}),
   };
 
-  try {
-    const res = await fetch(BASE_URL, {
+  const attempt = (): Promise<Response> =>
+    fetch(BASE_URL, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -98,6 +98,19 @@ export async function groqChat(options: GroqChatOptions): Promise<GroqChatResult
       // Server-side (Node) runtime. Abort after 30s so a slow model never hangs a request.
       signal: AbortSignal.timeout(30000),
     });
+
+  try {
+    let res = await attempt();
+
+    // Free-tier bursts can trip the per-minute request cap (e.g. scheduled
+    // jobs colliding). Honor the server's Retry-After and retry exactly once
+    // instead of surfacing a rate-limit error.
+    if (res.status === 429) {
+      const retryAfter = Number(res.headers.get("retry-after"));
+      const waitMs = Math.min(2000, Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 1000);
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+      res = await attempt();
+    }
 
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
