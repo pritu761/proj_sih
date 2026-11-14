@@ -83,10 +83,28 @@ interface SnapshotPayload {
 
 type SnapshotProvider = () => { store: StoreState; auditLogs: AuditEntry[]; isDirtyAtHydration?: boolean } | null;
 
-let provider: SnapshotProvider | null = null;
-let hydrationComplete = false;
-let mutatedDuringHydration = false;
-let flushTimer: ReturnType<typeof setTimeout> | null = null;
+/**
+ * Runtime state, anchored on globalThis. Next.js bundles shared server
+ * modules once per layer (page renders, route handlers, server actions), and
+ * a plain module-level copy would leave some layers holding `provider = null`
+ * — mutations from those layers would then silently skip persistence. The
+ * repository's store, the Prisma client and the audit ledger are anchored the
+ * same way for exactly this reason.
+ */
+interface SnapshotRuntime {
+  provider: SnapshotProvider | null;
+  hydrationComplete: boolean;
+  mutatedDuringHydration: boolean;
+  flushTimer: ReturnType<typeof setTimeout> | null;
+}
+
+const globalSnap = globalThis as unknown as { __sentinelSnap?: SnapshotRuntime };
+const snap: SnapshotRuntime = (globalSnap.__sentinelSnap ??= {
+  provider: null,
+  hydrationComplete: false,
+  mutatedDuringHydration: false,
+  flushTimer: null,
+});
 
 const DATE_KEYS = new Set([
   "timestamp",
@@ -133,24 +151,46 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
+/**
+ * Neon (free tier) auto-suspends an idle database; the first query after a
+ * suspension pays the wake-up cost, which measured ~2s. Budgets are generous
+ * so a wake is never misread as an unreachable database, and every op gets
+ * one retry — the first attempt triggers the wake, the retry lands warm.
+ */
+const HYDRATE_TIMEOUT_MS = 10_000;
+const PERSIST_TIMEOUT_MS = 20_000;
+
+async function withRetry<T>(op: () => Promise<T>, ms: number): Promise<T> {
+  try {
+    return await withTimeout(op(), ms);
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    return await withTimeout(op(), ms);
+  }
+}
+
+function describeError(err: unknown): string {
+  return (err as { message?: string })?.message || String(err);
+}
+
 /** The repository registers its live store so persistence never imports it back. */
 export function registerSnapshotSource(source: SnapshotProvider): void {
-  provider = source;
+  snap.provider = source;
 }
 
 /** Schedules a write-behind snapshot flush (batched, at most one per window). */
 export function markStoreDirty(): void {
-  if (!hydrationComplete) mutatedDuringHydration = true;
-  if (!provider || flushTimer) return;
-  flushTimer = setTimeout(() => {
-    flushTimer = null;
+  if (!snap.hydrationComplete) snap.mutatedDuringHydration = true;
+  if (!snap.provider || snap.flushTimer) return;
+  snap.flushTimer = setTimeout(() => {
+    snap.flushTimer = null;
     void persistSnapshot();
   }, 2000);
 }
 
 export async function persistSnapshot(): Promise<void> {
-  if (!provider) return;
-  const snapshot = provider();
+  if (!snap.provider) return;
+  const snapshot = snap.provider();
   if (!snapshot) return;
   const payload: SnapshotPayload = {
     version: SNAPSHOT_VERSION,
@@ -158,18 +198,20 @@ export async function persistSnapshot(): Promise<void> {
     auditLogs: snapshot.auditLogs,
   };
   try {
-    await withTimeout(
-      prisma.appStateSnapshot.upsert({
-        where: { id: "singleton" },
-        update: { data: payload as object },
-        create: { id: "singleton", data: payload as object },
-      }),
-      4000
+    await withRetry(
+      () =>
+        prisma.appStateSnapshot.upsert({
+          where: { id: "singleton" },
+          update: { data: payload as object },
+          create: { id: "singleton", data: payload as object },
+        }),
+      PERSIST_TIMEOUT_MS
     );
-  } catch {
-    // No reachable database (demo mode). The in-memory store remains the
-    // authoritative source and the UI keeps working untouched.
-    console.debug("Snapshot persistence skipped (database unreachable).");
+    console.debug("[snapshot] persisted store to database.");
+  } catch (err) {
+    // The in-memory store remains the authoritative source and the UI keeps
+    // working untouched; surface the real reason instead of a generic label.
+    console.warn(`[snapshot] persist skipped: ${describeError(err)}`);
   }
 }
 
@@ -182,37 +224,40 @@ export async function hydrateFromSnapshot(
   store: StoreState,
   auditLogs: AuditEntry[]
 ): Promise<void> {
+  let row: Awaited<ReturnType<typeof prisma.appStateSnapshot.findUnique>>;
   try {
-    const row = await withTimeout(
-      prisma.appStateSnapshot.findUnique({ where: { id: "singleton" } }),
-      2500
+    row = await withRetry(
+      () => prisma.appStateSnapshot.findUnique({ where: { id: "singleton" } }),
+      HYDRATE_TIMEOUT_MS
     );
-    if (!row?.data) {
-      hydrationComplete = true;
-      return;
-    }
-    const payload = row.data as unknown as SnapshotPayload;
-    if (payload?.version !== SNAPSHOT_VERSION || !payload.store) {
-      console.debug("Snapshot version mismatch; falling back to seed data.");
-      hydrationComplete = true;
-      return;
-    }
-    if (mutatedDuringHydration) {
-      // A mutation already happened this boot — the live state wins.
-      hydrationComplete = true;
-      return;
-    }
-
-    const revived = revive(payload.store);
-    Object.assign(store, revived);
-
-    if (Array.isArray(payload.auditLogs)) {
-      const revivedLogs = revive(payload.auditLogs) as AuditEntry[];
-      auditLogs.splice(0, auditLogs.length, ...revivedLogs);
-    }
-    hydrationComplete = true;
-  } catch {
-    // Demo mode without a database — seed data stays.
-    hydrationComplete = true;
+  } catch (err) {
+    console.warn(`[snapshot] hydrate skipped: ${describeError(err)} — continuing with seed data.`);
+    snap.hydrationComplete = true;
+    return;
   }
+  if (!row?.data) {
+    snap.hydrationComplete = true;
+    return;
+  }
+  const payload = row.data as unknown as SnapshotPayload;
+  if (payload?.version !== SNAPSHOT_VERSION || !payload.store) {
+    console.debug("Snapshot version mismatch; falling back to seed data.");
+    snap.hydrationComplete = true;
+    return;
+  }
+  if (snap.mutatedDuringHydration) {
+    // A mutation already happened this boot — the live state wins.
+    snap.hydrationComplete = true;
+    return;
+  }
+
+  const revived = revive(payload.store);
+  Object.assign(store, revived);
+
+  if (Array.isArray(payload.auditLogs)) {
+    const revivedLogs = revive(payload.auditLogs) as AuditEntry[];
+    auditLogs.splice(0, auditLogs.length, ...revivedLogs);
+  }
+  snap.hydrationComplete = true;
+  console.debug("[snapshot] hydrated store from database snapshot.");
 }

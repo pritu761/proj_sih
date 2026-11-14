@@ -16,7 +16,9 @@ function createPrismaClient(): PrismaClient {
       connectionString,
       max: 10,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000,
+      // Neon (free tier) auto-suspends idle instances; a cold wake can take
+      // several seconds, so do not mistake suspension for a dead database.
+      connectionTimeoutMillis: 15000,
     });
 
   if (process.env.NODE_ENV !== "production") {
