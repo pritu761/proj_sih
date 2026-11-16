@@ -64,13 +64,13 @@ export function CategoryBars({
           </div>
           <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-saffron-500 to-saffron-300"
+              className="bar-grow h-full rounded-full bg-gradient-to-r from-saffron-500 to-saffron-300"
               style={{ width: `${Math.max(3, Math.round((c.received / Math.max(1, max)) * 100))}%` }}
             />
           </div>
           <div className="mt-1 h-1 overflow-hidden rounded-full bg-transparent">
             <div
-              className="h-full rounded-full bg-emerald-400/70"
+              className="bar-grow h-full rounded-full bg-emerald-400/70"
               style={{ width: `${Math.max(2, Math.round((c.disposed / Math.max(1, max)) * 100))}%` }}
             />
           </div>

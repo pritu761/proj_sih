@@ -256,7 +256,7 @@ export function ReportsClient({ metrics }: { metrics: any }) {
                 </div>
                 <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">
                   <div
-                    className="h-full rounded-full transition-all duration-700"
+                    className="bar-grow h-full rounded-full transition-all duration-700"
                     style={{
                       width: `${Math.max(a.count > 0 ? 3 : 0, (a.count / totalAgeing) * 100)}%`,
                       background: a.color,
@@ -294,7 +294,7 @@ export function RegionBars({ data }: { data: any[] }) {
           </span>
           <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-400"
+              className="bar-grow h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-400"
               style={{ width: `${(r.cases / max) * 100}%` }}
             />
           </div>

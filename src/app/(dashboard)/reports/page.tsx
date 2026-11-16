@@ -24,6 +24,7 @@ import { BacklogForecastChart } from "@/components/reports/BacklogForecastChart"
 import { AiReportSummary } from "@/components/reports/AiReportSummary";
 import { computeBureauScorecard } from "@/lib/services/scorecard";
 import { cn } from "@/lib/utils";
+import { CountUp } from "@/components/ui/count-up";
 import { CalendarClock } from "lucide-react";
 
 /** Colour scale for the breach heatmap cells (density = breached ÷ open). */
@@ -69,7 +70,8 @@ export default async function ReportsPage() {
   const kpiHighlights = [
     {
       label: "Overall disposal rate",
-      value: `${disposalRate}%`,
+      value: disposalRate,
+      suffix: "%",
       subtext: `${kpi.disposed} closed of ${kpi.totalReceived} received`,
       icon: TrendingUp,
       color: "#059669",
@@ -79,6 +81,7 @@ export default async function ReportsPage() {
     {
       label: "Cases under process",
       value: kpi.underProcess,
+      suffix: "",
       subtext: "Notice · hearing · inspection active",
       icon: RotateCw,
       color: "#2559e8",
@@ -88,6 +91,7 @@ export default async function ReportsPage() {
     {
       label: "SLA breach incidence",
       value: kpi.pendingBeyondTimeline,
+      suffix: "",
       subtext: "Exceeded statutory category timeline",
       icon: AlertOctagon,
       color: "#dc2626",
@@ -97,6 +101,7 @@ export default async function ReportsPage() {
     {
       label: "Inter-bureau overlaps",
       value: kpi.openOverlapAlerts,
+      suffix: "",
       subtext: "Concurrent multi-bureau inquiries",
       icon: ShieldAlert,
       color: "#f59e0b",
@@ -195,14 +200,14 @@ export default async function ReportsPage() {
                 className="mt-1 font-display text-[28px] font-extrabold leading-none tracking-[-0.03em]"
                 style={{ color: kpiItem.color }}
               >
-                {kpiItem.value}
+                <CountUp value={kpiItem.value} suffix={kpiItem.suffix} />
               </p>
               <p className="mt-1.5 text-[10.5px] font-medium leading-snug text-slate-400">
                 {kpiItem.subtext}
               </p>
               <div className="mt-3 h-1 overflow-hidden rounded-full bg-slate-100">
                 <div
-                  className="h-full rounded-full transition-all duration-700"
+                  className="bar-grow h-full rounded-full transition-all duration-700"
                   style={{
                     width: `${Math.max(3, Math.min(100, kpiItem.progress))}%`,
                     background: kpiItem.color,

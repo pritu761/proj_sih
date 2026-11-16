@@ -938,6 +938,16 @@ textarea.input {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
 }
+/* Fades and lifts a block into place — used by the tracking result panel. */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* Compositor-friendly fill: bars scale from the left on mount/reveal. */
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 
 .animate-rise { animation: rise-soft 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
 .animate-spin-slow { animation: spin-slow 52s linear infinite; }
@@ -1326,6 +1336,11 @@ textarea.input {
   transform-origin: left center;
   animation: meter-fill 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+/* Data bars grow from the left; transform-only so scrolls stay smooth. */
+.bar-grow {
+  transform-origin: left center;
+  animation: bar-grow 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 @keyframes meter-fill {
   from {
     transform: scaleX(0);
@@ -1544,6 +1559,7 @@ textarea.input {
   .kpi-card::after,
   .btn-primary::after,
   .meter-fill,
+  .bar-grow,
   .watch-row,
   .topology-link,
   .topology-node,

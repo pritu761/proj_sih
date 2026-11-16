@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Radar,
@@ -35,6 +35,15 @@ function daysLabel(c: CaseRisk) {
 export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
   const [horizon, setHorizon] = useState<(typeof HORIZONS)[number]>(15);
   const [hovered, setHovered] = useState<string | null>(null);
+  // SMIL <animate> is not affected by CSS reduced-motion rules. Gate the blips
+  // on a mount-only check so they are absent from SSR and never run for users
+  // who asked for reduced motion. The static radar dots always remain.
+  const [allowBlips, setAllowBlips] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) setAllowBlips(true);
+  }, []);
 
   const rows = useMemo(() => {
     if (!risk) return [];
@@ -132,8 +141,12 @@ export function RiskRadar({ risk }: { risk?: RiskRadarData }) {
                     onMouseLeave={() => setHovered(null)}
                   >
                     <circle cx={x} cy={y} r={active ? 9 : 6} fill={color} opacity={0.16}>
-                      <animate attributeName="r" values="4;10;4" dur="3.2s" repeatCount="indefinite" begin={`${i * 0.4}s`} />
-                      <animate attributeName="opacity" values="0.34;0;0.34" dur="3.2s" repeatCount="indefinite" begin={`${i * 0.4}s`} />
+                      {allowBlips && (
+                        <>
+                          <animate attributeName="r" values="4;10;4" dur="3.2s" repeatCount="indefinite" begin={`${i * 0.4}s`} />
+                          <animate attributeName="opacity" values="0.34;0;0.34" dur="3.2s" repeatCount="indefinite" begin={`${i * 0.4}s`} />
+                        </>
+                      )}
                     </circle>
                     <circle cx={x} cy={y} r={active ? 4.4 : 3.4} fill={color} />
                   </g>

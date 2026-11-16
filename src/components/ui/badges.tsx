@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { ChangePulse } from "./change-pulse";
 import type { LucideIcon } from "lucide-react";
 
 type Tone =
@@ -76,10 +77,22 @@ interface PillProps {
   icon?: LucideIcon;
   className?: string;
   title?: string;
+  /** Opt-in: pop once when this value changes while `pulseActive` is true. */
+  pulseWatch?: string;
+  pulseActive?: boolean;
 }
 
-export function Pill({ children, tone = "neutral", dot, icon: Icon, className, title }: PillProps) {
-  return (
+export function Pill({
+  children,
+  tone = "neutral",
+  dot,
+  icon: Icon,
+  className,
+  title,
+  pulseWatch,
+  pulseActive = false,
+}: PillProps) {
+  const pill = (
     <span
       title={title}
       className={cn(
@@ -93,6 +106,16 @@ export function Pill({ children, tone = "neutral", dot, icon: Icon, className, t
       {children}
     </span>
   );
+  // Only opted-in critical pills get the change detector; ordinary pills keep
+  // their exact markup and cost nothing extra.
+  if (pulseWatch !== undefined) {
+    return (
+      <ChangePulse watch={pulseWatch} active={pulseActive}>
+        {pill}
+      </ChangePulse>
+    );
+  }
+  return pill;
 }
 
 export function StatusPill({
@@ -105,7 +128,13 @@ export function StatusPill({
   dot?: boolean;
 }) {
   return (
-    <Pill tone={statusTone[status] ?? "neutral"} dot={dot} className={className}>
+    <Pill
+      tone={statusTone[status] ?? "neutral"}
+      dot={dot}
+      className={className}
+      pulseWatch={status}
+      pulseActive={status === "ESCALATED"}
+    >
       {statusLabel[status] ?? status.replaceAll("_", " ")}
     </Pill>
   );

@@ -41,6 +41,7 @@ import {
   Area,
 } from "recharts";
 import { StatusPill, BureauPill, ConfidencePill } from "@/components/ui/badges";
+import { ChangePulse } from "@/components/ui/change-pulse";
 import { CountUp } from "@/components/ui/count-up";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { useToast } from "@/components/ui/toast";
@@ -54,7 +55,7 @@ import { RiskRadar } from "./RiskRadar";
 import { IngestionSimulator } from "./IngestionSimulator";
 import { OperationsWire } from "./OperationsWire";
 import { AiBriefing } from "./AiBriefing";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 interface DashboardClientProps {
   initialMetrics: any;
@@ -104,6 +105,9 @@ export function DashboardClient({
   // The "Synced" label is derived from the server's generatedAt timestamp,
   // formatted after mount so server/client locale differences cannot diverge.
   const [syncedLabel, setSyncedLabel] = useState("just now");
+  // The hero date uses a stable SSR placeholder and is derived from the
+  // server-supplied generatedAt after mount — never from the client clock.
+  const [dateLabel, setDateLabel] = useState("—");
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -127,6 +131,7 @@ export function DashboardClient({
     setSyncedLabel(
       new Date(generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     );
+    setDateLabel(formatDate(generatedAt));
   }, [metrics?.generatedAt]);
 
   const refresh = async () => {
@@ -458,7 +463,7 @@ export function DashboardClient({
                 Live command center
               </span>
               <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
-                {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                {dateLabel}
               </span>
             </div>
 
@@ -962,20 +967,25 @@ export function DashboardClient({
                       </td>
                       <td><BureauPill bureau={c.assigned_bureau} /></td>
                       <td>
-                        <span
-                          className={cn(
-                            "badge border",
-                            c.isBreached
-                              ? "sla-breached"
-                              : c.isApproaching
-                                ? "sla-approaching"
-                                : "sla-normal"
-                          )}
+                        <ChangePulse
+                          watch={c.isBreached ? "breached" : c.isApproaching ? "approaching" : "normal"}
+                          active={c.isBreached}
                         >
-                          {c.isBreached
-                            ? `${Math.abs(c.remainingDays)}d overdue`
-                            : `${c.remainingDays}d left`}
-                        </span>
+                          <span
+                            className={cn(
+                              "badge border",
+                              c.isBreached
+                                ? "sla-breached"
+                                : c.isApproaching
+                                  ? "sla-approaching"
+                                  : "sla-normal"
+                            )}
+                          >
+                            {c.isBreached
+                              ? `${Math.abs(c.remainingDays)}d overdue`
+                              : `${c.remainingDays}d left`}
+                          </span>
+                        </ChangePulse>
                       </td>
                       <td className="text-right">
                         <Link href={`/cases/${c.id}`} className="inline-flex rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-brand-600 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-brand-300" aria-label={`View ${c.case_id}`}>

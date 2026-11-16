@@ -187,7 +187,7 @@ function TransparencyContentBody({ s }: { s: TransparencyStats }) {
                     </div>
                     <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-saffron-500 to-saffron-300"
+                        className="bar-grow h-full rounded-full bg-gradient-to-r from-saffron-500 to-saffron-300"
                         style={{
                           width: `${Math.max(3, Math.round((r.received / maxRegion) * 100))}%`,
                         }}
@@ -262,7 +262,7 @@ function TransparencyContentBody({ s }: { s: TransparencyStats }) {
                       </span>
                       <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-saffron-500 to-saffron-300"
+                          className="bar-grow h-full rounded-full bg-gradient-to-r from-saffron-500 to-saffron-300"
                           style={{ width: `${Math.round((r.count / maxStars) * 100)}%` }}
                         />
                       </div>
