@@ -29,6 +29,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { BureauPill, PriorityPill, StatusPill } from "@/components/ui/badges";
 import { ComplianceRiskCard } from "@/components/institutions/ComplianceRiskCard";
 import { DocumentVault } from "@/components/institutions/DocumentVault";
+import { InstitutionManager } from "@/components/institutions/InstitutionAdmin";
 import { assessInstitutionCompliance } from "@/lib/services/aph-engine";
 import { analyzeComplainants, RECURRENCE_META } from "@/lib/services/complainant-engine";
 import { cn } from "@/lib/utils";
@@ -133,6 +134,14 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
     caseId: c.case_id,
     label: `${c.case_id} · ${c.category}`,
   }));
+
+  // Master-data manager inputs (admin / bureau officer only, enforced in the
+  // repository and by the component itself).
+  const directory = await repository.getInstitutions({ limit: 1000 });
+  const isAdmin = user.role === "ADMIN";
+  const isOfficer = ["COMPETENT_AUTHORITY", "REGULATION_OFFICER", "PGRC_OFFICER", "BUREAU_OFFICER"].includes(
+    user.role
+  );
 
   return (
     <div className="space-y-5">
@@ -571,6 +580,33 @@ export default async function InstitutionProfilePage({ params }: InstitutionProf
           );
         })}
       </div>
+
+      {/* Master-data manager: edit / aliases / merge (ADMIN or bureau officer) */}
+      <InstitutionManager
+        institution={{
+          id: institution.id,
+          name: institution.name,
+          aicte_permanent_id: institution.aicte_permanent_id,
+          address: institution.address,
+          city: institution.city,
+          state: institution.state,
+          pincode: institution.pincode,
+          region: institution.region,
+          institution_type: institution.institution_type,
+          contact_email: institution.contact_email ?? "",
+          contact_phone: institution.contact_phone ?? "",
+          aliases: institution.aliases ?? [],
+          caseCount: cases.length,
+          merged_into: institution.merged_into,
+        }}
+        allInstitutions={directory.institutions.map((i: any) => ({
+          id: i.id,
+          name: i.name,
+          aicte_permanent_id: i.aicte_permanent_id,
+        }))}
+        isAdmin={isAdmin}
+        isOfficer={isOfficer}
+      />
     </div>
   );
 }

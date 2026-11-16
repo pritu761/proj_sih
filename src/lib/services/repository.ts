@@ -1,5 +1,10 @@
 import { generateSeedData, SeedCase, SeedComment, SeedDocument, SeedInstitution, SeedOverlapAlert } from "@/lib/mock-data-generator";
-import { ALL_KNOWN_USERS, DEMO_PASSWORD_HASHES, SLA_CONFIGS } from "@/lib/demo-data";
+import {
+  ALL_KNOWN_USERS,
+  DEMO_PASSWORD_HASHES,
+  SLA_CONFIGS,
+  normalizeInstitutionName,
+} from "@/lib/demo-data";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import {
@@ -1156,6 +1161,135 @@ export class ComplaintRepository {
   }
 
   /**
+   * Action: Correct clerical errors on a filed case.
+   *
+   * Only the bureau that owns the file (or senior management) may fix a
+   * registry record. Every changed field is captured in the append-only
+   * timeline and in the audit ledger together with the mandatory reason;
+   * the original values are retained in the audit `before` snapshot.
+   */
+  public async correctCase(
+    caseId: string,
+    patch: {
+      category?: string;
+      priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+      description?: string;
+      reason: string;
+    },
+    actor: SessionUser
+  ) {
+    const store = getInMemoryStore();
+    const c = store.cases.find((item) => item.id === caseId || item.case_id === caseId);
+    if (!c) throw new Error(`Case ${caseId} not found.`);
+
+    assertCanActOnCase(actor, c);
+
+    const before: Record<string, unknown> = {};
+    const changes: string[] = [];
+
+    if (patch.category !== undefined && patch.category !== c.category) {
+      before.category = c.category;
+      c.category = patch.category;
+      changes.push(`category → ${patch.category}`);
+    }
+    if (patch.priority !== undefined && patch.priority !== c.priority) {
+      before.priority = c.priority;
+      c.priority = patch.priority;
+      changes.push(`priority → ${patch.priority}`);
+    }
+    if (patch.description !== undefined && patch.description !== c.description) {
+      before.description = c.description;
+      c.description = patch.description;
+      changes.push("representation text amended");
+    }
+
+    if (changes.length === 0) {
+      throw new Error("No correction was applied — the supplied values already match the record.");
+    }
+
+    c.last_action = `Record corrected by ${actor.bureau}`;
+    c.last_action_date = new Date();
+    c.actions.unshift({
+      actor_user: actor.email,
+      actor_bureau: actor.bureau,
+      action_type: "CASE_CORRECTED",
+      remarks: `Clerical correction (${changes.join(", ")}). Reason: ${patch.reason}`,
+      timestamp: new Date(),
+      attachments: [],
+    });
+
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "CASE_CORRECTED",
+      entity: "Case",
+      entity_id: c.case_id,
+      before,
+      after: {
+        category: c.category,
+        priority: c.priority,
+        description: c.description,
+        changes,
+        reason: patch.reason,
+      },
+    });
+
+    return c;
+  }
+
+  /**
+   * Action: Withdraw / void a wrongly filed case.
+   *
+   * No new status enum is introduced — the file is DISPOSED like any other
+   * closed matter, but an additive marker records that it was voided rather
+   * than redressed. A loud "WITHDRAWN: <reason>" timeline entry and audit
+   * record preserve the full justification.
+   */
+  public async withdrawCase(caseId: string, reason: string, actor: SessionUser) {
+    const store = getInMemoryStore();
+    const c = store.cases.find((item) => item.id === caseId || item.case_id === caseId);
+    if (!c) throw new Error(`Case ${caseId} not found.`);
+
+    assertCanActOnCase(actor, c);
+
+    if (c.withdrawn) {
+      throw new Error(`Case ${c.case_id} has already been withdrawn.`);
+    }
+    if (c.status === "DISPOSED") {
+      throw new Error(`Case ${c.case_id} is already disposed and cannot be withdrawn.`);
+    }
+
+    const previousStatus = c.status;
+    c.status = "DISPOSED";
+    c.withdrawn = true;
+    c.withdrawn_reason = reason;
+    c.last_action = `WITHDRAWN: ${reason}`;
+    c.last_action_date = new Date();
+    c.actions.unshift({
+      actor_user: actor.email,
+      actor_bureau: actor.bureau,
+      action_type: "CASE_WITHDRAWN",
+      remarks: `WITHDRAWN: ${reason}`,
+      timestamp: new Date(),
+      attachments: [],
+    });
+
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "CASE_WITHDRAWN",
+      entity: "Case",
+      entity_id: c.case_id,
+      before: { status: previousStatus, withdrawn: false },
+      after: { status: "DISPOSED", withdrawn: true, withdrawn_reason: reason },
+    });
+
+    return c;
+  }
+
+  /**
    * Internal helper that writes (or updates) a canonical case-to-case link.
    * Authorization is checked by callers so overlap coordination can link cases
    * across the bureaus that are party to an alert.
@@ -1341,6 +1475,7 @@ export class ComplaintRepository {
         institution_aicte_id: cInst?.aicte_permanent_id,
         institution_name: cInst?.name,
         institution_normalized_name: cInst?.normalized_name,
+        institution_aliases: cInst?.aliases,
         institution_city: cInst?.city,
         institution_state: cInst?.state,
         institution_pincode: cInst?.pincode,
@@ -1820,6 +1955,7 @@ export class ComplaintRepository {
         institution_aicte_id: cInst?.aicte_permanent_id,
         institution_name: cInst?.name,
         institution_normalized_name: cInst?.normalized_name,
+        institution_aliases: cInst?.aliases,
         institution_city: cInst?.city,
         institution_state: cInst?.state,
         institution_pincode: cInst?.pincode,
@@ -2544,6 +2680,301 @@ export class ComplaintRepository {
       profile,
       meta: RECURRENCE_META[profile.level],
       isCurrentCase: profile.caseIds.includes(c.case_id),
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Institution directory CRUD (master data)
+  //
+  // Defensible RBAC rule, documented once here and enforced by
+  // `assertCanManageInstitution`:
+  //   • create / merge — ADMIN only. These reshape the authoritative entity
+  //     graph and move files between legal entities, so they are reserved for
+  //     the system administrator.
+  //   • edit / alias management — ADMIN or a bureau officer
+  //     (COMPETENT_AUTHORITY, REGULATION_OFFICER, PGRC_OFFICER, BUREAU_OFFICER).
+  //     Regional Officers remain read-only observers of master data.
+  // ───────────────────────────────────────────────────────────────────────────
+
+  private canManageInstitution(
+    actor: SessionUser | null | undefined,
+    action: "create" | "edit" | "merge"
+  ): boolean {
+    if (!actor) return false;
+    if (actor.role === "ADMIN") return true;
+    if (action === "create" || action === "merge") return false;
+    return ["COMPETENT_AUTHORITY", "REGULATION_OFFICER", "PGRC_OFFICER", "BUREAU_OFFICER"].includes(
+      actor.role
+    );
+  }
+
+  private assertCanManageInstitution(
+    actor: SessionUser,
+    action: "create" | "edit" | "merge"
+  ) {
+    if (!this.canManageInstitution(actor, action)) {
+      throw new Error(
+        `Unauthorized: User ${actor.email} (${actor.role}) cannot ${action} institutions.`
+      );
+    }
+  }
+
+  private findInstitution(store: StoreState, id: string): SeedInstitution | undefined {
+    return store.institutions.find(
+      (i) => i.id === id || i.aicte_permanent_id.trim() === id.trim()
+    );
+  }
+
+  public async createInstitution(
+    data: {
+      name: string;
+      aicte_permanent_id: string;
+      address: string;
+      city: string;
+      state: string;
+      pincode: string;
+      region: string;
+      institution_type: string;
+      contact_email?: string;
+      contact_phone?: string;
+    },
+    actor: SessionUser
+  ) {
+    this.assertCanManageInstitution(actor, "create");
+    const store = getInMemoryStore();
+    const aicteId = data.aicte_permanent_id.trim();
+    if (
+      store.institutions.some(
+        (i) => i.aicte_permanent_id.trim().toLowerCase() === aicteId.toLowerCase()
+      )
+    ) {
+      throw new Error(`An institution with AICTE Permanent ID ${aicteId} already exists.`);
+    }
+
+    const inst: SeedInstitution = {
+      id: uid("inst"),
+      aicte_permanent_id: aicteId,
+      name: data.name.trim(),
+      normalized_name: normalizeInstitutionName(data.name),
+      address: data.address.trim(),
+      city: data.city.trim(),
+      state: data.state.trim(),
+      pincode: data.pincode.trim(),
+      region: data.region,
+      institution_type: data.institution_type,
+      contact_email: data.contact_email?.trim() || "",
+      contact_phone: data.contact_phone?.trim() || "",
+      aliases: [],
+    };
+    store.institutions.push(inst);
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "CREATE_INSTITUTION",
+      entity: "Institution",
+      entity_id: inst.id,
+      after: {
+        name: inst.name,
+        aicte_permanent_id: inst.aicte_permanent_id,
+        city: inst.city,
+        region: inst.region,
+      },
+    });
+
+    return inst;
+  }
+
+  public async updateInstitution(
+    institutionId: string,
+    patch: {
+      name?: string;
+      address?: string;
+      city?: string;
+      state?: string;
+      pincode?: string;
+      region?: string;
+      institution_type?: string;
+      contact_email?: string;
+      contact_phone?: string;
+    },
+    actor: SessionUser
+  ) {
+    this.assertCanManageInstitution(actor, "edit");
+    const store = getInMemoryStore();
+    const inst = this.findInstitution(store, institutionId);
+    if (!inst) throw new Error("Institution not found.");
+
+    const before: Record<string, unknown> = {};
+    const fields: (keyof typeof patch)[] = [
+      "name", "address", "city", "state", "pincode", "region",
+      "institution_type", "contact_email", "contact_phone",
+    ];
+    for (const field of fields) {
+      const value = patch[field];
+      if (value !== undefined && value !== inst[field]) {
+        before[field] = inst[field];
+        (inst as unknown as Record<string, unknown>)[field] = value;
+      }
+    }
+    // Keep the entity-resolution key in step with a renamed institution.
+    if (patch.name !== undefined && patch.name !== before.name && before.name !== undefined) {
+      inst.normalized_name = normalizeInstitutionName(inst.name);
+    }
+
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "UPDATE_INSTITUTION",
+      entity: "Institution",
+      entity_id: inst.id,
+      before,
+      after: { ...patch, normalized_name: inst.normalized_name },
+    });
+
+    return inst;
+  }
+
+  public async addInstitutionAlias(institutionId: string, alias: string, actor: SessionUser) {
+    this.assertCanManageInstitution(actor, "edit");
+    const store = getInMemoryStore();
+    const inst = this.findInstitution(store, institutionId);
+    if (!inst) throw new Error("Institution not found.");
+
+    const clean = alias.trim();
+    inst.aliases ??= [];
+    const existing = inst.aliases.find((a) => a.toLowerCase() === clean.toLowerCase());
+    if (!existing) {
+      inst.aliases.push(clean);
+      markStoreDirty();
+    }
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "ADD_INSTITUTION_ALIAS",
+      entity: "Institution",
+      entity_id: inst.id,
+      after: { alias: clean },
+    });
+
+    return inst;
+  }
+
+  public async removeInstitutionAlias(institutionId: string, alias: string, actor: SessionUser) {
+    this.assertCanManageInstitution(actor, "edit");
+    const store = getInMemoryStore();
+    const inst = this.findInstitution(store, institutionId);
+    if (!inst) throw new Error("Institution not found.");
+
+    const target = (inst.aliases ?? []).find(
+      (a) => a.toLowerCase() === alias.trim().toLowerCase()
+    );
+    if (target) {
+      inst.aliases = (inst.aliases ?? []).filter((a) => a !== target);
+      markStoreDirty();
+    }
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "REMOVE_INSTITUTION_ALIAS",
+      entity: "Institution",
+      entity_id: inst.id,
+      before: { alias: target ?? alias },
+    });
+
+    return inst;
+  }
+
+  /**
+   * Merge one institution entity into another. Cases, documents and overlap
+   * alerts are reassigned to the target; case comments travel with their cases
+   * because they are keyed on the (unchanged) registry number. The source's
+   * name and aliases become aliases of the target so the overlap detector keeps
+   * resolving both identities as one entity. Audit history is never deleted,
+   * and both entities receive their own audit record.
+   */
+  public async mergeInstitutions(
+    sourceId: string,
+    targetId: string,
+    actor: SessionUser,
+    reason: string
+  ) {
+    this.assertCanManageInstitution(actor, "merge");
+    const store = getInMemoryStore();
+    const source = this.findInstitution(store, sourceId);
+    const target = this.findInstitution(store, targetId);
+    if (!source || !target) throw new Error("Both institutions must exist before they can be merged.");
+    if (source.id === target.id) throw new Error("An institution cannot be merged into itself.");
+
+    const movedCases = store.cases.filter((c) => c.institution_id === source.id);
+    const now = new Date();
+    for (const c of movedCases) {
+      c.institution_id = target.id;
+      c.last_action = `Institution record merged into ${target.name}`;
+      c.last_action_date = now;
+      c.actions.unshift({
+        actor_user: actor.email,
+        actor_bureau: actor.bureau,
+        action_type: "REMARK",
+        remarks: `Institution record merged: ${source.name} → ${target.name}. ${reason}`,
+        timestamp: now,
+        attachments: [],
+      });
+    }
+
+    const movedDocuments = store.documents.filter((d) => d.institution_id === source.id);
+    for (const d of movedDocuments) d.institution_id = target.id;
+
+    const movedAlerts = store.overlapAlerts.filter((o) => o.institution_id === source.id);
+    for (const o of movedAlerts) o.institution_id = target.id;
+
+    // Preserve the source's identity for entity resolution.
+    target.aliases = Array.from(
+      new Set([
+        ...(target.aliases ?? []),
+        source.name,
+        source.normalized_name,
+        ...(source.aliases ?? []),
+      ].filter(Boolean))
+    );
+    source.merged_into = target.id;
+
+    markStoreDirty();
+
+    await logAuditEvent({
+      user: actor.email,
+      action: "MERGE_INSTITUTIONS",
+      entity: "Institution",
+      entity_id: target.id,
+      before: {
+        source: { id: source.id, name: source.name, aicte_permanent_id: source.aicte_permanent_id },
+        caseCount: movedCases.length,
+      },
+      after: {
+        target: { id: target.id, name: target.name },
+        merged_into: target.id,
+        movedCaseIds: movedCases.map((c) => c.case_id),
+        movedDocumentIds: movedDocuments.map((d) => d.id),
+        movedAlertIds: movedAlerts.map((a) => a.id),
+        reason,
+      },
+    });
+    await logAuditEvent({
+      user: actor.email,
+      action: "INSTITUTION_MERGED_INTO",
+      entity: "Institution",
+      entity_id: source.id,
+      before: { name: source.name, aicte_permanent_id: source.aicte_permanent_id },
+      after: { merged_into: target.id, reason },
+    });
+
+    return {
+      source,
+      target,
+      movedCases: movedCases.length,
+      movedDocuments: movedDocuments.length,
+      movedAlerts: movedAlerts.length,
     };
   }
 

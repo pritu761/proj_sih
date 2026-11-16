@@ -7,6 +7,9 @@ export interface CaseWithInstitution {
   institution_aicte_id?: string;
   institution_name?: string;
   institution_normalized_name?: string;
+  /** Alternative names for the same legal entity, normalized by the detector
+   * so an alias match counts as an entity match. */
+  institution_aliases?: string[];
   institution_city?: string;
   institution_state?: string;
   institution_pincode?: string;
@@ -61,6 +64,43 @@ export interface IOverlapDetector {
     allCases: CaseWithInstitution[]
   ): Promise<OverlapCandidate[]>;
   calculateTrigramSimilarity(a: string, b: string): number;
+}
+
+/**
+ * All normalized name forms that identify one institution entity: its
+ * canonical (normalized) name plus any administrator-managed aliases. With no
+ * aliases this is exactly the single canonical name, so existing behavior and
+ * tests are unchanged.
+ */
+export function normalizedNameVariants(input: CaseWithInstitution): string[] {
+  const canonical =
+    input.institution_normalized_name ||
+    (input.institution_name ? normalizeInstitutionName(input.institution_name) : "");
+  const variants = [canonical, ...(input.institution_aliases ?? []).map(normalizeInstitutionName)]
+    .map((v) => v.trim())
+    .filter(Boolean);
+  return Array.from(new Set(variants));
+}
+
+/**
+ * Best trigram similarity across every (canonical/alias) name pair. The
+ * detector therefore treats two records as the same entity when an alias on
+ * one side matches the name on the other, without changing the single-name
+ * path used when no aliases are present.
+ */
+export function bestNameSimilarity(
+  target: CaseWithInstitution,
+  other: CaseWithInstitution
+): number {
+  const a = normalizedNameVariants(target);
+  const b = normalizedNameVariants(other);
+  let best = 0;
+  for (const nameA of a) {
+    for (const nameB of b) {
+      best = Math.max(best, calculateTrigramSimilarity(nameA, nameB));
+    }
+  }
+  return best;
 }
 
 /**
@@ -293,20 +333,11 @@ export function deriveTrilayerFromCases(
   // institution row.
   const hasExactId = options?.exactIdOverride ?? resolvedExactId;
 
-  const targetNorm =
-    target.institution_normalized_name ||
-    (target.institution_name ? normalizeInstitutionName(target.institution_name) : "");
-  const otherNorm =
-    other.institution_normalized_name ||
-    (other.institution_name ? normalizeInstitutionName(other.institution_name) : "");
-
   return computeTrilayer({
     target,
     other,
     exactId: hasExactId,
-    nameSimilarity:
-      options?.nameSimilarityOverride ??
-      calculateTrigramSimilarity(targetNorm, otherNorm),
+    nameSimilarity: options?.nameSimilarityOverride ?? bestNameSimilarity(target, other),
     sameLocation:
       (Boolean(target.institution_pincode) &&
         target.institution_pincode === other.institution_pincode) ||
@@ -333,9 +364,6 @@ export class StandardOverlapDetector implements IOverlapDetector {
     if (targetCase.status === "DISPOSED") return [];
 
     const candidates: OverlapCandidate[] = [];
-    const targetNormName =
-      targetCase.institution_normalized_name ||
-      (targetCase.institution_name ? normalizeInstitutionName(targetCase.institution_name) : "");
 
     for (const other of activeCases) {
       if (other.id === targetCase.id || other.case_id === targetCase.case_id) continue;
@@ -363,12 +391,10 @@ export class StandardOverlapDetector implements IOverlapDetector {
         });
       }
 
-      // RULE 2: Fuzzy institution name match + location corroboration
-      const otherNormName =
-        other.institution_normalized_name ||
-        (other.institution_name ? normalizeInstitutionName(other.institution_name) : "");
-
-      const nameSimilarity = calculateTrigramSimilarity(targetNormName, otherNormName);
+      // RULE 2: Fuzzy institution name match + location corroboration.
+      // Aliases on either record participate in entity resolution, so two
+      // filings for the same legal entity under different names still collide.
+      const nameSimilarity = bestNameSimilarity(targetCase, other);
       const samePincode = Boolean(targetCase.institution_pincode) && targetCase.institution_pincode === other.institution_pincode;
       const sameCity = Boolean(targetCase.institution_city) && targetCase.institution_city?.toLowerCase() === other.institution_city?.toLowerCase();
 

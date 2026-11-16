@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
     institution_aicte_id: c.institution?.aicte_permanent_id,
     institution_name: c.institution?.name,
     institution_normalized_name: c.institution?.normalized_name,
+    institution_aliases: c.institution?.aliases,
     institution_city: c.institution?.city,
     institution_state: c.institution?.state,
     institution_pincode: c.institution?.pincode,

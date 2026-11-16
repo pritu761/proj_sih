@@ -15,6 +15,7 @@ import {
   Layers,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
+import { AddInstitutionPanel } from "@/components/institutions/InstitutionAdmin";
 import { BureauPill } from "@/components/ui/badges";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
@@ -103,6 +104,9 @@ export default async function InstitutionsPage({ searchParams }: InstitutionsPag
           </Link>
         }
       />
+
+      {/* ADMIN master-data entry point */}
+      <AddInstitutionPanel isAdmin={user.role === "ADMIN"} />
 
       {/* Summary strip */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

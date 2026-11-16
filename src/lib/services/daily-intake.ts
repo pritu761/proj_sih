@@ -383,6 +383,7 @@ export async function ensureDailyIntake(options: {
       institution_aicte_id: inst?.aicte_permanent_id,
       institution_name: inst?.name,
       institution_normalized_name: inst?.normalized_name,
+      institution_aliases: inst?.aliases,
       institution_city: inst?.city,
       institution_state: inst?.state,
       institution_pincode: inst?.pincode,

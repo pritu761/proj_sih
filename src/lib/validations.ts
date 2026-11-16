@@ -17,6 +17,21 @@ export const BureauEnum = z.enum([
 
 export const CasePriorityEnum = z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]);
 
+/** Statutory grievance categories (mirrors SLA_CONFIGS in demo-data). Used by
+ * the case-correction panel so clerical fixes stay within the known taxonomy. */
+export const CASE_CATEGORIES = [
+  "Ragging & Safety Violations",
+  "Withholding Certificates",
+  "Capitation Fee & Overcharging",
+  "Unapproved Courses & Seats",
+  "Admission Irregularities",
+  "Faculty Non-Payment & Harassment",
+  "Infrastructure & Lab Deficiencies",
+  "Other Institutional Grievances",
+] as const;
+
+export const CaseCategoryEnum = z.enum(CASE_CATEGORIES);
+
 export const LinkTypeEnum = z.enum(["OVERLAP", "DUPLICATE", "RELATED"]);
 
 export const UpdateStatusSchema = z.object({
@@ -43,6 +58,38 @@ export const AddRemarkSchema = z.object({
   caseId: z.string().min(1, "Case ID is required"),
   remarks: z.string().min(3, "Remark must be at least 3 characters long"),
   attachments: z.array(z.string().url()).optional(),
+});
+
+/**
+ * Clerical correction of a filed case. All editable fields are optional, but
+ * at least one must be supplied, and the reason is always mandatory so the
+ * change is attested in the audit ledger.
+ */
+export const CorrectCaseSchema = z
+  .object({
+    caseId: z.string().min(1, "Case ID is required"),
+    category: CaseCategoryEnum.optional(),
+    priority: CasePriorityEnum.optional(),
+    description: z
+      .string()
+      .min(15, "Description must be at least 15 characters long")
+      .optional(),
+    reason: z
+      .string()
+      .min(10, "State the reason for this correction (min 10 characters)"),
+  })
+  .refine(
+    (d) => d.category !== undefined || d.priority !== undefined || d.description !== undefined,
+    { message: "Choose at least one field to correct", path: ["category"] }
+  );
+
+/** Void a wrongly filed case. No new status enum: the file is DISPOSED with
+ * an additive withdrawal marker and a WITHDRAWN timeline entry. */
+export const WithdrawCaseSchema = z.object({
+  caseId: z.string().min(1, "Case ID is required"),
+  reason: z
+    .string()
+    .min(10, "Provide a clear withdrawal reason (min 10 characters)"),
 });
 
 export const LinkCasesSchema = z.object({
@@ -199,6 +246,96 @@ export const AddInstitutionDocumentSchema = z.object({
 
 export const RemoveInstitutionDocumentSchema = z.object({
   documentId: z.string().min(1, "Document record is required"),
+});
+
+// -----------------------------------------------------------------------------
+// Institution directory CRUD (admin-managed master data)
+// -----------------------------------------------------------------------------
+export const InstitutionRegionEnum = z.enum([
+  "Northern",
+  "Western",
+  "Southern",
+  "Eastern",
+  "Central",
+  "North-Western",
+  "South-Western",
+]);
+
+export const InstitutionTypeEnum = z.enum([
+  "Engineering & Technology",
+  "Management",
+  "Polytechnic",
+  "Pharmacy",
+  "Architecture",
+]);
+
+export const CreateInstitutionSchema = z.object({
+  name: z.string().min(3, "Institution name must be at least 3 characters").max(180),
+  aicte_permanent_id: z
+    .string()
+    .min(3, "AICTE Permanent ID is required")
+    .max(40)
+    .transform((v) => v.trim()),
+  address: z.string().min(3, "Address is required").max(300),
+  city: z.string().min(2, "City is required").max(80),
+  state: z.string().min(2, "State is required").max(80),
+  pincode: z.string().regex(/^\d{6}$/, "PIN code must be 6 digits"),
+  region: InstitutionRegionEnum,
+  institution_type: InstitutionTypeEnum,
+  contact_email: z.string().max(180).optional(),
+  contact_phone: z.string().max(30).optional(),
+});
+
+export const UpdateInstitutionSchema = z
+  .object({
+    institutionId: z.string().min(1, "Institution ID is required"),
+    name: z.string().min(3).max(180).optional(),
+    address: z.string().min(3).max(300).optional(),
+    city: z.string().min(2).max(80).optional(),
+    state: z.string().min(2).max(80).optional(),
+    pincode: z.string().regex(/^\d{6}$/, "PIN code must be 6 digits").optional(),
+    region: InstitutionRegionEnum.optional(),
+    institution_type: InstitutionTypeEnum.optional(),
+    contact_email: z.string().max(180).optional(),
+    contact_phone: z.string().max(30).optional(),
+  })
+  .refine(
+    (d) =>
+      [
+        d.name,
+        d.address,
+        d.city,
+        d.state,
+        d.pincode,
+        d.region,
+        d.institution_type,
+        d.contact_email,
+        d.contact_phone,
+      ].some((v) => v !== undefined),
+    { message: "Choose at least one field to update", path: ["name"] }
+  );
+
+export const MergeInstitutionsSchema = z
+  .object({
+    sourceId: z.string().min(1, "Select the institution to merge from"),
+    targetId: z.string().min(1, "Select the institution to merge into"),
+    reason: z
+      .string()
+      .min(10, "Provide a merge justification (min 10 characters)"),
+  })
+  .refine((d) => d.sourceId !== d.targetId, {
+    message: "Source and target institutions must be different",
+    path: ["targetId"],
+  });
+
+export const AddInstitutionAliasSchema = z.object({
+  institutionId: z.string().min(1, "Institution ID is required"),
+  alias: z.string().min(2, "Alias must be at least 2 characters").max(120),
+});
+
+export const RemoveInstitutionAliasSchema = z.object({
+  institutionId: z.string().min(1, "Institution ID is required"),
+  alias: z.string().min(2, "Alias is required"),
 });
 
 const UserRoleEnum = z.enum([

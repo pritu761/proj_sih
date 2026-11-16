@@ -51,7 +51,11 @@ import {
   assignOfficerAction,
   scheduleHearingAction,
   fieldVerificationAction,
+  correctCaseAction,
+  withdrawCaseAction,
 } from "@/actions/case-actions";
+import { useToast } from "@/components/ui/toast";
+import { CASE_CATEGORIES } from "@/lib/validations";
 import { coordinateOverlapAction } from "@/actions/overlap-actions";
 import { aiAnalyzeResponseAction } from "@/actions/ai-actions";
 import { canActOnCase, canAddFieldVerification, SessionUser } from "@/lib/rbac";
@@ -116,6 +120,8 @@ const actionIcon: Record<string, typeof Inbox> = {
   DISPOSED: CheckCircle2,
   LINKED: Link2,
   STATUS_CHANGED: RefreshCw,
+  CASE_CORRECTED: RefreshCw,
+  CASE_WITHDRAWN: ShieldAlert,
   FIELD_VERIFICATION: ClipboardCheck,
   HEARING_SCHEDULED: Gavel,
   HEARING: Gavel,
@@ -130,6 +136,8 @@ const actionTone: Record<string, string> = {
   DISPOSED: "bg-emerald-50 text-emerald-600 border-emerald-100",
   LINKED: "bg-amber-50 text-amber-600 border-amber-100",
   STATUS_CHANGED: "bg-indigo-50 text-indigo-600 border-indigo-100",
+  CASE_CORRECTED: "bg-cyan-50 text-cyan-600 border-cyan-100",
+  CASE_WITHDRAWN: "bg-rose-50 text-rose-600 border-rose-100",
   FIELD_VERIFICATION: "bg-teal-50 text-teal-600 border-teal-100",
   HEARING_SCHEDULED: "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100",
   HEARING: "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-100",
@@ -156,9 +164,10 @@ export function CaseDetailClient({
   officers,
 }: CaseDetailClientProps) {
   const router = useRouter();
+  const toast = useToast();
 
   const [activeModal, setActiveModal] = useState<
-    "STATUS" | "TRANSFER" | "ESCALATE" | "REMARK" | "LINK" | "ASSIGN" | "HEARING" | "FIELD" | "OVERLAP_COMPARE" | null
+    "STATUS" | "TRANSFER" | "ESCALATE" | "REMARK" | "LINK" | "ASSIGN" | "HEARING" | "FIELD" | "CORRECT" | "WITHDRAW" | "OVERLAP_COMPARE" | null
   >(null);
 
   const [isLoading, setIsLoading] = useState(false);
@@ -187,6 +196,14 @@ export function CaseDetailClient({
   );
   // Regional field verification
   const [fieldFindings, setFieldFindings] = useState("");
+
+  // Clerical correction / withdrawal
+  const [correctionCategory, setCorrectionCategory] = useState(caseItem.category ?? "");
+  const [correctionPriority, setCorrectionPriority] = useState(caseItem.priority ?? "MEDIUM");
+  const [correctionDescription, setCorrectionDescription] = useState(caseItem.description ?? "");
+  const [correctionReason, setCorrectionReason] = useState("");
+  const [withdrawReason, setWithdrawReason] = useState("");
+  const [withdrawConfirmed, setWithdrawConfirmed] = useState(false);
 
   // Institution response analyzer (left column panel)
   const [responseText, setResponseText] = useState("");
@@ -287,6 +304,9 @@ export function CaseDetailClient({
     setErrorMsg("");
     setUploadedUrl("");
     setCoordinationNote("");
+    setCorrectionReason("");
+    setWithdrawReason("");
+    setWithdrawConfirmed(false);
   };
 
   const handleUpdateStatus = async () => {
@@ -408,6 +428,67 @@ export function CaseDetailClient({
     } else {
       resetModals();
       router.refresh();
+    }
+  };
+
+  const handleCorrectCase = async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    try {
+      const patch: {
+        caseId: string;
+        category?: string;
+        priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+        description?: string;
+        reason: string;
+      } = { caseId: caseItem.id, reason: correctionReason };
+      if (correctionCategory && correctionCategory !== caseItem.category) {
+        patch.category = correctionCategory;
+      }
+      if (
+        correctionPriority &&
+        correctionPriority !== caseItem.priority &&
+        ["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(correctionPriority)
+      ) {
+        patch.priority = correctionPriority as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+      }
+      if (correctionDescription && correctionDescription !== caseItem.description) {
+        patch.description = correctionDescription;
+      }
+      const res = await correctCaseAction(patch);
+      if (!res.success) {
+        setErrorMsg(res.error || "Failed to correct this record.");
+        return;
+      }
+      toast.success("Record corrected", "The change is saved to the append-only timeline.");
+      resetModals();
+      router.refresh();
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Failed to correct this record.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleWithdrawCase = async () => {
+    setIsLoading(true);
+    setErrorMsg("");
+    try {
+      const res = await withdrawCaseAction({
+        caseId: caseItem.id,
+        reason: withdrawReason,
+      });
+      if (!res.success) {
+        setErrorMsg(res.error || "Failed to withdraw this case.");
+        return;
+      }
+      toast.success("Case withdrawn", "The file is now DISPOSED with a WITHDRAWN record.");
+      resetModals();
+      router.refresh();
+    } catch (err: any) {
+      setErrorMsg(err?.message || "Failed to withdraw this case.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -566,6 +647,11 @@ export function CaseDetailClient({
               {closed && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10.5px] font-bold text-emerald-700">
                   <CheckCircle2 className="h-2.5 w-2.5" /> Closed
+                </span>
+              )}
+              {caseItem.withdrawn && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10.5px] font-bold text-rose-700">
+                  <ShieldAlert className="h-2.5 w-2.5" /> Withdrawn
                 </span>
               )}
               {languageBadge && (
@@ -737,6 +823,22 @@ export function CaseDetailClient({
                 <button onClick={() => setActiveModal("REMARK")} className="btn btn-secondary btn-sm">
                   <MessageSquare className="h-3.5 w-3.5" />
                   Add remark
+                </button>
+                <button onClick={() => setActiveModal("CORRECT")} className="btn btn-secondary btn-sm">
+                  <FileText className="h-3.5 w-3.5" />
+                  Correct this record
+                </button>
+                <button
+                  onClick={() => setActiveModal("WITHDRAW")}
+                  disabled={closed}
+                  title={closed ? "Already disposed — cannot withdraw" : "Withdraw / void this case"}
+                  className={cn(
+                    "btn btn-sm border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100",
+                    closed && "pointer-events-none opacity-40"
+                  )}
+                >
+                  <ShieldAlert className="h-3.5 w-3.5" />
+                  Withdraw / void
                 </button>
                 <button onClick={() => setActiveModal("LINK")} className="btn btn-secondary btn-sm">
                   <Link2 className="h-3.5 w-3.5" />
@@ -1927,6 +2029,171 @@ export function CaseDetailClient({
               </p>
             )}
           </div>
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      {/* Clerical correction modal */}
+      <Modal
+        open={activeModal === "CORRECT"}
+        onClose={resetModals}
+        title="Correct this record"
+        description="Fix clerical errors in the registry. Every change is attested with your reason."
+        icon={<FileText className="h-4 w-4" />}
+        tone="blue"
+        footer={
+          <>
+            <button onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleCorrectCase}
+              disabled={isLoading || correctionReason.trim().length < 10}
+              className="btn btn-primary btn-sm"
+            >
+              {isLoading ? "Saving…" : "Save correction"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label htmlFor="correct-category" className="field-label">
+                Category <span className="font-normal text-slate-400">(leave unchanged to keep)</span>
+              </label>
+              <select
+                id="correct-category"
+                value={correctionCategory}
+                onChange={(e) => setCorrectionCategory(e.target.value)}
+                className="input"
+              >
+                <option value="">— No change —</option>
+                {CASE_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="correct-priority" className="field-label">
+                Priority <span className="font-normal text-slate-400">(leave unchanged to keep)</span>
+              </label>
+              <select
+                id="correct-priority"
+                value={correctionPriority}
+                onChange={(e) => setCorrectionPriority(e.target.value)}
+                className="input"
+              >
+                <option value="">— No change —</option>
+                {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="correct-description" className="field-label">
+              Grievance representation <span className="font-normal text-slate-400">(optional)</span>
+            </label>
+            <textarea
+              id="correct-description"
+              rows={4}
+              value={correctionDescription}
+              onChange={(e) => setCorrectionDescription(e.target.value)}
+              className="input"
+              placeholder="Edit the representation text if it contains a clerical error…"
+            />
+            <p className="field-hint">At least 15 characters if changed. Original text stays in the audit trail.</p>
+          </div>
+
+          <div>
+            <label htmlFor="correct-reason" className="field-label">
+              Reason for correction <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              id="correct-reason"
+              rows={2}
+              value={correctionReason}
+              onChange={(e) => setCorrectionReason(e.target.value)}
+              className="input"
+              placeholder="e.g. Registry number transposed at intake; corrected against the original receipt…"
+            />
+            <p className="field-hint">Mandatory · minimum 10 characters · recorded in the audit ledger.</p>
+          </div>
+
+          {errorMsg && (
+            <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">
+              {errorMsg}
+            </p>
+          )}
+        </div>
+      </Modal>
+
+      {/* Withdraw / void modal */}
+      <Modal
+        open={activeModal === "WITHDRAW"}
+        onClose={resetModals}
+        title="Withdraw / void case"
+        description="Use only for wrongly filed cases. The file closes as DISPOSED with a WITHDRAWN record."
+        icon={<ShieldAlert className="h-4 w-4" />}
+        tone="rose"
+        footer={
+          <>
+            <button onClick={resetModals} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              onClick={handleWithdrawCase}
+              disabled={isLoading || withdrawReason.trim().length < 10 || !withdrawConfirmed}
+              className="btn btn-danger btn-sm"
+            >
+              {isLoading ? "Withdrawing…" : "Confirm withdrawal"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+            <p className="text-[11px] leading-relaxed text-rose-800">
+              This closes <strong className="font-mono">{caseItem.case_id}</strong> permanently. The
+              timeline gains a <strong>WITHDRAWN</strong> entry and the action is audited. This cannot
+              be undone from the desk.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="withdraw-reason" className="field-label">
+              Withdrawal reason <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              id="withdraw-reason"
+              rows={3}
+              value={withdrawReason}
+              onChange={(e) => setWithdrawReason(e.target.value)}
+              className="input"
+              placeholder="e.g. Filed against the wrong institution; duplicate of AICTE/RB/2026/00042…"
+            />
+            <p className="field-hint">Mandatory · minimum 10 characters.</p>
+          </div>
+
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+            <input
+              type="checkbox"
+              checked={withdrawConfirmed}
+              onChange={(e) => setWithdrawConfirmed(e.target.checked)}
+              className="mt-0.5 h-3.5 w-3.5 accent-rose-600"
+            />
+            <span className="text-[11px] font-medium leading-relaxed text-slate-700">
+              I confirm this case was filed in error and should be voided.
+            </span>
+          </label>
 
           {errorMsg && (
             <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] font-medium text-rose-700">

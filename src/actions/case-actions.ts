@@ -15,6 +15,8 @@ import {
   AddCaseCommentSchema,
   FieldVerificationSchema,
   BulkUpdateCasesSchema,
+  CorrectCaseSchema,
+  WithdrawCaseSchema,
 } from "@/lib/validations";
 import { SessionUser } from "@/lib/rbac";
 
@@ -186,6 +188,74 @@ export async function addRemarkAction(data: {
     return { success: true, data: updated };
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to add remark." };
+  }
+}
+
+/**
+ * Fix clerical errors on a filed case. The repository re-checks bureau
+ * authorization on the live record before applying any change.
+ */
+export async function correctCaseAction(data: {
+  caseId: string;
+  category?: string;
+  priority?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  description?: string;
+  reason: string;
+}) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  const parsed = CorrectCaseSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const actor = session.user as unknown as SessionUser;
+    const updated = await repository.correctCase(
+      parsed.data.caseId,
+      parsed.data,
+      actor
+    );
+
+    revalidatePath(`/cases/${parsed.data.caseId}`);
+    revalidatePath("/cases");
+    return { success: true, data: updated };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to correct case." };
+  }
+}
+
+/** Void a wrongly filed case: status becomes DISPOSED with a WITHDRAWN marker. */
+export async function withdrawCaseAction(data: {
+  caseId: string;
+  reason: string;
+}) {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  const parsed = WithdrawCaseSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0].message };
+  }
+
+  try {
+    const actor = session.user as unknown as SessionUser;
+    const updated = await repository.withdrawCase(
+      parsed.data.caseId,
+      parsed.data.reason,
+      actor
+    );
+
+    revalidatePath(`/cases/${parsed.data.caseId}`);
+    revalidatePath("/cases");
+    return { success: true, data: updated };
+  } catch (err: any) {
+    return { success: false, error: err.message || "Failed to withdraw case." };
   }
 }
 

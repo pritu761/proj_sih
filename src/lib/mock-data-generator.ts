@@ -14,6 +14,12 @@ export interface SeedInstitution {
   institution_type: string;
   contact_email: string;
   contact_phone: string;
+  /** Alternative names this institution is known by (additive entity alias
+   * layer used by the overlap detector to resolve the same legal entity). */
+  aliases?: string[];
+  /** Set when this record has been folded into another institution by an
+   * administrator merge. Audit history and case history remain untouched. */
+  merged_into?: string;
 }
 
 export interface SeedCase {
@@ -40,6 +46,10 @@ export interface SeedCase {
   feedback_rating?: number;
   feedback_comment?: string;
   feedback_at?: Date | null;
+  /** Additive markers for a wrongly filed case that a bureau has voided. The
+   * statutory status stays DISPOSED — no new enum value is introduced. */
+  withdrawn?: boolean;
+  withdrawn_reason?: string;
   actions: {
     actor_user: string;
     actor_bureau: string;
