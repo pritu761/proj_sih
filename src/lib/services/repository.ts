@@ -2124,6 +2124,24 @@ export class ComplaintRepository {
   }
 
   /**
+   * Mark every notification visible to the actor as read. Visibility is
+   * intentionally sourced from `getNotifications` so the same bureau filter
+   * applies here — a bureau officer can never clear another bureau's bell.
+   * Returns the number of notifications that actually changed.
+   */
+  public async markAllNotificationsRead(user?: SessionUser) {
+    const visible = await this.getNotifications(user);
+    let changed = 0;
+    for (const notification of visible) {
+      if (notification.read) continue;
+      notification.read = true;
+      changed++;
+    }
+    markStoreDirty();
+    return changed;
+  }
+
+  /**
    * Cron-backed SLA notifications. One batch per UTC day: breached files get
    * SLA_BREACHED, files inside the warning band get SLA_APPROACHING. The bell
    * already knows both types (see Navbar's notifIcon/notifTone maps).

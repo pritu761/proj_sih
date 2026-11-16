@@ -18,7 +18,7 @@ const STEPS: TourStep[] = [
   {
     title: "Command centre",
     body: "Live KPIs, SLA countdown and collision alerts that need attention today.",
-    target: "a[href='/']",
+    target: "a[href='/dashboard']",
   },
   {
     title: "Officer Work Queue",
@@ -57,6 +57,23 @@ export function OnboardingTour() {
     } catch {
       /* storage unavailable — skip the tour */
     }
+  }, []);
+
+  // Replay channel: the profile menu and command palette broadcast this event
+  // to clear the "seen" flag and walk through the workspace from step one.
+  useEffect(() => {
+    const onReplay = () => {
+      try {
+        window.localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        /* storage unavailable — still show the tour for this session */
+      }
+      setStep(0);
+      setHighlight(null);
+      setOpen(true);
+    };
+    window.addEventListener("sentinel:replay-tour", onReplay);
+    return () => window.removeEventListener("sentinel:replay-tour", onReplay);
   }, []);
 
   useEffect(() => {

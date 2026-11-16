@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -134,6 +134,20 @@ export function DashboardClient({
       setTimeout(() => setIsRefreshing(false), 500);
     }
   };
+
+  // The command palette broadcasts a refresh request on this channel. Keep a
+  // ref to the latest `refresh` closure so the listener (installed once) always
+  // sees current state, and remove it on unmount.
+  const refreshRef = useRef(refresh);
+  useEffect(() => {
+    refreshRef.current = refresh;
+  });
+  useEffect(() => {
+    const onExternalRefresh = () => void refreshRef.current();
+    window.addEventListener("sentinel:refresh-dashboard", onExternalRefresh);
+    return () =>
+      window.removeEventListener("sentinel:refresh-dashboard", onExternalRefresh);
+  }, []);
 
   const k = metrics.kpi;
   const total = Math.max(1, k.totalReceived);

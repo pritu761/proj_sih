@@ -24,10 +24,13 @@ import {
   ArrowUpRight,
   Sparkles,
   Keyboard,
+  RefreshCw,
+  CheckCheck,
 } from "lucide-react";
 import { cn, getBureauShortName } from "@/lib/utils";
 import { useTheme } from "@/components/theme/theme-provider";
 import { useToast } from "@/components/ui/toast";
+import { markAllNotificationsReadAction } from "@/actions/notification-actions";
 import type { SessionUser } from "@/lib/rbac";
 
 type Group = "Recent" | "Actions" | "Navigate" | "Cases" | "Institutions";
@@ -265,6 +268,45 @@ export function CommandPalette({ user }: { user: SessionUser }) {
         icon: ShieldAlert,
         href: "/alerts?status=OPEN",
         tone: "border-rose-200 bg-rose-50 text-rose-600",
+      },
+      {
+        key: "action-refresh-dashboard",
+        group: "Actions",
+        title: "Refresh dashboard metrics",
+        subtitle: "Pull the latest live operating picture",
+        icon: RefreshCw,
+        run: () => window.dispatchEvent(new Event("sentinel:refresh-dashboard")),
+        tone: "border-brand-200 bg-brand-50 text-brand-600",
+      },
+      {
+        key: "action-mark-all-read",
+        group: "Actions",
+        title: "Mark all notifications read",
+        subtitle: "Clear unread alerts across your bureaus",
+        icon: CheckCheck,
+        run: async () => {
+          try {
+            const result = await markAllNotificationsReadAction();
+            if (!result?.success) throw new Error(result?.error ?? "Update failed");
+            const count = result.count ?? 0;
+            toast.success(
+              "All notifications marked as read",
+              `${count} alert${count === 1 ? "" : "s"} cleared from your bell.`
+            );
+          } catch {
+            toast.error("Could not update notifications", "Please try again in a moment.");
+          }
+        },
+        tone: "border-emerald-200 bg-emerald-50 text-emerald-600",
+      },
+      {
+        key: "action-replay-tour",
+        group: "Actions",
+        title: "Replay guided tour",
+        subtitle: "Walk through the workspace again",
+        icon: Sparkles,
+        run: () => window.dispatchEvent(new Event("sentinel:replay-tour")),
+        tone: "border-slate-200 bg-slate-50 text-slate-600",
       },
       {
         key: "action-shortcuts",

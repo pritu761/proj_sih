@@ -21,3 +21,20 @@ export async function markNotificationReadAction(id: string) {
     return { success: false, error: err.message };
   }
 }
+
+export async function markAllNotificationsReadAction() {
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Authentication required." };
+  }
+
+  try {
+    const actor = session.user as unknown as SessionUser;
+    const count = await repository.markAllNotificationsRead(actor);
+    revalidatePath("/dashboard");
+    revalidatePath("/alerts");
+    return { success: true, count };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}

@@ -19,10 +19,15 @@ import {
   Inbox,
   ChevronDown,
   Keyboard,
+  CheckCheck,
+  Sparkles,
 } from "lucide-react";
 import { SessionUser } from "@/lib/rbac";
 import { getBureauLabel } from "@/lib/utils";
-import { markNotificationReadAction } from "@/actions/notification-actions";
+import {
+  markNotificationReadAction,
+  markAllNotificationsReadAction,
+} from "@/actions/notification-actions";
 import { signOut } from "next-auth/react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useToast } from "@/components/ui/toast";
@@ -70,6 +75,20 @@ function timeAgo(date: Date | string) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+/**
+ * Route notification rows to the broadest SAFE list view for their signal.
+ * Never deep-link to a case id from here — the drawer is visible to bureau
+ * users who may not be allowed to open the underlying file.
+ */
+function notificationHref(type: string) {
+  if (type === "SLA_BREACHED" || type === "SLA_APPROACHING") {
+    return "/cases?sla_status=BREACHED";
+  }
+  if (type === "OVERLAP") return "/alerts";
+  if (type === "PENDING_REMINDER") return "/calendar";
+  return "/cases";
+}
+
 export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortcuts }: NavbarProps) {
   const router = useRouter();
   const toast = useToast();
@@ -112,6 +131,25 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
       toast.info("Notification marked as read", "It stays available in your alert history.");
     } catch {
       toast.error("Could not update notification", "Please try again in a moment.");
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (unreadCount === 0) return;
+    const previously = notifList;
+    const cleared = unreadCount;
+    // Optimistic: clear the whole drawer immediately, roll back on failure.
+    setNotifList((prev) => prev.map((n) => ({ ...n, read: true })));
+    try {
+      const result = await markAllNotificationsReadAction();
+      if (!result?.success) throw new Error(result?.error ?? "Update failed");
+      toast.success(
+        "All notifications marked as read",
+        `${cleared} alert${cleared === 1 ? "" : "s"} cleared from your bell.`
+      );
+    } catch {
+      setNotifList(previously);
+      toast.error("Could not update notifications", "Please try again in a moment.");
     }
   };
 
@@ -249,13 +287,25 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                       </span>
                     )}
                   </div>
-                  <Link
-                    href="/alerts"
-                    onClick={() => setShowNotifications(false)}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 hover:text-brand-700"
-                  >
-                    View all <ArrowUpRight className="h-3 w-3" />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleMarkAllAsRead}
+                      disabled={unreadCount === 0}
+                      aria-label="Mark all notifications as read"
+                      className="inline-flex items-center gap-1 text-[10.5px] font-bold text-slate-500 transition-colors hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-slate-500"
+                    >
+                      <CheckCheck className="h-3.5 w-3.5" />
+                      Mark all as read
+                    </button>
+                    <Link
+                      href="/alerts"
+                      onClick={() => setShowNotifications(false)}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 hover:text-brand-700"
+                    >
+                      View all <ArrowUpRight className="h-3 w-3" />
+                    </Link>
+                  </div>
                 </div>
 
                 <div className="max-h-[340px] overflow-y-auto">
@@ -271,10 +321,12 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                     notifList.slice(0, 7).map((notif) => {
                       const Icon = notifIcon[notif.type] || Bell;
                       return (
-                        <div
+                        <Link
                           key={notif.id}
+                          href={notificationHref(notif.type)}
+                          onClick={() => setShowNotifications(false)}
                           className={cn(
-                            "border-b border-slate-50 px-4 py-3 transition-colors last:border-0 hover:bg-slate-50/80",
+                            "block border-b border-slate-50 px-4 py-3 transition-colors last:border-0 hover:bg-slate-50/80",
                             !notif.read && "bg-brand-50/40"
                           )}
                         >
@@ -305,7 +357,12 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                                 </span>
                                 {!notif.read && (
                                   <button
-                                    onClick={() => handleMarkAsRead(notif.id)}
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleMarkAsRead(notif.id);
+                                    }}
                                     className="rounded-md px-1.5 py-0.5 text-[10.5px] font-bold text-brand-600 hover:bg-brand-50"
                                   >
                                     Mark read
@@ -314,7 +371,7 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                               </div>
                             </div>
                           </div>
-                        </div>
+                        </Link>
                       );
                     })
                   )}
@@ -369,6 +426,17 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                     <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" />
                     Review alerts
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowProfile(false);
+                      window.dispatchEvent(new Event("sentinel:replay-tour"));
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11.5px] font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-slate-400" />
+                    Replay guided tour
+                  </button>
                   {onShortcuts && (
                     <button
                       onClick={() => {
