@@ -453,6 +453,45 @@ export class ComplaintRepository {
     // Explainable risk radar (portfolio-level breach forecast)
     const riskRadar = buildRiskRadar(allCases, store.institutions, scopedOverlapAlerts);
 
+    // Additive, registry-derived freshness + weekly movement. No black-box AI:
+    // every figure below is counted from the same live cases that feed the KPIs.
+    // The disposal timestamp mirrors analytics.disposedAtOf / latestDisposedAt:
+    // the most recent DISPOSED action, falling back to last_action_date.
+    const movementWindowStart = Date.now() - 7 * 86400000;
+    let received7d = 0;
+    let disposed7d = 0;
+    for (const c of allCases) {
+      if (new Date(c.date_received).getTime() >= movementWindowStart) received7d++;
+      if (c.status === "DISPOSED") {
+        const disposalAction = c.actions
+          .filter((a) => a.action_type === "DISPOSED")
+          .sort(
+            (a, b) =>
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          )[0];
+        const disposedTs = disposalAction
+          ? new Date(disposalAction.timestamp).getTime()
+          : new Date(c.last_action_date).getTime();
+        if (disposedTs >= movementWindowStart) disposed7d++;
+      }
+    }
+    const recentMovement = { received7d, disposed7d };
+
+    // Additive unassigned-work-queue count, scoped exactly like getMyQueue's
+    // "unavailable for pick-up" branch so the dashboard action deck agrees with
+    // the workbench. Regional officers are read-only for bureau case state, so
+    // they always report zero here.
+    let queueUnassigned = 0;
+    if (user && user.role !== "REGIONAL_OFFICER") {
+      const bureauScoped = user.bureau !== "ALL";
+      queueUnassigned = store.cases.filter((c) => {
+        if (c.assigned_officer) return false;
+        if (c.status === "DISPOSED" || c.status === "TRANSFERRED") return false;
+        if (bureauScoped && c.assigned_bureau !== user.bureau) return false;
+        return true;
+      }).length;
+    }
+
     return {
       kpi: {
         totalReceived,
@@ -474,6 +513,10 @@ export class ComplaintRepository {
       urgentCases,
       openOverlapList,
       riskRadar,
+      // Additive fields — safe for the existing demo registry numbers.
+      generatedAt: new Date().toISOString(),
+      recentMovement,
+      queueUnassigned,
     };
   }
 

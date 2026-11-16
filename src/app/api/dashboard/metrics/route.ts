@@ -11,5 +11,10 @@ export async function GET() {
 
   const user = session.user as unknown as SessionUser;
   const metrics = await repository.getDashboardMetrics(user);
-  return NextResponse.json(metrics);
+  // Honest freshness: stamp the moment this payload was actually served. The
+  // dashboard reads this server timestamp instead of a mount-time client Date.
+  return NextResponse.json({
+    ...metrics,
+    generatedAt: new Date().toISOString(),
+  });
 }

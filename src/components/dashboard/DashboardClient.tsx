@@ -23,6 +23,8 @@ import {
   Timer,
   Sparkles,
   Scale,
+  ListChecks,
+  Users,
 } from "lucide-react";
 import {
   BarChart,
@@ -75,24 +77,31 @@ const statusColor: Record<string, string> = {
 
 export function DashboardClient({
   initialMetrics,
-  userRole: _userRole,
-  userBureau: _userBureau,
+  userRole,
+  userBureau,
   userName,
 }: DashboardClientProps) {
   const router = useRouter();
   const toast = useToast();
   const [metrics, setMetrics] = useState(initialMetrics);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  // Hydration-safe time-aware greeting: the first client render matches the
+  // server's static "Welcome back" exactly; the clock-derived salutation is
+  // applied only after mount.
+  const [greeting, setGreeting] = useState("Welcome back");
+  // The "Synced" label is derived from the server's generatedAt timestamp,
+  // formatted after mount so server/client locale differences cannot diverge.
+  const [syncedLabel, setSyncedLabel] = useState("just now");
 
   useEffect(() => {
-    setLastUpdated(new Date());
+    const hour = new Date().getHours();
+    setGreeting(hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening");
     const interval = setInterval(async () => {
       try {
         const res = await fetch("/api/dashboard/metrics");
         if (res.ok) {
           setMetrics(await res.json());
-          setLastUpdated(new Date());
         }
       } catch {
         /* silent polling tick */
@@ -101,13 +110,21 @@ export function DashboardClient({
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const generatedAt = metrics?.generatedAt;
+    if (!generatedAt || Number.isNaN(Date.parse(generatedAt))) return;
+    setSyncedLabel(
+      new Date(generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    );
+  }, [metrics?.generatedAt]);
+
   const refresh = async () => {
     setIsRefreshing(true);
     try {
       const res = await fetch("/api/dashboard/metrics");
       if (!res.ok) throw new Error("Metrics endpoint unavailable");
+      // generatedAt from the response drives the "Synced" label — no client clock.
       setMetrics(await res.json());
-      setLastUpdated(new Date());
     } catch {
       toast.error(
         "Refresh failed",
@@ -135,12 +152,6 @@ export function DashboardClient({
       text: "files beyond the statutory timeline",
       href: "/cases?sla_status=BREACHED",
       tone: "#fb7185",
-    },
-    {
-      value: `${k.openOverlapAlerts}`,
-      text: "cross-bureau overlaps awaiting a lead",
-      href: "/alerts?status=OPEN",
-      tone: "#fbbf24",
     },
     {
       value: `${disposalRate}%`,
@@ -282,6 +293,73 @@ export function DashboardClient({
       ?.split(/\s+/)
       .find((w) => w && !honorifics.has(w.toLowerCase().replace(/\./g, ""))) ?? "Officer";
 
+  const recentMovement = metrics.recentMovement ?? { received7d: 0, disposed7d: 0 };
+  const bureauLabel = bureauShort[userBureau ?? ""] ?? userBureau ?? "Your bureau";
+
+  // One-click action deck. Every figure is registry-derived (or an additive
+  // metrics field); cards appear only where the signed-in role can act on the
+  // signal. Regional officers are read-only for bureau case state, so their
+  // unassigned count is zero and a neutral, region-safe card keeps the deck at
+  // three compact actions.
+  const priorities: {
+    label: string;
+    count: number;
+    detail: string;
+    href: string;
+    icon: typeof Inbox;
+    tone: string;
+  }[] = [
+    {
+      label: "SLA breaches",
+      count: k.pendingBeyondTimeline,
+      detail: "Files past the statutory timeline awaiting action.",
+      href: "/cases?sla_status=BREACHED",
+      icon: AlertOctagon,
+      tone: "text-rose-700 bg-rose-50 border-rose-200",
+    },
+    {
+      label: "Cross-bureau overlaps",
+      count: k.openOverlapAlerts,
+      detail: "Parallel inquiries that need a lead bureau.",
+      href: "/alerts",
+      icon: ShieldAlert,
+      tone: "text-saffron-600 bg-saffron-500/10 border-saffron-300",
+    },
+  ];
+
+  if (userRole !== "REGIONAL_OFFICER") {
+    priorities.push({
+      label: "Unassigned files",
+      count: metrics.queueUnassigned ?? 0,
+      detail: `${bureauLabel} desk files awaiting an officer.`,
+      href: "/workqueue",
+      icon: Users,
+      tone: "text-brand-700 bg-brand-50 border-brand-200",
+    });
+  }
+
+  if (userRole === "ADMIN" || userRole === "COMPETENT_AUTHORITY") {
+    priorities.push({
+      label: "Awaiting authority direction",
+      count: k.escalated,
+      detail: "Escalated files awaiting your decision.",
+      href: "/escalation",
+      icon: Flame,
+      tone: "text-violet-700 bg-violet-50 border-violet-200",
+    });
+  }
+
+  if (priorities.length < 3) {
+    priorities.push({
+      label: "Pending scrutiny",
+      count: k.pending,
+      detail: "Region files awaiting allocation.",
+      href: "/cases?status=PENDING",
+      icon: Inbox,
+      tone: "text-amber-700 bg-amber-50 border-amber-200",
+    });
+  }
+
   return (
     <div
       className={cn(
@@ -318,7 +396,7 @@ export function DashboardClient({
             </div>
 
             <h1 className="mt-3.5 font-display text-[clamp(1.65rem,3vw,2.15rem)] font-extrabold leading-[1.08] tracking-[-0.035em] text-white">
-              {userName ? `Welcome back, ${firstName}.` : "Institutional grievance overview."}
+              {userName ? `${greeting}, ${firstName}.` : "Institutional grievance overview."}
             </h1>
             <p className="mt-2 max-w-xl text-[12.5px] leading-relaxed text-slate-400">
               One live operating picture across every Bureau, Cell, and Regional Office.
@@ -330,13 +408,13 @@ export function DashboardClient({
                 <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
                 Refresh data
               </button>
-              <IngestionSimulator userRole={_userRole} userBureau={_userBureau} />
+              <IngestionSimulator userRole={userRole} userBureau={userBureau} />
               <Link href="/cases/new" className="btn btn-primary btn-sm">
                 <PlusCircle className="h-3.5 w-3.5" />
                 Register complaint
               </Link>
               <span className="ml-1 text-[10.5px] font-medium text-slate-400">
-                Synced {lastUpdated ? lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "just now"}
+                Synced {syncedLabel}
               </span>
             </div>
           </div>
@@ -375,6 +453,60 @@ export function DashboardClient({
         </div>
       </section>
 
+      {/* ── Today's priorities ── */}
+      <Reveal delay={60}>
+        <section className="panel overflow-hidden">
+          <div className="panel-head flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-saffron-300/60 bg-saffron-500/10 text-saffron-600">
+                <ListChecks className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="panel-title">Today&apos;s priorities</h2>
+                <p className="mt-0.5 text-[10.5px] font-medium text-slate-400 dark:text-slate-500">
+                  Live registry signals — one click to act.
+                </p>
+              </div>
+            </div>
+            <span className="text-[10.5px] font-semibold text-slate-400 dark:text-slate-500">
+              This week:{" "}
+              <span className="text-slate-700 dark:text-slate-200">{recentMovement.received7d}</span>{" "}
+              received ·{" "}
+              <span className="text-slate-700 dark:text-slate-200">{recentMovement.disposed7d}</span>{" "}
+              disposed
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-px bg-slate-100 dark:bg-white/5 sm:grid-cols-2 xl:grid-cols-4">
+            {priorities.map((p) => {
+              const Icon = p.icon;
+              return (
+                <Link
+                  key={p.label}
+                  href={p.href}
+                  className="group bg-white p-4 transition-colors hover:bg-slate-50/80 dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border", p.tone)}>
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-slate-500" />
+                  </div>
+                  <p className="mt-3 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
+                    {p.label}
+                  </p>
+                  <p className="mt-1 font-display text-[26px] font-extrabold leading-none tracking-[-0.03em] text-slate-950 dark:text-white">
+                    <CountUp value={p.count} />
+                  </p>
+                  <p className="mt-1.5 text-[10.5px] leading-snug text-slate-500 dark:text-slate-400">
+                    {p.detail}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      </Reveal>
+
       <Reveal>
         <OperationsWire items={wireItems} />
       </Reveal>
@@ -382,38 +514,6 @@ export function DashboardClient({
       <Reveal delay={90}>
         <AiBriefing />
       </Reveal>
-
-      {/* ── Overlap alert ── */}
-      {k.openOverlapAlerts > 0 && (
-        <div className="relative overflow-hidden rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 via-white to-amber-50/60 p-4 shadow-sm animate-slide-up sm:p-5">
-          <div className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-rose-500 to-amber-400" />
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3.5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-[0_10px_24px_-8px_rgba(225,29,72,0.6)]">
-                <ShieldAlert className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-[14px] font-bold tracking-tight text-rose-950">
-                    Potential Overlapping Cases – Coordination Required
-                  </h2>
-                  <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide text-white">
-                    {k.openOverlapAlerts} open
-                  </span>
-                </div>
-                <p className="mt-1 max-w-2xl text-[11.5px] leading-relaxed text-rose-800/85">
-                  Parallel open inquiries detected on the same institutions across multiple Bureaus.
-                  Assign a lead bureau before duplicate action is taken.
-                </p>
-              </div>
-            </div>
-            <Link href="/alerts?status=OPEN" className="btn btn-danger btn-sm shrink-0 self-start sm:self-auto">
-              Review collisions
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </div>
-      )}
 
       {/* ── KPI grid ── */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 stagger-children">
@@ -708,7 +808,16 @@ export function DashboardClient({
           </div>
 
           {urgentCases.length === 0 ? (
-            <EmptyState icon={CheckCircle2} title="No urgent cases right now" />
+            <EmptyState
+              icon={CheckCircle2}
+              title="No urgent cases right now"
+              action={
+                <Link href="/cases?sla_status=BREACHED" className="btn btn-secondary btn-sm">
+                  Open SLA view
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              }
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -783,7 +892,16 @@ export function DashboardClient({
           </div>
 
           {openOverlaps.length === 0 ? (
-            <EmptyState icon={ShieldAlert} title="No uncoordinated overlaps" />
+            <EmptyState
+              icon={ShieldAlert}
+              title="No uncoordinated overlaps"
+              action={
+                <Link href="/alerts?status=OPEN" className="btn btn-secondary btn-sm">
+                  Open coordination hub
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Link>
+              }
+            />
           ) : (
             <div className="divide-y divide-slate-100">
               {openOverlaps.map((o) => (
