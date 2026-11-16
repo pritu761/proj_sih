@@ -73,6 +73,11 @@ export interface StoreState {
   lastAutoEscalation?: string;
   /** Merge-suggestion pair keys an officer already reviewed ("not duplicates"). */
   dismissedMergeSuggestions?: string[];
+  /** UTC day (YYYY-MM-DD) each cron notification sweep last ran for. Old
+   * snapshots simply omit these; the first run then creates its daily batch. */
+  lastSlaNotificationDay?: string;
+  lastReminderNotificationDay?: string;
+  lastOverlapNotificationDay?: string;
 }
 
 interface SnapshotPayload {

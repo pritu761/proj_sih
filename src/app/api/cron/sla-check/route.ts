@@ -27,12 +27,15 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  const notificationsCreatedCount = await repository.createSlaNotifications();
+
   return NextResponse.json({
     success: true,
     timestamp: new Date().toISOString(),
     checkedCases: activeCases.length,
     breachedCount,
     approachingCount,
+    notificationsCreatedCount,
     notificationsCreated: notificationsCreated.slice(0, 10),
   });
 }

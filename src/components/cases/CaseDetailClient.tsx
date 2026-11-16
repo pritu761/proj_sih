@@ -38,6 +38,7 @@ import {
   MinusCircle,
   ThumbsDown,
   EyeOff,
+  Star,
 } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import {
@@ -818,6 +819,64 @@ export function CaseDetailClient({
                 {caseItem.description}
               </p>
             </div>
+          </div>
+
+          {/* Citizen feedback — the complainant's own rating of the redressal,
+              submitted on the public tracker. Officers see it on the same file. */}
+          <div className="panel overflow-hidden">
+            <div className="panel-head">
+              <div>
+                <h2 className="panel-title flex items-center gap-2">
+                  <Star className="h-3.5 w-3.5 text-saffron-500" />
+                  Citizen feedback — quality of redressal
+                </h2>
+                <p className="mt-0.5 text-[10.5px] font-medium text-slate-400">
+                  Shared by the complainant on the public grievance tracker.
+                </p>
+              </div>
+            </div>
+            {typeof caseItem.feedback_rating === "number" ? (
+              <div className="space-y-2.5 px-5 py-4">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="flex items-center gap-0.5" aria-label={`${caseItem.feedback_rating} out of 5 stars`}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={cn(
+                          "h-3.5 w-3.5",
+                          star <= caseItem.feedback_rating
+                            ? "fill-saffron-400 text-saffron-400"
+                            : "text-slate-300"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <span className="font-display text-[12px] font-bold text-slate-800">
+                    {caseItem.feedback_rating}/5
+                  </span>
+                  <span className="rounded-full border border-brand-100 bg-brand-50 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-brand-700">
+                    {["", "Unsatisfactory", "Needs improvement", "Satisfactory", "Good", "Excellent"][caseItem.feedback_rating]}
+                  </span>
+                  {caseItem.feedback_at && (
+                    <span className="text-[10px] font-medium text-slate-400">
+                      {formatDate(caseItem.feedback_at)}
+                    </span>
+                  )}
+                </div>
+                {caseItem.feedback_comment ? (
+                  <p className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5 text-[11.5px] leading-relaxed text-slate-600">
+                    &ldquo;{caseItem.feedback_comment}&rdquo;
+                  </p>
+                ) : (
+                  <p className="text-[10.5px] italic text-slate-400">No written comment was added.</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-5 py-4 text-[11.5px] font-medium text-slate-400">
+                <Star className="h-3.5 w-3.5 text-slate-300" />
+                No citizen feedback yet
+              </div>
+            )}
           </div>
 
           {/* Precedent cards — how comparable grievances of this category were actually resolved */}

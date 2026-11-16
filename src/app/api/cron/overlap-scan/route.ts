@@ -28,12 +28,16 @@ export async function GET(req: NextRequest) {
   }));
 
   const detectedCandidates = await overlapDetector.batchScan(formattedCases);
+  const notificationsCreatedCount = await repository.createOverlapNotifications(
+    detectedCandidates
+  );
 
   return NextResponse.json({
     success: true,
     timestamp: new Date().toISOString(),
     scannedCasesCount: activeCases.length,
     detectedOverlapsCount: detectedCandidates.length,
+    notificationsCreatedCount,
     sampleOverlaps: detectedCandidates.slice(0, 5),
   });
 }

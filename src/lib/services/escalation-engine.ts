@@ -221,3 +221,89 @@ export async function runAutoEscalation(options: {
     items,
   };
 }
+
+/** One auto-escalated file as shown in the authority review console. */
+export interface EscalatedCaseView {
+  case_id: string;
+  internal_id: string;
+  bureau: string;
+  institutionName: string;
+  breachDays: number;
+  memo: string;
+  escalatedAt: Date;
+}
+
+export interface EscalationReview {
+  day: string;
+  graceDays: number;
+  checked: number;
+  escalated: number;
+  alreadyEscalated: number;
+  items: EscalatedCaseView[];
+}
+
+/**
+ * Derives the review console from the markers the engine already persists:
+ * an `ESCALATED` timeline action authored by the system actor carries the full
+ * memorandum, and `lastAutoEscalation` records the sweep day. No new schema.
+ */
+export function deriveEscalationReview(
+  store: StoreState,
+  now: Date = new Date()
+): EscalationReview {
+  const instNames = new Map(store.institutions.map((i) => [i.id, i.name]));
+  const items: EscalatedCaseView[] = [];
+  let checked = 0;
+  let alreadyEscalated = 0;
+
+  for (const c of store.cases) {
+    if (c.status === "DISPOSED" || c.status === "TRANSFERRED") continue;
+    checked++;
+
+    const autoAction = c.actions.find(
+      (a) =>
+        a.action_type === "ESCALATED" &&
+        a.actor_user === AUTO_ESCALATION_SYSTEM_ACTOR
+    );
+    if (!autoAction) {
+      if (c.status === "ESCALATED") alreadyEscalated++;
+      continue;
+    }
+
+    const memo = autoAction.remarks || "";
+    const fromMemo = memo.match(/(\d+)\s+days?\s+overdue/i);
+    const fromLastAction = c.last_action?.match(/\((\d+)d\s+past statutory window\)/i);
+    const due = new Date(c.expected_disposal_date).getTime();
+    const stamp = new Date(autoAction.timestamp).getTime();
+    const computed =
+      Number.isFinite(due) && Number.isFinite(stamp)
+        ? Math.floor((stamp - due) / 86400000)
+        : 0;
+    const breachDays = fromMemo
+      ? Number(fromMemo[1])
+      : fromLastAction
+        ? Number(fromLastAction[1])
+        : Math.max(0, computed);
+
+    items.push({
+      case_id: c.case_id,
+      internal_id: c.id,
+      bureau: c.assigned_bureau,
+      institutionName: instNames.get(c.institution_id) ?? "Institution on record",
+      breachDays,
+      memo,
+      escalatedAt: new Date(autoAction.timestamp),
+    });
+  }
+
+  items.sort((a, b) => b.escalatedAt.getTime() - a.escalatedAt.getTime());
+
+  return {
+    day: store.lastAutoEscalation ?? dayKey(now),
+    graceDays: AUTO_ESCALATION_GRACE_DAYS,
+    checked,
+    escalated: items.length,
+    alreadyEscalated,
+    items,
+  };
+}

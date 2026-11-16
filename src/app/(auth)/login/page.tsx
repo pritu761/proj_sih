@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { DEMO_USERS } from "@/lib/demo-data";
+import { DEMO_USERS, EXTRA_OFFICERS } from "@/lib/demo-data";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { TextReveal } from "@/components/ui/text-reveal";
 import { HeroAmbient } from "./hero-ambient";
@@ -30,6 +30,27 @@ const roleMeta: Record<string, RoleMeta> = {
   BUREAU_OFFICER: { label: "Approval", code: "AB", className: "bg-amber-500 text-ink-950" },
   REGIONAL_OFFICER: { label: "Regional", code: "RO", className: "bg-teal-700 text-white" },
 };
+
+/** Seven one-click logins: the six primary personas plus the SDC officer. */
+const skillCellPersona = EXTRA_OFFICERS.find((u) => u.bureau === "SKILL_CELL")!;
+const demoPersonas = [
+  ...DEMO_USERS.map((u) => ({
+    id: u.id,
+    email: u.email,
+    password: u.password,
+    name: u.name,
+    designation: u.designation,
+    meta: roleMeta[u.role] ?? { label: "Officer", code: "OF", className: "bg-slate-600 text-white" },
+  })),
+  {
+    id: skillCellPersona.id,
+    email: skillCellPersona.email,
+    password: skillCellPersona.password,
+    name: skillCellPersona.name,
+    designation: skillCellPersona.designation,
+    meta: { label: "Skill Cell", code: "SC", className: "bg-emerald-700 text-white" },
+  },
+];
 
 function safeCallbackUrl(value: string | null) {
   if (!value) return "/dashboard";
@@ -211,8 +232,8 @@ function LoginForm() {
           </p>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {DEMO_USERS.map((u, i) => {
-              const meta = roleMeta[u.role] ?? { label: "Officer", code: "OF", className: "bg-slate-600 text-white" };
+            {demoPersonas.map((u, i) => {
+              const meta = u.meta;
               return (
                 <button
                   key={u.id}

@@ -1,5 +1,14 @@
 import { describe, it, expect } from "vitest";
 import repository from "@/lib/services/repository";
+import type { SessionUser } from "@/lib/rbac";
+
+const ADMIN: SessionUser = {
+  id: "usr_admin_001",
+  name: "Dr. Rajesh Sharma",
+  email: "admin@aicte.gov.in",
+  role: "ADMIN",
+  bureau: "ALL",
+};
 
 /**
  * The citizen feedback loop, end to end at the repository seam:
@@ -27,6 +36,22 @@ describe("Citizen feedback loop (repository)", () => {
     // Latest submission wins (a citizen may revise their rating).
     repository.submitPublicFeedback(disposed.case_id, { rating: 3 });
     expect(repository.getPublicCaseStatus(disposed.case_id)?.feedback_rating).toBe(3);
+  });
+
+  it("exposes submitted feedback on the officer case view", async () => {
+    const page = await repository.getCases({ status: "DISPOSED", limit: 1 });
+    const disposed = page.cases[0];
+    repository.submitPublicFeedback(disposed.case_id, {
+      rating: 4,
+      comment: "Officer panel should surface this redressal rating.",
+    });
+
+    // getCaseById spreads the canonical case record, so the officer workspace
+    // receives the same feedback fields the public projection shows.
+    const view = await repository.getCaseById(disposed.id, ADMIN);
+    expect(view?.caseItem.feedback_rating).toBe(4);
+    expect(view?.caseItem.feedback_comment).toContain("Officer panel");
+    expect(view?.caseItem.feedback_at).toBeTruthy();
   });
 
   it("feeds the transparency page's quality-of-redressal metrics", async () => {

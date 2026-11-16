@@ -3,6 +3,7 @@ import { generateSeedData } from "@/lib/mock-data-generator";
 import {
   runAutoEscalation,
   buildEscalationMemo,
+  deriveEscalationReview,
   AUTO_ESCALATION_GRACE_DAYS,
 } from "@/lib/services/escalation-engine";
 import type { StoreState } from "@/lib/services/persistence";
@@ -83,6 +84,15 @@ describe("Auto-escalation engine", () => {
     // Digest notification summarises the sweep instead of flooding the bell.
     const digest = store.notifications.find((n) => n.type === "ESCALATION");
     expect(digest?.title).toContain("Auto-escalation digest");
+
+    // Review console derives its rows from the markers the engine persisted.
+    const review = deriveEscalationReview(store, now);
+    expect(review.escalated).toBeGreaterThanOrEqual(1);
+    const row = review.items.find((i) => i.case_id === fixture.case_id);
+    expect(row?.bureau).toBe(fixture.assigned_bureau);
+    expect(row?.breachDays).toBeGreaterThanOrEqual(AUTO_ESCALATION_GRACE_DAYS);
+    expect(row?.memo).toContain("AUTO-ESCALATION MEMORANDUM");
+    expect(row?.escalatedAt).toBeInstanceOf(Date);
   });
 
   it("respects the grace window: 1-day-overdue files stay untouched", async () => {

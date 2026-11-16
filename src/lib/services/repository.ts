@@ -4,7 +4,11 @@ import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
 import { calculateCaseSla, computeAgeingBuckets } from "./sla-engine";
 import { buildRiskRadar, buildCaseInsight } from "./risk-engine";
-import { overlapDetector, deriveTrilayerFromCases } from "./overlap-detector";
+import {
+  overlapDetector,
+  deriveTrilayerFromCases,
+  type OverlapCandidate,
+} from "./overlap-detector";
 import { logAuditEvent, inMemoryAuditLogs } from "./audit";
 import { analyzeComplainants, ComplainantProfile, ComplainantCaseInput, RECURRENCE_META } from "./complainant-engine";
 import {
@@ -15,7 +19,7 @@ import {
   StoreUser,
 } from "./persistence";
 import { ensureDailyIntake } from "./daily-intake";
-import { runAutoEscalation } from "./escalation-engine";
+import { runAutoEscalation, deriveEscalationReview } from "./escalation-engine";
 import { findMergeSuggestions, type MergeSuggestion } from "./merge-suggester";
 import {
   computeBacklogForecast,
@@ -50,6 +54,11 @@ export interface CaseFilterOptions {
 
 function uid(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** UTC day key used by the cron notification idempotency markers. */
+function utcDay(d: Date = new Date()): string {
+  return d.toISOString().slice(0, 10);
 }
 
 const PASSWORD_HASH_FALLBACK = DEMO_PASSWORD_HASHES["Officer@123"];
@@ -1348,6 +1357,16 @@ export class ComplaintRepository {
   }
 
   /**
+   * Authority review data, derived from the escalation engine's persisted
+   * markers (system-authored ESCALATED timeline actions + sweep day) — no new
+   * persistence is introduced for the review console.
+   */
+  public async getEscalationReview() {
+    const store = getInMemoryStore();
+    return deriveEscalationReview(store);
+  }
+
+  /**
    * Overlap Actions: Acknowledge, Coordinate, Dismiss
    */
   public async coordinateOverlapAlert(
@@ -1843,6 +1862,117 @@ export class ComplaintRepository {
     notification.read = true;
     markStoreDirty();
     return true;
+  }
+
+  /**
+   * Cron-backed SLA notifications. One batch per UTC day: breached files get
+   * SLA_BREACHED, files inside the warning band get SLA_APPROACHING. The bell
+   * already knows both types (see Navbar's notifIcon/notifTone maps).
+   */
+  public async createSlaNotifications(now: Date = new Date()): Promise<number> {
+    const store = getInMemoryStore();
+    const day = utcDay(now);
+    if (store.lastSlaNotificationDay === day) return 0;
+
+    let created = 0;
+    for (const c of store.cases) {
+      if (c.status === "DISPOSED") continue;
+      const sla = calculateCaseSla(c.category, c.date_received, c.status, now);
+      if (!sla.isBreached && !sla.isApproaching) continue;
+
+      const breached = sla.isBreached;
+      store.notifications.unshift({
+        id: `notif_sla_${day}_${c.id}`,
+        type: breached ? "SLA_BREACHED" : "SLA_APPROACHING",
+        case_id: c.case_id,
+        target_bureau: c.assigned_bureau,
+        title: breached
+          ? `SLA breached: ${c.case_id}`
+          : `SLA approaching: ${c.case_id}`,
+        message: breached
+          ? `Case ${c.case_id} is ${Math.abs(sla.remainingDays)} day(s) past its ${sla.timelineDays}-day statutory window. Immediate action or escalation required.`
+          : `Case ${c.case_id} has ${sla.remainingDays} day(s) left in its ${sla.timelineDays}-day statutory window.`,
+        read: false,
+        created_at: now,
+      });
+      created++;
+    }
+
+    store.lastSlaNotificationDay = day;
+    markStoreDirty();
+    return created;
+  }
+
+  /** Cron-backed hearing reminders, once per UTC day. */
+  public async createReminderNotifications(
+    now: Date = new Date(),
+    daysAhead = 7
+  ): Promise<number> {
+    const store = getInMemoryStore();
+    const day = utcDay(now);
+    if (store.lastReminderNotificationDay === day) return 0;
+
+    const horizon = now.getTime() + daysAhead * 86400000;
+    let created = 0;
+    for (const c of store.cases) {
+      if (!c.hearing_date || c.status === "DISPOSED") continue;
+      const hearingTime = new Date(c.hearing_date).getTime();
+      if (hearingTime < now.getTime() || hearingTime > horizon) continue;
+
+      const when = new Date(hearingTime).toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+      store.notifications.unshift({
+        id: `notif_rem_${day}_${c.id}`,
+        type: "PENDING_REMINDER",
+        case_id: c.case_id,
+        target_bureau: c.assigned_bureau,
+        title: `Hearing reminder: ${c.case_id}`,
+        message: `Hearing scheduled for ${when} on case ${c.case_id}. Ensure the file and representation are ready before the bench.`,
+        read: false,
+        created_at: now,
+      });
+      created++;
+    }
+
+    store.lastReminderNotificationDay = day;
+    markStoreDirty();
+    return created;
+  }
+
+  /** Cron-backed notifications for newly detected overlaps, once per UTC day. */
+  public async createOverlapNotifications(
+    candidates: OverlapCandidate[],
+    now: Date = new Date()
+  ): Promise<number> {
+    const store = getInMemoryStore();
+    const day = utcDay(now);
+    if (store.lastOverlapNotificationDay === day) return 0;
+
+    let created = 0;
+    for (const candidate of candidates) {
+      const caseIds = candidate.case_ids ?? [];
+      if (caseIds.length < 2) continue;
+      const firstCase = store.cases.find((c) => c.case_id === caseIds[0]);
+      store.notifications.unshift({
+        id: `notif_ov_${day}_${caseIds.join("_")}`,
+        type: "OVERLAP",
+        case_id: caseIds[0],
+        target_bureau:
+          candidate.bureaus_involved[0] ?? firstCase?.assigned_bureau ?? "ALL",
+        title: `New overlap detected — coordination required (${caseIds.length} files)`,
+        message: `Cases ${caseIds.join(", ")} share matching facts (${candidate.confidence} confidence). Review and coordinate before disposal.`,
+        read: false,
+        created_at: now,
+      });
+      created++;
+    }
+
+    store.lastOverlapNotificationDay = day;
+    markStoreDirty();
+    return created;
   }
 
   // ───────────────────────────────────────────────────────────────────────────

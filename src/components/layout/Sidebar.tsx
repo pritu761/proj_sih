@@ -22,6 +22,7 @@ import {
   CalendarDays,
   UsersRound,
   Landmark,
+  Siren,
 } from "lucide-react";
 import { SessionUser } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -75,6 +76,16 @@ export function Sidebar({
           active: pathname.startsWith("/alerts"),
           badge: openOverlapCount,
         },
+        ...(user.role === "ADMIN" || user.role === "COMPETENT_AUTHORITY"
+          ? [
+              {
+                name: "Escalation Review",
+                href: "/escalation",
+                icon: Siren,
+                active: pathname.startsWith("/escalation"),
+              },
+            ]
+          : []),
       ],
     },
     {
@@ -93,7 +104,7 @@ export function Sidebar({
           icon: CalendarDays,
           active: pathname.startsWith("/calendar"),
         },
-        ...(user.role === "ADMIN" || user.role === "COMPETENT_AUTHORITY"
+        ...(user.role === "ADMIN"
           ? [
               {
                 name: "Team & Access",

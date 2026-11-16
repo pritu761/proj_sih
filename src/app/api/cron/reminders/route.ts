@@ -16,11 +16,14 @@ export async function GET(req: NextRequest) {
     return elapsedDays > 7;
   });
 
+  const notificationsCreatedCount = await repository.createReminderNotifications();
+
   return NextResponse.json({
     success: true,
     timestamp: new Date().toISOString(),
     totalPendingChecked: pendingCases.length,
     dormantCasesCount: inactivePending.length,
     remindedCaseIds: inactivePending.slice(0, 10).map((c) => c.case_id),
+    notificationsCreatedCount,
   });
 }
