@@ -47,6 +47,7 @@ import { useToast } from "@/components/ui/toast";
 import { ChartTooltip } from "@/components/ui/chart-tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Reveal } from "@/components/ui/reveal";
+import { RecentActivity } from "./RecentActivity";
 import { RiskRadar } from "./RiskRadar";
 import { IngestionSimulator } from "./IngestionSimulator";
 import { OperationsWire } from "./OperationsWire";
@@ -197,7 +198,27 @@ export function DashboardClient({
       : []),
   ];
 
-  const kpis = [
+  type KpiCard = {
+    label: string;
+    value: number;
+    icon: typeof Inbox;
+    tone: string;
+    accent: string;
+    href: string;
+    sub: string;
+    share: number;
+    alert?: boolean;
+    trend?: {
+      current: number;
+      previous: number;
+      delta: number;
+      direction: "up" | "down" | "flat";
+    };
+    /** Whether a rising value is the "good" direction for this metric. */
+    trendGoodWhenUp?: boolean;
+  };
+
+  const kpis: KpiCard[] = [
     {
       label: "Total received",
       value: k.totalReceived,
@@ -207,6 +228,8 @@ export function DashboardClient({
       href: "/cases",
       sub: "All bureaus & regions",
       share: 100,
+      trend: metrics.kpiTrends?.received,
+      trendGoodWhenUp: false,
     },
     {
       label: "Pending scrutiny",
@@ -237,6 +260,8 @@ export function DashboardClient({
       href: "/cases?status=DISPOSED",
       sub: "Redressed & closed",
       share: (k.disposed / total) * 100,
+      trend: metrics.kpiTrends?.disposed,
+      trendGoodWhenUp: true,
     },
     {
       label: "Transferred",
@@ -309,6 +334,13 @@ export function DashboardClient({
 
   const recentMovement = metrics.recentMovement ?? { received7d: 0, disposed7d: 0 };
   const bureauLabel = bureauShort[userBureau ?? ""] ?? userBureau ?? "Your bureau";
+
+  // Server-generated freshness drives the activity feed's relative times so
+  // the first client render matches SSR exactly (no clock-based hydration drift).
+  const parsedSyncTime = Date.parse(metrics.generatedAt ?? "");
+  const activityReference = Number.isFinite(parsedSyncTime)
+    ? parsedSyncTime
+    : Date.now();
 
   // One-click action deck. Every figure is registry-derived (or an additive
   // metrics field); cards appear only where the signed-in role can act on the
@@ -521,6 +553,14 @@ export function DashboardClient({
         </section>
       </Reveal>
 
+      {/* ── Recent activity (RBAC-scoped audit projection) ── */}
+      <Reveal delay={70}>
+        <RecentActivity
+          items={metrics.recentActivity}
+          referenceTime={activityReference}
+        />
+      </Reveal>
+
       <Reveal>
         <OperationsWire items={wireItems} />
       </Reveal>
@@ -557,6 +597,33 @@ export function DashboardClient({
                 <CountUp value={kpi.value} />
               </p>
               <p className="mt-1.5 truncate text-[10.5px] font-medium text-slate-400">{kpi.sub}</p>
+
+              {/* Honest, date-derived weekly movement — only on cards with real data. */}
+              {kpi.trend && (
+                <div className="mt-2 flex items-center">
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9.5px] font-bold tabular-nums dark:bg-transparent",
+                      kpi.trend.direction === "flat"
+                        ? "border-slate-200 bg-slate-50 text-slate-500 dark:border-white/10 dark:text-slate-400"
+                        : (kpi.trend.direction === "up") === (kpi.trendGoodWhenUp ?? true)
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:text-emerald-300"
+                          : "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-400/20 dark:text-rose-300"
+                    )}
+                    title={`${kpi.trend.current} in the last 7 days vs ${kpi.trend.previous} in the prior 7 days`}
+                  >
+                    {kpi.trend.direction === "up"
+                      ? "▲"
+                      : kpi.trend.direction === "down"
+                        ? "▼"
+                        : "—"}
+                    {" "}
+                    {kpi.trend.direction === "flat"
+                      ? "no change"
+                      : `${kpi.trend.direction === "up" ? "+" : "−"}${Math.abs(kpi.trend.delta)} vs prior 7d`}
+                  </span>
+                </div>
+              )}
 
               <div className="mt-3.5 h-1 overflow-hidden rounded-full bg-slate-100">
                 <div

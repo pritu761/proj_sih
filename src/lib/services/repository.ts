@@ -21,7 +21,7 @@ import {
   deriveTrilayerFromCases,
   type OverlapCandidate,
 } from "./overlap-detector";
-import { logAuditEvent, inMemoryAuditLogs } from "./audit";
+import { logAuditEvent, inMemoryAuditLogs, type AuditEntry } from "./audit";
 import { buildAuditChain } from "./audit-chain";
 import { analyzeComplainants, ComplainantProfile, ComplainantCaseInput, RECURRENCE_META } from "./complainant-engine";
 import {
@@ -126,6 +126,109 @@ function uid(prefix: string): string {
 /** UTC day key used by the cron notification idempotency markers. */
 function utcDay(d: Date = new Date()): string {
   return d.toISOString().slice(0, 10);
+}
+
+const DAY_MS = 86400000;
+
+/** A single RBAC-scoped row of the dashboard recent-activity feed. */
+export interface RecentActivityEntry {
+  id: string;
+  actor: string;
+  action: string;
+  entity: string;
+  entity_id: string;
+  /** Humanised action label, e.g. STATUS_CHANGED → "Status changed". */
+  label: string;
+  /** ISO timestamp from the sealed audit ledger. */
+  timestamp: string;
+  /** Safe, role-checked destination for the row. */
+  href: string;
+  /** Short context (registry number / institution id) shown beside the actor. */
+  entityLabel?: string;
+  /** Bureau that owns the referenced entity — kept for scoping assertions. */
+  entityBureau?: string;
+}
+
+/** Honest week-over-week movement derived from real case dates. */
+export interface KpiTrend {
+  current: number;
+  previous: number;
+  delta: number;
+  direction: "up" | "down" | "flat";
+}
+
+export interface KpiTrends {
+  received: KpiTrend;
+  disposed: KpiTrend;
+}
+
+/** STATUS_CHANGED → "Status changed", LOGIN → "Login". */
+function humanizeAction(action: string): string {
+  if (!action) return "Activity";
+  return action
+    .toLowerCase()
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function makeTrend(current: number, previous: number): KpiTrend {
+  const delta = current - previous;
+  return {
+    current,
+    previous,
+    delta,
+    direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
+  };
+}
+
+/** Mirrors analytics.disposedAtOf / the repository's latestDisposedAt helper. */
+function activityDisposedAt(c: SeedCase): number {
+  const disposed = c.actions
+    .filter((a) => a.action_type === "DISPOSED")
+    .sort(
+      (a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    )[0];
+  const at = disposed
+    ? new Date(disposed.timestamp).getTime()
+    : new Date(c.last_action_date).getTime();
+  return Number.isFinite(at) ? at : 0;
+}
+
+/**
+ * Count live cases whose real dates fall in the trailing 7 days versus the
+ * prior 7 days. No hard-coded demo series: received uses `date_received`,
+ * disposed uses the same disposal timestamp analytics uses.
+ */
+export function computeKpiTrends(cases: SeedCase[], now: number = Date.now()): KpiTrends {
+  const currentStart = now - 7 * DAY_MS;
+  const previousStart = now - 14 * DAY_MS;
+  let receivedCurrent = 0;
+  let receivedPrevious = 0;
+  let disposedCurrent = 0;
+  let disposedPrevious = 0;
+
+  for (const c of cases) {
+    const received = new Date(c.date_received).getTime();
+    if (Number.isFinite(received)) {
+      if (received >= currentStart) receivedCurrent++;
+      else if (received >= previousStart) receivedPrevious++;
+    }
+    if (c.status === "DISPOSED") {
+      const disposedAt = activityDisposedAt(c);
+      if (Number.isFinite(disposedAt)) {
+        if (disposedAt >= currentStart) disposedCurrent++;
+        else if (disposedAt >= previousStart) disposedPrevious++;
+      }
+    }
+  }
+
+  return {
+    received: makeTrend(receivedCurrent, receivedPrevious),
+    disposed: makeTrend(disposedCurrent, disposedPrevious),
+  };
 }
 
 const PASSWORD_HASH_FALLBACK = DEMO_PASSWORD_HASHES["Officer@123"];
@@ -517,6 +620,10 @@ export class ComplaintRepository {
       generatedAt: new Date().toISOString(),
       recentMovement,
       queueUnassigned,
+      // Honest, date-derived weekly movement (never the hard-coded monthlyTrends).
+      kpiTrends: computeKpiTrends(allCases),
+      // RBAC-scoped ledger projection so the dashboard feed refreshes with the poll.
+      recentActivity: await this.getRecentActivity(user, 8),
     };
   }
 
@@ -4004,6 +4111,199 @@ export class ComplaintRepository {
         feedback,
       },
     };
+  }
+
+  /**
+   * RBAC-scoped recent activity. The raw ledger (`getAuditLogs`) is a global,
+   * unscoped audit trail and must never reach a user-facing surface directly.
+   * This projection resolves each entry against the live store, applies the
+   * same visibility rules as the rest of the repository, and drops any case
+   * entry the signed-in officer cannot view.
+   */
+  public async getRecentActivity(
+    user?: SessionUser,
+    limit = 8
+  ): Promise<RecentActivityEntry[]> {
+    const store = getInMemoryStore();
+    seedAuditLedger(store.cases);
+
+    const caseById = new Map<string, SeedCase>();
+    const caseByRegistry = new Map<string, SeedCase>();
+    for (const c of store.cases) {
+      caseById.set(c.id, c);
+      caseByRegistry.set(c.case_id, c);
+    }
+    const instById = new Map(store.institutions.map((i) => [i.id, i]));
+
+    // Some audit entities reference a case pair ("A <-> B"); resolve the first
+    // registry number we recognise so the link still lands on a real case.
+    const resolveCase = (entityId: string): SeedCase | undefined => {
+      if (!entityId) return undefined;
+      const direct = caseById.get(entityId) ?? caseByRegistry.get(entityId);
+      if (direct) return direct;
+      for (const token of entityId.split(/[<>\s]+/).filter(Boolean)) {
+        const hit = caseById.get(token) ?? caseByRegistry.get(token);
+        if (hit) return hit;
+      }
+      return undefined;
+    };
+
+    const canSeeCase = (c: SeedCase): boolean => {
+      if (!user) return false;
+      if (user.role === "ADMIN" || user.role === "COMPETENT_AUTHORITY") return true;
+      const inst = instById.get(c.institution_id);
+      if (user.role === "REGIONAL_OFFICER") {
+        if (!user.region) return true;
+        return inst?.region === user.region;
+      }
+      if (user.role === "BUREAU_OFFICER") {
+        // Generic bureau officers only receive their own desk's files here,
+        // mirroring canActOnCase's bureau scoping. Specialist regulation/PGRC
+        // officers keep the Single-Source-of-Truth visibility of canViewCase.
+        if (user.bureau === "ALL") return true;
+        return c.assigned_bureau === user.bureau;
+      }
+      return canViewCase(user, {
+        assigned_bureau: c.assigned_bureau,
+        institution: inst ? { region: inst.region } : undefined,
+      });
+    };
+
+    // AuditEntry has no bureau column: derive it from the sealed `after`
+    // payload or the actor's directory record, treating unknown actors as
+    // registry-wide ("ALL") rather than guessing a restricted bureau.
+    const actorBureau = (entry: AuditEntry): string => {
+      const after = entry.after as { bureau?: string } | null | undefined;
+      if (after && typeof after.bureau === "string" && after.bureau) return after.bureau;
+      const actor = String(entry.user ?? "").toLowerCase();
+      const actorUser = store.users.find(
+        (u) => u.email.toLowerCase() === actor || u.id.toLowerCase() === actor
+      );
+      return actorUser?.bureau ?? "ALL";
+    };
+
+    const canSeeNonCase = (entry: AuditEntry): boolean => {
+      if (!user) return false;
+      if (
+        user.role === "ADMIN" ||
+        user.role === "COMPETENT_AUTHORITY" ||
+        user.role === "REGIONAL_OFFICER" ||
+        user.bureau === "ALL"
+      ) {
+        return true;
+      }
+      const bureau = actorBureau(entry);
+      return bureau === user.bureau || bureau === "ALL";
+    };
+
+    const CASE_ENTITIES = new Set([
+      "case",
+      "casecomment",
+      "caselink",
+      "casepair",
+    ]);
+
+    type ActivityRow = {
+      entry: AuditEntry;
+      index: number;
+      time: number;
+      entity: string;
+      entityLower: string;
+      entityId: string;
+      caseEntry: boolean;
+      resolved?: SeedCase;
+    };
+
+    const rows: ActivityRow[] = inMemoryAuditLogs
+      .map((entry, index) => {
+        const entity = String(entry.entity ?? "");
+        const entityLower = entity.toLowerCase();
+        const entityId = String(entry.entity_id ?? "");
+        const time = entry.timestamp
+          ? new Date(entry.timestamp).getTime()
+          : 0;
+        const caseEntry =
+          CASE_ENTITIES.has(entityLower) ||
+          Boolean(caseById.get(entityId) || caseByRegistry.get(entityId));
+        return {
+          entry,
+          index,
+          time: Number.isFinite(time) ? time : 0,
+          entity,
+          entityLower,
+          entityId,
+          caseEntry,
+          resolved: caseEntry ? resolveCase(entityId) : undefined,
+        };
+      })
+      .filter((row) => {
+        if (!row.caseEntry) return canSeeNonCase(row.entry);
+        // A stale case reference cannot be visibility-checked, so only the
+        // registry-wide roles may see the raw id.
+        if (!row.resolved) {
+          return (
+            user?.role === "ADMIN" ||
+            user?.role === "COMPETENT_AUTHORITY"
+          );
+        }
+        return canSeeCase(row.resolved);
+      })
+      .sort((a, b) => {
+        if (b.time !== a.time) return b.time - a.time;
+        return a.index - b.index; // stable ordering for equal timestamps
+      });
+
+    const slug = (value: string) =>
+      value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+    return rows.slice(0, Math.max(0, limit)).map((row) => {
+      const { entry, entity, entityLower, entityId, resolved } = row;
+      let href = "/reports";
+      let entityLabel = entityId;
+      let entityBureau: string | undefined;
+
+      if (resolved) {
+        href = `/cases/${resolved.id}`;
+        entityLabel = resolved.case_id;
+        entityBureau = resolved.assigned_bureau;
+      } else if (row.caseEntry) {
+        href = "/cases";
+      } else if (
+        entityLower.includes("alert") ||
+        entityLower.includes("overlap")
+      ) {
+        href = "/alerts";
+      } else if (entityLower === "institution") {
+        href = entityId
+          ? `/institutions/${encodeURIComponent(entityId)}`
+          : "/institutions";
+        entityBureau = actorBureau(entry);
+      } else {
+        entityBureau = actorBureau(entry);
+      }
+
+      return {
+        id: [
+          "act",
+          row.time,
+          slug(String(entry.action ?? "event")),
+          slug(entity),
+          slug(entityId),
+          slug(String(entry.user ?? "system")),
+        ].join("_"),
+        actor: String(entry.user ?? "System"),
+        action: String(entry.action ?? ""),
+        entity,
+        entity_id: entityId,
+        label: humanizeAction(String(entry.action ?? "")),
+        timestamp: entry.timestamp
+          ? new Date(entry.timestamp).toISOString()
+          : new Date(0).toISOString(),
+        href,
+        entityLabel,
+        entityBureau,
+      };
+    });
   }
 
   public async getAuditLogs() {
