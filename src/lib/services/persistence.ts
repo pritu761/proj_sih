@@ -57,6 +57,24 @@ export interface StoreCaseLink {
   note?: string;
 }
 
+/**
+ * In-app status digest for a public watcher. No live email is sent: the
+ * disclosure desk records a short update in the store so a citizen can fetch
+ * it from the tracker's "My updates" panel using the email they subscribed
+ * with. Persisted inside the JSONB snapshot (created_at is already revived
+ * by DATE_KEYS).
+ */
+export interface WatcherDigest {
+  id: string;
+  email: string;
+  /** Internal case id (the key used by GrievanceWatcher.case_id). */
+  case_id: string;
+  /** Public registry number, used to link back to the track view. */
+  registry_no: string;
+  message: string;
+  created_at: Date;
+}
+
 /** The canonical mutable demo store shape (owned by the repository). */
 export interface StoreState {
   institutions: SeedInstitution[];
@@ -85,6 +103,9 @@ export interface StoreState {
   lastSlaNotificationDay?: string;
   lastReminderNotificationDay?: string;
   lastOverlapNotificationDay?: string;
+  /** Additive: in-app watcher status digests. Optional so snapshots written
+   * before this field existed revive safely with an empty digest. */
+  watcherDigests?: WatcherDigest[];
 }
 
 interface SnapshotPayload {

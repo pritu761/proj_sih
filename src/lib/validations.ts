@@ -414,6 +414,15 @@ export const SubscribeCaseWatchSchema = z.object({
     .transform((v) => v.toLowerCase().trim()),
 });
 
+/** In-app watcher digest lookup: only the subscriber's own email is accepted. */
+export const WatcherDigestLookupSchema = z.object({
+  email: z
+    .string()
+    .email("Enter a valid email address")
+    .max(120)
+    .transform((v) => v.toLowerCase().trim()),
+});
+
 // -----------------------------------------------------------------------------
 // AI feature validations
 // -----------------------------------------------------------------------------

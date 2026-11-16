@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -25,17 +25,27 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LangProvider, useLang, LanguageToggle } from "@/components/ui/language";
-import { track } from "@/lib/i18n";
+import { LOCALE_BY_LANG, track } from "@/lib/i18n";
 import {
   trackCaseAction,
   subscribeCaseWatchAction,
   submitFeedbackAction,
 } from "@/actions/track-actions";
+import { getWatcherDigestAction } from "@/actions/digest-actions";
 import { StatusPill } from "@/components/ui/badges";
 import { TextReveal } from "@/components/ui/text-reveal";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { Reveal } from "@/components/ui/reveal";
 import { formatDate, formatDateTime, cn } from "@/lib/utils";
+
+/** Mirrors the server's WatcherDigestView projection (no email field). */
+interface DigestEntry {
+  id: string;
+  case_id: string;
+  registry_no: string;
+  message: string;
+  created_at: Date | string;
+}
 
 interface TrackingResult {
   registry_no: string;
@@ -120,6 +130,14 @@ function TrackClientContent() {
   const [isSendingFeedback, setIsSendingFeedback] = useState(false);
   const [feedbackError, setFeedbackError] = useState("");
 
+  // In-app watcher digest ("My updates") — no live email is sent.
+  const [digestEmail, setDigestEmail] = useState("");
+  const [digests, setDigests] = useState<DigestEntry[]>([]);
+  const [isLoadingDigest, setIsLoadingDigest] = useState(false);
+  const [digestDone, setDigestDone] = useState(false);
+  const [digestError, setDigestError] = useState("");
+  const autoTracked = useRef(false);
+
   const handleTrack = async (code?: string) => {
     const target = (code ?? registryNo).trim();
     if (target.length < 10) {
@@ -193,6 +211,33 @@ function TrackClientContent() {
     setWatchers(res.watchers);
     setWatchDone(true);
   };
+
+  const handleLoadDigest = async () => {
+    setIsLoadingDigest(true);
+    setDigestError("");
+    const res = await getWatcherDigestAction(digestEmail);
+    setIsLoadingDigest(false);
+    if (!res.success) {
+      setDigests([]);
+      setDigestDone(false);
+      setDigestError(res.error || t.digest.error);
+      return;
+    }
+    setDigests(res.digests);
+    setDigestDone(true);
+  };
+
+  // Digest entries link back to /track?registry=… — open that deep link by
+  // running the same lookup the citizen would run by hand. Client-only so
+  // there is no SSR/hydration mismatch.
+  useEffect(() => {
+    if (autoTracked.current) return;
+    const code = new URLSearchParams(window.location.search).get("registry");
+    if (!code || code.length < 10) return;
+    autoTracked.current = true;
+    void handleTrack(code);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const sla = result ? slaMeta(result) : null;
 
@@ -303,6 +348,93 @@ function TrackClientContent() {
                 ))}
               </div>
             </div>
+          </div>
+        </Reveal>
+
+        {/* In-app watcher digest ("My updates") */}
+        <Reveal delay={100} className="no-print">
+          <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-2xl">
+            <p className="flex items-center gap-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-white/50">
+              <Inbox className="h-3.5 w-3.5" />
+              {t.digest.heading}
+            </p>
+            <p className="mt-1.5 text-[11.5px] leading-relaxed text-white/60">
+              {t.digest.sub}
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                type="email"
+                value={digestEmail}
+                onChange={(e) => setDigestEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLoadDigest()}
+                placeholder="you@example.com"
+                className="w-full rounded-xl border border-white/15 bg-ink-900/60 px-3 py-2.5 text-[11.5px] font-semibold text-white placeholder:text-white/25 transition-all duration-300 focus:border-saffron-400/60 focus:shadow-[0_0_0_3.5px_rgba(251,191,36,0.12),0_0_28px_-8px_rgba(251,191,36,0.45)] focus:outline-none"
+                aria-label={t.digest.emailLabel}
+              />
+              <button
+                type="button"
+                onClick={handleLoadDigest}
+                disabled={isLoadingDigest}
+                className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-saffron-400 px-3.5 py-2.5 text-[11px] font-extrabold text-ink-950 transition-all duration-300 hover:bg-saffron-300 active:scale-[0.97] disabled:opacity-50"
+              >
+                {isLoadingDigest ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Search className="h-3.5 w-3.5" />
+                )}
+                {isLoadingDigest ? t.digest.checking : t.digest.button}
+              </button>
+            </div>
+
+            {digestError && (
+              <p role="alert" className="mt-2 text-[10.5px] font-semibold text-rose-300">
+                {digestError}
+              </p>
+            )}
+
+            {digestDone && !digestError && (
+              <div className="mt-3 border-t border-white/10 pt-3">
+                {digests.length === 0 ? (
+                  <p className="text-[11px] leading-relaxed text-white/50">
+                    {t.digest.empty}
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] text-saffron-300">
+                      {t.digest.found(digests.length)}
+                    </p>
+                    <ul className="mt-2 space-y-2">
+                      {digests.map((d) => (
+                        <li key={d.id}>
+                          <Link
+                            href={`/track?registry=${encodeURIComponent(d.registry_no)}`}
+                            className="group flex items-start gap-2 rounded-xl border border-white/10 bg-ink-900/40 p-3 transition-colors hover:border-saffron-400/50 hover:bg-white/5"
+                          >
+                            <ScrollText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-saffron-400" />
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-[11.5px] font-semibold leading-snug text-white/80 group-hover:text-white">
+                                {d.message}
+                              </span>
+                              <span className="mt-0.5 block font-mono text-[10.5px] font-bold text-saffron-300">
+                                {d.registry_no}
+                              </span>
+                              <span className="mt-0.5 block text-[10px] text-white/35">
+                                {formatDateTime(d.created_at)}
+                              </span>
+                            </span>
+                            <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/25 transition-transform group-hover:translate-x-0.5 group-hover:text-saffron-300" />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            )}
+
+            <p className="mt-3 border-t border-white/10 pt-2.5 text-[10px] leading-relaxed text-white/30">
+              {t.digest.privacy}
+            </p>
           </div>
         </Reveal>
 
@@ -552,7 +684,7 @@ function TrackClientContent() {
                         <span className="font-semibold text-emerald-200/80">
                           {fbSubmitted.at
                             ? t.feedback.recordedNote(
-                                new Date(fbSubmitted.at).toLocaleDateString(lang === "hi" ? "hi-IN" : "en-IN", {
+                                new Date(fbSubmitted.at).toLocaleDateString(LOCALE_BY_LANG[lang], {
                                   day: "numeric",
                                   month: "short",
                                   year: "numeric",

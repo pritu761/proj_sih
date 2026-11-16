@@ -30,6 +30,7 @@ import {
   registerSnapshotSource,
   StoreState,
   StoreUser,
+  WatcherDigest,
 } from "./persistence";
 import { ensureDailyIntake } from "./daily-intake";
 import { runAutoEscalation, deriveEscalationReview } from "./escalation-engine";
@@ -113,6 +114,10 @@ export interface CaseFilterOptions {
   sortBy?: "date_received" | "last_action_date" | "priority" | "status";
   sortOrder?: "asc" | "desc";
 }
+
+/** Public projection of an in-app digest — deliberately excludes the email
+ * so a lookup can never enumerate another citizen's address. */
+export type WatcherDigestView = Omit<WatcherDigest, "email">;
 
 function uid(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -903,6 +908,10 @@ export class ComplaintRepository {
     c.actions.unshift(action);
 
     markStoreDirty();
+    this.notifyCaseWatchersBestEffort(
+      c.id,
+      `Status updated to ${newStatus.replaceAll("_", " ")}.`
+    );
 
     await logAuditEvent({
       user: actor.email,
@@ -1046,6 +1055,10 @@ export class ComplaintRepository {
     });
 
     markStoreDirty();
+    this.notifyCaseWatchersBestEffort(
+      c.id,
+      `Case transferred to ${toBureau.replaceAll("_", " ")}.`
+    );
 
     await logAuditEvent({
       user: actor.email,
@@ -1148,6 +1161,10 @@ export class ComplaintRepository {
     c.actions.unshift(action);
 
     markStoreDirty();
+    this.notifyCaseWatchersBestEffort(
+      c.id,
+      `New remark from the Council: ${remarks.trim().slice(0, 120)}`
+    );
 
     await logAuditEvent({
       user: actor.email,
@@ -2573,6 +2590,10 @@ export class ComplaintRepository {
     }
 
     markStoreDirty();
+    this.notifyCaseWatchersBestEffort(
+      c.id,
+      `Hearing scheduled for ${hearingDate.toDateString().slice(4)}.`
+    );
 
     await logAuditEvent({
       user: actor.email,
@@ -3442,6 +3463,111 @@ export class ComplaintRepository {
       update: {},
     });
     return await prisma.grievanceWatcher.count({ where: { case_id: c.id } });
+  }
+
+  /**
+   * Record one in-app status digest per distinct watcher of a case. The
+   * GrievanceWatcher lookup is best-effort and time-boxed: an unreachable or
+   * suspended database, or an absent watcher, must never fail the parent
+   * case mutation. Identical (email, case, message, day) entries are ignored
+   * so repeated officer actions do not spam the citizen's panel.
+   */
+  public async notifyWatchersOfChange(
+    caseInternalId: string,
+    changeSummary: string
+  ): Promise<number> {
+    const store = getInMemoryStore();
+    const c = store.cases.find((item) => item.id === caseInternalId);
+    if (!c) return 0;
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("watcher lookup timed out")), 1500);
+    });
+
+    let emails: string[] = [];
+    try {
+      const watchers = await Promise.race([
+        prisma.grievanceWatcher.findMany({
+          where: { case_id: caseInternalId },
+          select: { email: true },
+        }),
+        deadline,
+      ]);
+      emails = Array.from(
+        new Set(
+          watchers
+            .map((w) => String(w.email ?? "").trim().toLowerCase())
+            .filter(Boolean)
+        )
+      );
+    } catch {
+      return 0; // DB down, suspended or timed out — never fail the mutation.
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+
+    if (emails.length === 0) return 0;
+
+    const digests = (store.watcherDigests ??= []);
+    const day = utcDay();
+    const message = changeSummary.trim().slice(0, 240);
+    const seen = new Set(
+      digests.map(
+        (d) =>
+          `${d.email.toLowerCase()}|${d.case_id}|${d.message}|${utcDay(new Date(d.created_at))}`
+      )
+    );
+
+    let added = 0;
+    for (const email of emails) {
+      const key = `${email}|${c.id}|${message}|${day}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      digests.push({
+        id: uid("digest"),
+        email,
+        case_id: c.id,
+        registry_no: c.case_id,
+        message,
+        created_at: new Date(),
+      });
+      added += 1;
+    }
+
+    // Keep the snapshot bounded; the panel only surfaces recent updates.
+    if (digests.length > 200) digests.splice(0, digests.length - 200);
+    if (added > 0) markStoreDirty();
+    return added;
+  }
+
+  /** Fire-and-forget used by case mutations: the lookup never blocks a write. */
+  private notifyCaseWatchersBestEffort(caseId: string, summary: string): void {
+    void this.notifyWatchersOfChange(caseId, summary).catch(() => undefined);
+  }
+
+  /**
+   * Public digest lookup: one email only, newest first, no other citizen's
+   * address in the projection and a hard cap on the number of returned rows.
+   */
+  public getWatcherDigest(email: string): WatcherDigestView[] {
+    const store = getInMemoryStore();
+    const key = String(email ?? "").trim().toLowerCase();
+    if (!key) return [];
+    return (store.watcherDigests ?? [])
+      .filter((d) => d.email.toLowerCase() === key)
+      .sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      )
+      .slice(0, 50)
+      .map((d) => ({
+        id: d.id,
+        case_id: d.case_id,
+        registry_no: d.registry_no,
+        message: d.message,
+        created_at: d.created_at,
+      }));
   }
 
   /**

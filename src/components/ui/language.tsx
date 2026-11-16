@@ -9,9 +9,22 @@ import {
   type ReactNode,
 } from "react";
 import { cn } from "@/lib/utils";
-import type { Lang } from "@/lib/i18n";
+import { LANGS, type Lang } from "@/lib/i18n";
 
 const LANG_STORAGE_KEY = "sentinel:lang";
+
+/** Native labels — citizens recognise their own language instantly. */
+const LANG_LABELS: Record<Lang, string> = {
+  en: "English",
+  hi: "हिन्दी",
+  ta: "தமிழ்",
+  te: "తెలుగు",
+  bn: "বাংলা",
+};
+
+function isLang(value: string | null): value is Lang {
+  return value !== null && LANGS.some((l) => l === value);
+}
 
 interface LangContextValue {
   lang: Lang;
@@ -24,17 +37,20 @@ const LangContext = createContext<LangContextValue>({
 });
 
 /**
- * Language preference for the public narrative surfaces (landing + tracker).
- * Persisted locally — no account, no server round-trip, consistent with the
- * anonymous nature of those pages.
+ * Language preference for the public narrative surfaces (landing + tracker +
+ * transparency). Persisted locally — no account, no server round-trip,
+ * consistent with the anonymous nature of those pages. Stored "en"/"hi"
+ * values from earlier builds remain valid; new languages are additive.
  */
 export function LangProvider({ children }: { children: ReactNode }) {
+  // Server and first client render always start at "en" so there is no
+  // SSR/hydration mismatch; the saved preference is applied after mount.
   const [lang, setLangState] = useState<Lang>("en");
 
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(LANG_STORAGE_KEY);
-      if (stored === "hi" || stored === "en") setLangState(stored);
+      if (isLang(stored)) setLangState(stored);
     } catch {
       /* storage blocked — default English */
     }
@@ -50,7 +66,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = lang === "hi" ? "hi" : "en";
+    document.documentElement.lang = lang;
   }, [lang]);
 
   return (
@@ -65,8 +81,10 @@ export function useLang() {
 }
 
 /**
- * Segmented EN | हिं control. `overHero` for the always-dark landing hero /
- * track header; omit for surfaces that can go light (scrolled landing nav).
+ * Compact native-language select. A five-way segmented row of wide buttons
+ * does not fit the public headers, so a single dropdown keeps the existing
+ * pill styling while exposing all five languages. `overHero` targets the
+ * always-dark landing hero / track header; omit for light surfaces.
  */
 export function LanguageToggle({
   overHero = false,
@@ -78,39 +96,23 @@ export function LanguageToggle({
   const { lang, setLang } = useLang();
 
   return (
-    <div
-      role="group"
+    <select
       aria-label="Content language"
+      value={lang}
+      onChange={(e) => setLang(e.target.value as Lang)}
       className={cn(
-        "inline-flex shrink-0 items-center rounded-full border p-0.5 text-[10px] font-bold tracking-wide",
+        "max-w-[8.5rem] shrink-0 cursor-pointer appearance-none rounded-full border bg-transparent px-2.5 py-1 text-[10px] font-bold tracking-wide outline-none transition-colors [&>option]:bg-white [&>option]:text-ink-950",
         overHero
-          ? "border-white/15 bg-white/[0.06] text-white/70 backdrop-blur"
-          : "border-slate-200 bg-white text-slate-500 shadow-sm dark:border-white/10 dark:bg-white/[0.06] dark:text-white/60",
+          ? "border-white/15 text-white/80 hover:border-white/30"
+          : "border-slate-200 text-slate-600 hover:border-slate-300 dark:border-white/10 dark:text-white/70",
         className,
       )}
     >
-      {(["en", "hi"] as const).map((l) => {
-        const active = lang === l;
-        return (
-          <button
-            key={l}
-            type="button"
-            onClick={() => setLang(l)}
-            aria-pressed={active}
-            title={l === "en" ? "English" : "हिन्दी"}
-            className={cn(
-              "rounded-full px-2.5 py-1 transition-all duration-300 active:scale-[0.97]",
-              active
-                ? overHero
-                  ? "bg-white text-ink-950 shadow-[0_2px_8px_rgba(0,0,0,0.25)]"
-                  : "bg-slate-900 text-white dark:bg-white dark:text-ink-950"
-                : "hover:opacity-75",
-            )}
-          >
-            {l === "en" ? "EN" : "हिं"}
-          </button>
-        );
-      })}
-    </div>
+      {LANGS.map((l) => (
+        <option key={l} value={l} title={LANG_LABELS[l]}>
+          {LANG_LABELS[l]}
+        </option>
+      ))}
+    </select>
   );
 }
