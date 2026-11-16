@@ -162,6 +162,34 @@ export interface KpiTrends {
   disposed: KpiTrend;
 }
 
+/**
+ * A single computed row of the replayable "what changed" login digest.
+ * Counts are RBAC-scoped and carry no case ids — only a safe list-view href.
+ */
+export interface VisitDigestSection {
+  key: "newGrievances" | "statusChanges" | "filesEscalated" | "newOverlapAlerts";
+  label: string;
+  count: number;
+  href: string;
+}
+
+/**
+ * Fully JSON-serializable digest (no `Date` values) safe to pass from the
+ * server-rendered dashboard page into the client component. Computing it never
+ * mutates the last-seen marker, so it can be replayed any number of times.
+ */
+export interface VisitDigest {
+  /** ISO start of the counting window (marker, or now − 7d for first visits). */
+  since: string;
+  /** ISO time the digest was generated. */
+  generatedAt: string;
+  /** True when the officer has no last-seen marker yet. */
+  isFirstVisit: boolean;
+  sections: VisitDigestSection[];
+  /** Sum of every section count. */
+  total: number;
+}
+
 /** STATUS_CHANGED → "Status changed", LOGIN → "Login". */
 function humanizeAction(action: string): string {
   if (!action) return "Activity";
@@ -373,6 +401,42 @@ function buildSeedStore(): StoreState {
   // Seed an initial tamper-evident audit ledger from the generated case actions
   seedAuditLedger(seed.cases);
   return store;
+}
+
+/**
+ * Case visibility for the login digest. Mirrors getRecentActivity's
+ * `canSeeCase`: ADMIN/CA and specialist officers keep Single-Source-of-Truth
+ * visibility, generic bureau officers see their own desk's files, and regional
+ * officers only see their region's institutions. The digest only emits counts,
+ * but scoping them identically keeps the two surfaces consistent.
+ */
+function visibleCasesForUser(store: StoreState, user?: SessionUser): SeedCase[] {
+  if (!user) return [];
+  const instById = new Map(store.institutions.map((i) => [i.id, i]));
+  return store.cases.filter((c) => {
+    if (user.role === "ADMIN" || user.role === "COMPETENT_AUTHORITY") return true;
+    const inst = instById.get(c.institution_id);
+    if (user.role === "REGIONAL_OFFICER") {
+      if (!user.region) return true;
+      return inst?.region === user.region;
+    }
+    if (user.role === "BUREAU_OFFICER") {
+      if (user.bureau === "ALL") return true;
+      return c.assigned_bureau === user.bureau;
+    }
+    // REGULATION_OFFICER / PGRC_OFFICER retain Single-Source-of-Truth visibility.
+    return canViewCase(user, {
+      assigned_bureau: c.assigned_bureau,
+      institution: inst ? { region: inst.region } : undefined,
+    });
+  });
+}
+
+/** Robust timestamp reader for legacy/optional date fields on seed records. */
+function toTimestamp(value: unknown): number {
+  if (!value) return 0;
+  const t = new Date(value as string | number | Date).getTime();
+  return Number.isFinite(t) ? t : 0;
 }
 
 export class ComplaintRepository {
@@ -4312,6 +4376,149 @@ export class ComplaintRepository {
     const store = getInMemoryStore();
     seedAuditLedger(store.cases);
     return inMemoryAuditLogs;
+  }
+
+  /**
+   * Replayable "what changed since your last visit" login digest. Counts are
+   * derived from live cases and the sealed audit ledger, scoped with the same
+   * visibility rules as getRecentActivity/getDashboardMetrics. Crucially this
+   * only READS the last-seen marker — it never advances it — so the same digest
+   * can be replayed from the Navbar without a server round trip.
+   */
+  public getVisitDigest(user?: SessionUser): VisitDigest {
+    const store = getInMemoryStore();
+    seedAuditLedger(store.cases);
+
+    const generatedAtMs = Date.now();
+    const generatedAt = new Date(generatedAtMs).toISOString();
+    const marker = user ? store.lastSeenByUser?.[user.id] : undefined;
+    const markerMs = marker ? Date.parse(marker) : NaN;
+    const isFirstVisit = !Number.isFinite(markerMs);
+    const sinceMs = isFirstVisit
+      ? generatedAtMs - 7 * DAY_MS
+      : Math.min(markerMs, generatedAtMs);
+    const since = new Date(sinceMs).toISOString();
+
+    // Cases the signed-in officer is allowed to see. Counts never carry ids,
+    // but resolving audit rows against this set keeps the figures in scope.
+    const visibleCases = visibleCasesForUser(store, user);
+    const visibleIds = new Set(visibleCases.map((c) => c.id));
+    const visibleRegistry = new Set(visibleCases.map((c) => c.case_id));
+    const registryWide =
+      !user ||
+      user.role === "ADMIN" ||
+      user.role === "COMPETENT_AUTHORITY" ||
+      user.bureau === "ALL";
+
+    // "A <-> B" pair references are resolved to the first visible case token.
+    const resolvesToVisibleCase = (entityId: string): boolean => {
+      if (!entityId) return false;
+      if (visibleIds.has(entityId) || visibleRegistry.has(entityId)) return true;
+      return entityId
+        .split(/[<>\s]+/)
+        .filter(Boolean)
+        .some((token) => visibleIds.has(token) || visibleRegistry.has(token));
+    };
+
+    // New grievances: live cases received inside the window.
+    let newGrievances = 0;
+    for (const c of visibleCases) {
+      if (toTimestamp(c.date_received) >= sinceMs) newGrievances++;
+    }
+
+    // Status changes / escalations: sealed ledger rows inside the window whose
+    // case (when there is one) the officer can view. Orphan/non-case rows are
+    // only counted for registry-wide roles.
+    let statusChanges = 0;
+    let filesEscalated = 0;
+    for (const entry of inMemoryAuditLogs) {
+      if (toTimestamp(entry.timestamp) < sinceMs) continue;
+      const action = String(entry.action ?? "").toLowerCase();
+      const isStatus = action.includes("status");
+      const isEscalation = action.includes("escalat");
+      if (!isStatus && !isEscalation) continue;
+
+      const entityId = String(entry.entity_id ?? "");
+      const caseEntry = resolvesToVisibleCase(entityId);
+      const knownEntity = Boolean(
+        store.cases.some(
+          (c) => c.id === entityId || c.case_id === entityId
+        )
+      );
+      if (!caseEntry && (knownEntity || !registryWide)) continue;
+      if (isStatus) statusChanges++;
+      if (isEscalation) filesEscalated++;
+    }
+
+    // New overlap alerts: detected inside the window, region-scoped for ROs and
+    // bureau-scoped for non-registry-wide officers (same rules as metrics and
+    // canCoordinateOverlap).
+    const regionInstIds =
+      user?.role === "REGIONAL_OFFICER" && user.region
+        ? new Set(
+            store.institutions
+              .filter((i) => i.region === user.region)
+              .map((i) => i.id)
+          )
+        : null;
+    let newOverlapAlerts = 0;
+    for (const alert of store.overlapAlerts) {
+      if (toTimestamp(alert.detected_at) < sinceMs) continue;
+      if (regionInstIds && !regionInstIds.has(alert.institution_id)) continue;
+      if (
+        !registryWide &&
+        user &&
+        !alert.bureaus_involved.includes(user.bureau)
+      ) {
+        continue;
+      }
+      newOverlapAlerts++;
+    }
+
+    const sections: VisitDigestSection[] = [
+      {
+        key: "newGrievances",
+        label: "New grievances received",
+        count: newGrievances,
+        href: "/cases",
+      },
+      {
+        key: "statusChanges",
+        label: "Status changes",
+        count: statusChanges,
+        href: "/cases",
+      },
+      {
+        key: "filesEscalated",
+        label: "Files escalated",
+        count: filesEscalated,
+        href: "/escalation",
+      },
+      {
+        key: "newOverlapAlerts",
+        label: "New overlap alerts",
+        count: newOverlapAlerts,
+        href: "/alerts?status=OPEN",
+      },
+    ];
+
+    return {
+      since,
+      generatedAt,
+      isFirstVisit,
+      sections,
+      total: sections.reduce((sum, s) => sum + s.count, 0),
+    };
+  }
+
+  /** Advance one officer's last-seen marker to now. Mutating the store marks
+   * it dirty so the new marker is included in the next snapshot flush. */
+  public markVisitSeen(user?: SessionUser): void {
+    if (!user) return;
+    const store = getInMemoryStore();
+    store.lastSeenByUser ??= {};
+    store.lastSeenByUser[user.id] = new Date().toISOString();
+    markStoreDirty();
   }
 }
 

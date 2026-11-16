@@ -106,6 +106,10 @@ export interface StoreState {
   /** Additive: in-app watcher status digests. Optional so snapshots written
    * before this field existed revive safely with an empty digest. */
   watcherDigests?: WatcherDigest[];
+  /** Additive: last-visit marker per officer (user id → ISO timestamp). Used
+   * by the replayable dashboard "what changed" digest. Old snapshots omit it
+   * and are treated as first-time visitors. */
+  lastSeenByUser?: Record<string, string>;
 }
 
 interface SnapshotPayload {

@@ -12,6 +12,9 @@ export default async function DashboardPage() {
 
   const user = session.user as unknown as SessionUser;
   const metrics = await repository.getDashboardMetrics(user);
+  // Read-only digest — computing it never advances the officer's last-seen
+  // marker. It is already JSON-serializable (all dates are ISO strings).
+  const visitDigest = repository.getVisitDigest(user);
 
   return (
     <DashboardClient
@@ -19,6 +22,7 @@ export default async function DashboardPage() {
       userRole={user.role}
       userBureau={user.bureau}
       userName={user.name}
+      visitDigest={visitDigest}
     />
   );
 }

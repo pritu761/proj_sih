@@ -47,6 +47,8 @@ import { useToast } from "@/components/ui/toast";
 import { ChartTooltip } from "@/components/ui/chart-tooltip";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Reveal } from "@/components/ui/reveal";
+import type { VisitDigest } from "@/lib/services/repository";
+import { VisitDigestPanel } from "./VisitDigestPanel";
 import { RecentActivity } from "./RecentActivity";
 import { RiskRadar } from "./RiskRadar";
 import { IngestionSimulator } from "./IngestionSimulator";
@@ -59,6 +61,8 @@ interface DashboardClientProps {
   userRole?: string;
   userBureau?: string;
   userName?: string;
+  /** Server-computed, JSON-serializable login digest (no live DB round trip). */
+  visitDigest?: VisitDigest;
 }
 
 const bureauShort: Record<string, string> = {
@@ -81,11 +85,17 @@ export function DashboardClient({
   userRole,
   userBureau,
   userName,
+  visitDigest,
 }: DashboardClientProps) {
   const router = useRouter();
   const toast = useToast();
   const [metrics, setMetrics] = useState(initialMetrics);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Keep the digest in local state so the Navbar's "replay" entry can reopen
+  // the exact same server-computed figures without another request.
+  const [digest] = useState(visitDigest);
+  const [showDigest, setShowDigest] = useState(Boolean(visitDigest));
 
   // Hydration-safe time-aware greeting: the first client render matches the
   // server's static "Welcome back" exactly; the clock-derived salutation is
@@ -149,6 +159,17 @@ export function DashboardClient({
     return () =>
       window.removeEventListener("sentinel:refresh-dashboard", onExternalRefresh);
   }, []);
+
+  // The profile menu broadcasts this on "Replay what's new". Reopen the digest
+  // held in state — no server round trip and no mutation of the seen marker.
+  useEffect(() => {
+    const onReplayDigest = () => {
+      if (digest) setShowDigest(true);
+    };
+    window.addEventListener("sentinel:replay-visit-digest", onReplayDigest);
+    return () =>
+      window.removeEventListener("sentinel:replay-visit-digest", onReplayDigest);
+  }, [digest]);
 
   const k = metrics.kpi;
   const total = Math.max(1, k.totalReceived);
@@ -223,7 +244,7 @@ export function DashboardClient({
       label: "Total received",
       value: k.totalReceived,
       icon: Inbox,
-      tone: "text-ink-800 bg-slate-100 border-slate-200",
+      tone: "text-ink-800 bg-slate-100 border-slate-200 dark:border-white/10 dark:bg-white/5 dark:text-slate-200",
       accent: "#0a1020",
       href: "/cases",
       sub: "All bureaus & regions",
@@ -235,7 +256,7 @@ export function DashboardClient({
       label: "Pending scrutiny",
       value: k.pending,
       icon: Clock,
-      tone: "text-amber-700 bg-amber-50 border-amber-200",
+      tone: "text-amber-700 bg-amber-50 border-amber-200 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-300",
       accent: "#f59e0b",
       href: "/cases?status=PENDING",
       sub: "Awaiting allocation",
@@ -245,7 +266,7 @@ export function DashboardClient({
       label: "Under process",
       value: k.underProcess,
       icon: RotateCw,
-      tone: "text-brand-700 bg-brand-50 border-brand-200",
+      tone: "text-brand-700 bg-brand-50 border-brand-200 dark:border-brand-400/20 dark:bg-brand-400/10 dark:text-brand-300",
       accent: "#2559e8",
       href: "/cases?status=UNDER_PROCESS",
       sub: "Hearing · notice · inquiry",
@@ -255,7 +276,7 @@ export function DashboardClient({
       label: "Disposed",
       value: k.disposed,
       icon: CheckCircle2,
-      tone: "text-emerald-700 bg-emerald-50 border-emerald-200",
+      tone: "text-emerald-700 bg-emerald-50 border-emerald-200 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-300",
       accent: "#059669",
       href: "/cases?status=DISPOSED",
       sub: "Redressed & closed",
@@ -267,7 +288,7 @@ export function DashboardClient({
       label: "Transferred",
       value: k.transferred,
       icon: ArrowRightLeft,
-      tone: "text-violet-700 bg-violet-50 border-violet-200",
+      tone: "text-violet-700 bg-violet-50 border-violet-200 dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-300",
       accent: "#7c3aed",
       href: "/cases?status=TRANSFERRED",
       sub: "Cross-jurisdiction",
@@ -277,7 +298,7 @@ export function DashboardClient({
       label: "Escalated",
       value: k.escalated,
       icon: Flame,
-      tone: "text-rose-700 bg-rose-50 border-rose-200",
+      tone: "text-rose-700 bg-rose-50 border-rose-200 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300",
       accent: "#e11d48",
       href: "/cases?status=ESCALATED",
       sub: "To competent authority",
@@ -287,7 +308,7 @@ export function DashboardClient({
       label: "Beyond timeline",
       value: k.pendingBeyondTimeline,
       icon: AlertOctagon,
-      tone: "text-rose-700 bg-rose-50 border-rose-200",
+      tone: "text-rose-700 bg-rose-50 border-rose-200 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300",
       accent: "#dc2626",
       href: "/cases?sla_status=BREACHED",
       sub: "Statutory SLA breached",
@@ -298,7 +319,7 @@ export function DashboardClient({
       label: "Overlap alerts",
       value: k.openOverlapAlerts,
       icon: ShieldAlert,
-      tone: "text-saffron-600 bg-saffron-500/10 border-saffron-300",
+      tone: "text-saffron-600 bg-saffron-500/10 border-saffron-300 dark:border-saffron-400/20 dark:bg-saffron-400/10 dark:text-saffron-300",
       accent: "#f59e0b",
       href: "/alerts?status=OPEN",
       sub: "Multi-bureau collisions",
@@ -361,7 +382,7 @@ export function DashboardClient({
       detail: "Files past the statutory timeline awaiting action.",
       href: "/cases?sla_status=BREACHED",
       icon: AlertOctagon,
-      tone: "text-rose-700 bg-rose-50 border-rose-200",
+      tone: "text-rose-700 bg-rose-50 border-rose-200 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300",
     },
     {
       label: "Cross-bureau overlaps",
@@ -369,7 +390,7 @@ export function DashboardClient({
       detail: "Parallel inquiries that need a lead bureau.",
       href: "/alerts",
       icon: ShieldAlert,
-      tone: "text-saffron-600 bg-saffron-500/10 border-saffron-300",
+      tone: "text-saffron-600 bg-saffron-500/10 border-saffron-300 dark:border-saffron-400/20 dark:bg-saffron-400/10 dark:text-saffron-300",
     },
   ];
 
@@ -380,7 +401,7 @@ export function DashboardClient({
       detail: `${bureauLabel} desk files awaiting an officer.`,
       href: "/workqueue",
       icon: Users,
-      tone: "text-brand-700 bg-brand-50 border-brand-200",
+      tone: "text-brand-700 bg-brand-50 border-brand-200 dark:border-brand-400/20 dark:bg-brand-400/10 dark:text-brand-300",
     });
   }
 
@@ -391,7 +412,7 @@ export function DashboardClient({
       detail: "Escalated files awaiting your decision.",
       href: "/escalation",
       icon: Flame,
-      tone: "text-violet-700 bg-violet-50 border-violet-200",
+      tone: "text-violet-700 bg-violet-50 border-violet-200 dark:border-violet-400/20 dark:bg-violet-400/10 dark:text-violet-300",
     });
   }
 
@@ -402,7 +423,7 @@ export function DashboardClient({
       detail: "Region files awaiting allocation.",
       href: "/cases?status=PENDING",
       icon: Inbox,
-      tone: "text-amber-700 bg-amber-50 border-amber-200",
+      tone: "text-amber-700 bg-amber-50 border-amber-200 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-300",
     });
   }
 
@@ -499,12 +520,19 @@ export function DashboardClient({
         </div>
       </section>
 
+      {/* ── Replayable login digest (first visit / what changed) ── */}
+      {digest && showDigest && (
+        <Reveal>
+          <VisitDigestPanel digest={digest} onClose={() => setShowDigest(false)} />
+        </Reveal>
+      )}
+
       {/* ── Today's priorities ── */}
       <Reveal delay={60}>
         <section className="panel overflow-hidden">
           <div className="panel-head flex-wrap">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-saffron-300/60 bg-saffron-500/10 text-saffron-600">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-saffron-300/60 bg-saffron-500/10 text-saffron-600 dark:border-saffron-400/20 dark:bg-saffron-400/10 dark:text-saffron-300">
                 <ListChecks className="h-4 w-4" />
               </div>
               <div>
@@ -535,7 +563,7 @@ export function DashboardClient({
                     <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border", p.tone)}>
                       <Icon className="h-4 w-4" />
                     </div>
-                    <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-slate-500" />
+                    <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-slate-500 dark:text-slate-600 dark:group-hover:text-slate-300" />
                   </div>
                   <p className="mt-3 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
                     {p.label}
@@ -579,24 +607,26 @@ export function DashboardClient({
               href={kpi.href}
               style={{ "--kpi-accent": kpi.accent } as CSSProperties}
               className={cn(
-                "kpi-card group relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg",
-                kpi.alert ? "border-rose-200/80 bg-gradient-to-br from-white to-rose-50/40" : "border-slate-200"
+                "kpi-card group relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg dark:bg-white/[0.02] dark:hover:border-white/20",
+                kpi.alert
+                  ? "border-rose-200/80 bg-gradient-to-br from-white to-rose-50/40 dark:border-rose-400/20 dark:from-white/[0.03] dark:to-rose-500/5"
+                  : "border-slate-200 dark:border-white/10"
               )}
             >
               <div className="flex items-start justify-between">
                 <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border", kpi.tone)}>
                   <Icon className="h-4 w-4" />
                 </div>
-                <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 opacity-0 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-slate-500 group-hover:opacity-100" />
+                <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 opacity-0 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-slate-500 group-hover:opacity-100 dark:text-slate-600 dark:group-hover:text-slate-300" />
               </div>
 
-              <p className="mt-3.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
+              <p className="mt-3.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
                 {kpi.label}
               </p>
-              <p className="mt-1 font-display text-[29px] font-extrabold leading-none tracking-[-0.03em] text-slate-950">
+              <p className="mt-1 font-display text-[29px] font-extrabold leading-none tracking-[-0.03em] text-slate-950 dark:text-white">
                 <CountUp value={kpi.value} />
               </p>
-              <p className="mt-1.5 truncate text-[10.5px] font-medium text-slate-400">{kpi.sub}</p>
+              <p className="mt-1.5 truncate text-[10.5px] font-medium text-slate-400 dark:text-slate-500">{kpi.sub}</p>
 
               {/* Honest, date-derived weekly movement — only on cards with real data. */}
               {kpi.trend && (
@@ -625,7 +655,7 @@ export function DashboardClient({
                 </div>
               )}
 
-              <div className="mt-3.5 h-1 overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-3.5 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
                 <div
                   className="meter-fill h-full rounded-full transition-all duration-700"
                   style={{ width: `${Math.max(3, Math.min(100, kpi.share))}%`, background: kpi.accent }}
@@ -654,7 +684,7 @@ export function DashboardClient({
                 { label: "In process", color: "#2559e8" },
                 { label: "Disposed", color: "#059669" },
               ].map((l) => (
-                <span key={l.label} className="hidden items-center gap-1.5 text-[10.5px] font-semibold text-slate-500 sm:flex">
+                <span key={l.label} className="hidden items-center gap-1.5 text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 sm:flex">
                   <span className="h-2 w-2 rounded-sm" style={{ background: l.color }} />
                   {l.label}
                 </span>
@@ -736,10 +766,10 @@ export function DashboardClient({
               </PieChart>
             </ResponsiveContainer>
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pb-1">
-              <span className="font-display text-[27px] font-extrabold leading-none tracking-tight text-slate-950">
+              <span className="font-display text-[27px] font-extrabold leading-none tracking-tight text-slate-950 dark:text-white">
                 <CountUp value={k.totalReceived} />
               </span>
-              <span className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              <span className="mt-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                 total cases
               </span>
             </div>
@@ -758,11 +788,11 @@ export function DashboardClient({
                   };
                   go(`/cases?status=${map[s.name] || s.name}`);
                 }}
-                className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-slate-50"
+                className="flex items-center gap-2 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-slate-50 dark:hover:bg-white/5"
               >
                 <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: s.color }} />
-                <span className="truncate text-[10.5px] font-medium text-slate-500">{s.name}</span>
-                <span className="ml-auto text-[11px] font-bold tabular-nums text-slate-900">{s.value}</span>
+                <span className="truncate text-[10.5px] font-medium text-slate-500 dark:text-slate-400">{s.name}</span>
+                <span className="ml-auto text-[11px] font-bold tabular-nums text-slate-900 dark:text-white">{s.value}</span>
               </button>
             ))}
           </div>
@@ -829,10 +859,10 @@ export function DashboardClient({
             </ResponsiveContainer>
           </div>
           <div className="flex items-center justify-center gap-4 pb-3">
-            <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500">
+            <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500 dark:text-slate-400">
               <span className="h-2 w-2 rounded-full bg-amber-500" /> Received
             </span>
-            <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500">
+            <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-500 dark:text-slate-400">
               <span className="h-2 w-2 rounded-full bg-emerald-500" /> Disposed
             </span>
           </div>
@@ -843,7 +873,7 @@ export function DashboardClient({
             <div>
               <h2 className="panel-title">Regional volume</h2>
             </div>
-            <Link href="/institutions" className="text-[10.5px] font-bold text-brand-600 hover:text-brand-700">
+            <Link href="/institutions" className="text-[10.5px] font-bold text-brand-600 hover:text-brand-700 dark:text-brand-300">
               Directory →
             </Link>
           </div>
@@ -876,7 +906,7 @@ export function DashboardClient({
         <div className="panel xl:col-span-2 overflow-hidden">
           <div className="panel-head">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-rose-600">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-rose-100 bg-rose-50 text-rose-600 dark:border-rose-400/20 dark:bg-rose-400/10 dark:text-rose-300">
                 <Activity className="h-4 w-4" />
               </div>
               <div>
@@ -916,19 +946,19 @@ export function DashboardClient({
                     <tr key={c.id} className="group">
                       <td>
                         <Link href={`/cases/${c.id}`} className="block">
-                          <span className="block font-mono text-[10.5px] font-bold text-brand-700 group-hover:underline">
+                          <span className="block font-mono text-[10.5px] font-bold text-brand-700 group-hover:underline dark:text-brand-300">
                             {c.case_id}
                           </span>
-                          <span className="mt-0.5 block max-w-[190px] truncate text-[10.5px] font-medium text-slate-500">
+                          <span className="mt-0.5 block max-w-[190px] truncate text-[10.5px] font-medium text-slate-500 dark:text-slate-400">
                             {c.category}
                           </span>
                         </Link>
                       </td>
                       <td>
-                        <span className="block max-w-[200px] truncate text-[11px] font-semibold text-slate-800">
+                        <span className="block max-w-[200px] truncate text-[11px] font-semibold text-slate-800 dark:text-slate-100">
                           {c.institution_name}
                         </span>
-                        <span className="mt-0.5 block text-[10.5px] text-slate-400">{c.institution_city}</span>
+                        <span className="mt-0.5 block text-[10.5px] text-slate-400 dark:text-slate-500">{c.institution_city}</span>
                       </td>
                       <td><BureauPill bureau={c.assigned_bureau} /></td>
                       <td>
@@ -948,7 +978,7 @@ export function DashboardClient({
                         </span>
                       </td>
                       <td className="text-right">
-                        <Link href={`/cases/${c.id}`} className="inline-flex rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-brand-600" aria-label={`View ${c.case_id}`}>
+                        <Link href={`/cases/${c.id}`} className="inline-flex rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-brand-600 dark:text-slate-500 dark:hover:bg-white/5 dark:hover:text-brand-300" aria-label={`View ${c.case_id}`}>
                           <ChevronRight className="h-4 w-4" />
                         </Link>
                       </td>
@@ -963,7 +993,7 @@ export function DashboardClient({
         <div className="panel overflow-hidden">
           <div className="panel-head">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-amber-600">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-amber-100 bg-amber-50 text-amber-600 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-300">
                 <Scale className="h-4 w-4" />
               </div>
               <div>
@@ -984,15 +1014,15 @@ export function DashboardClient({
               }
             />
           ) : (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-100 dark:divide-white/5">
               {openOverlaps.map((o) => (
                 <Link
                   key={o.id}
                   href={`/institutions/${o.institution_id}`}
-                  className="group block px-4 py-3.5 transition-colors hover:bg-slate-50/80"
+                  className="group block px-4 py-3.5 transition-colors hover:bg-slate-50/80 dark:hover:bg-white/[0.04]"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="line-clamp-1 text-[11.5px] font-bold text-slate-800 group-hover:text-brand-700">
+                    <p className="line-clamp-1 text-[11.5px] font-bold text-slate-800 group-hover:text-brand-700 dark:text-slate-100 dark:group-hover:text-brand-300">
                       {o.institution_name}
                     </p>
                     <ConfidencePill confidence={o.confidence} />
@@ -1001,11 +1031,11 @@ export function DashboardClient({
                     {o.bureaus_involved.map((b: string) => (
                       <BureauPill key={b} bureau={b} />
                     ))}
-                    <span className="text-[10.5px] font-semibold text-slate-400">
+                    <span className="text-[10.5px] font-semibold text-slate-400 dark:text-slate-500">
                       {o.case_ids.length} cases
                     </span>
                   </div>
-                  <p className="mt-1.5 line-clamp-1 text-[10.5px] text-slate-400">
+                  <p className="mt-1.5 line-clamp-1 text-[10.5px] text-slate-400 dark:text-slate-500">
                     {o.match_reasons?.[0]?.description ?? "Multi-bureau inquiry detected."}
                   </p>
                 </Link>

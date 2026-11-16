@@ -21,6 +21,7 @@ import {
   Keyboard,
   CheckCheck,
   Sparkles,
+  History,
 } from "lucide-react";
 import { SessionUser } from "@/lib/rbac";
 import { getBureauLabel } from "@/lib/utils";
@@ -436,6 +437,17 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
                   >
                     <Sparkles className="h-3.5 w-3.5 text-slate-400" />
                     Replay guided tour
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowProfile(false);
+                      window.dispatchEvent(new Event("sentinel:replay-visit-digest"));
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-[11.5px] font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    <History className="h-3.5 w-3.5 text-slate-400" />
+                    Replay what&apos;s new
                   </button>
                   {onShortcuts && (
                     <button
