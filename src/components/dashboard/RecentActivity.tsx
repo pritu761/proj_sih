@@ -35,7 +35,7 @@ export function RecentActivitySkeleton() {
       </div>
       <div className="divide-y divide-slate-100 dark:divide-white/5">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3 px-4 py-3">
+          <div key={i} className="activity-row flex items-center gap-3 px-4 py-3">
             <div className="skeleton h-7 w-7 shrink-0 rounded-lg" />
             <div className="min-w-0 flex-1 space-y-2">
               <div className="skeleton h-2.5 w-1/3 rounded" />
@@ -120,7 +120,7 @@ export function RecentActivity({
               key={item.id}
               href={item.href}
               className={cn(
-                "group flex items-start gap-3 px-4 py-3 transition-colors",
+                "activity-row group flex items-start gap-3 px-4 py-3 transition-colors",
                 "hover:bg-slate-50/80 dark:hover:bg-white/[0.04]"
               )}
             >

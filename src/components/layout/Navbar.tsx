@@ -235,10 +235,7 @@ export function Navbar({ user, notifications, openOverlapCount, onMenu, onShortc
 
           {/* Live */}
           <div className="hidden items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50/80 px-2.5 py-1.5 text-[10.5px] font-bold text-emerald-700 xl:flex">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            </span>
+            <span className="live-dot text-emerald-500" aria-hidden="true" />
             Live sync
           </div>
 

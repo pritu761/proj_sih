@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { CountUp } from "@/components/ui/count-up";
+import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { Reveal } from "@/components/ui/reveal";
 import { LangProvider, useLang, LanguageToggle } from "@/components/ui/language";
 import { MonthlyFlowChart, CategoryBars } from "@/components/transparency/TransparencyCharts";
@@ -58,6 +59,7 @@ function TransparencyContentBody({ s }: { s: TransparencyStats }) {
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-ink-950 via-ink-900 to-ink-950 text-white">
+      <ScrollProgress />
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-ink-950/55 backdrop-blur-2xl backdrop-saturate-150">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">

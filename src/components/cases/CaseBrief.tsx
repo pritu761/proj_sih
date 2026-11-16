@@ -53,7 +53,7 @@ export function CaseBrief({
   }, []);
 
   return (
-    <section className="panel rail-top overflow-hidden">
+    <section className="panel rail-top shine overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 px-5 py-3">
         <div className="flex items-center gap-2">
           <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-brand-50 text-brand-600">

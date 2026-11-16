@@ -25,6 +25,7 @@ import {
   Scale,
   ListChecks,
   Users,
+  Rows3,
 } from "lucide-react";
 import {
   BarChart,
@@ -108,6 +109,36 @@ export function DashboardClient({
   // The hero date uses a stable SSR placeholder and is derived from the
   // server-supplied generatedAt after mount — never from the client clock.
   const [dateLabel, setDateLabel] = useState("—");
+
+  // Density preference starts non-compact on both server and client so the
+  // markup matches at hydration. The persisted value is read, and later
+  // written, only after mount.
+  const [compact, setCompact] = useState(false);
+  const DENSITY_KEY = "sentinel-dashboard-density";
+
+  useEffect(() => {
+    try {
+      setCompact(window.localStorage.getItem(DENSITY_KEY) === "compact");
+    } catch {
+      /* storage unavailable — keep the comfortable default */
+    }
+  }, []);
+
+  const toggleCompact = () => {
+    const next = !compact;
+    setCompact(next);
+    try {
+      window.localStorage.setItem(DENSITY_KEY, next ? "compact" : "comfortable");
+    } catch {
+      /* storage unavailable — the toggle still works for this session */
+    }
+    toast.info(
+      next ? "Compact view on" : "Comfortable view on",
+      next
+        ? "Panels and charts tightened. Your preference is saved for next time."
+        : "Full spacing restored. Your preference is saved for next time."
+    );
+  };
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -434,13 +465,14 @@ export function DashboardClient({
 
   return (
     <div
+      data-density={compact ? "compact" : "comfortable"}
       className={cn(
-        "space-y-5 transition-opacity",
+        "dash-root space-y-5 transition-opacity",
         isRefreshing && "pointer-events-none opacity-50"
       )}
     >
       {/* ── Command hero ── */}
-      <section className="hero-mesh relative overflow-hidden rounded-[20px] border border-white/10 px-5 py-5 shadow-[0_24px_60px_-30px_rgba(6,10,20,0.6)] sm:px-7 sm:py-6">
+      <section className="hero-mesh hero-compact-pad relative overflow-hidden rounded-[20px] border border-white/10 px-5 py-5 shadow-[0_24px_60px_-30px_rgba(6,10,20,0.6)] sm:px-7 sm:py-6">
         {/* Real AICTE HQ architectural backdrop */}
         <div
           className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center opacity-25 filter contrast-125 mix-blend-luminosity dark:opacity-40 dark:filter-none dark:brightness-105"
@@ -456,10 +488,7 @@ export function DashboardClient({
           <div className="max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-emerald-300">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                </span>
+                <span className="live-dot text-emerald-400" aria-hidden="true" />
                 Live command center
               </span>
               <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400">
@@ -479,6 +508,19 @@ export function DashboardClient({
               <button onClick={refresh} disabled={isRefreshing} className="btn btn-secondary btn-sm border-white/15 bg-white/[0.06] text-slate-200 hover:bg-white/[0.1] hover:text-white">
                 <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
                 Refresh data
+              </button>
+              <button
+                type="button"
+                onClick={toggleCompact}
+                aria-pressed={compact}
+                title={compact ? "Switch to comfortable view" : "Switch to compact view"}
+                className={cn(
+                  "btn btn-secondary btn-sm border-white/15 bg-white/[0.06] text-slate-200 hover:bg-white/[0.1] hover:text-white",
+                  compact && "border-brand-400/40 bg-brand-400/15 text-white"
+                )}
+              >
+                <Rows3 className="h-3.5 w-3.5" />
+                Compact view
               </button>
               <IngestionSimulator userRole={userRole} userBureau={userBureau} />
               <Link href="/cases/new" className="btn btn-primary btn-sm">
@@ -562,7 +604,7 @@ export function DashboardClient({
                 <Link
                   key={p.label}
                   href={p.href}
-                  className="group bg-white p-4 transition-colors hover:bg-slate-50/80 dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
+                  className="priority-card group bg-white p-4 transition-colors hover:bg-slate-50/80 dark:bg-white/[0.02] dark:hover:bg-white/[0.04]"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl border", p.tone)}>
@@ -573,7 +615,7 @@ export function DashboardClient({
                   <p className="mt-3 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
                     {p.label}
                   </p>
-                  <p className="mt-1 font-display text-[26px] font-extrabold leading-none tracking-[-0.03em] text-slate-950 dark:text-white">
+                  <p className="priority-value mt-1 font-display text-[26px] font-extrabold leading-none tracking-[-0.03em] text-slate-950 dark:text-white">
                     <CountUp value={p.count} />
                   </p>
                   <p className="mt-1.5 text-[10.5px] leading-snug text-slate-500 dark:text-slate-400">
@@ -625,13 +667,13 @@ export function DashboardClient({
                 <ArrowUpRight className="h-3.5 w-3.5 text-slate-300 opacity-0 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-slate-500 group-hover:opacity-100 dark:text-slate-600 dark:group-hover:text-slate-300" />
               </div>
 
-              <p className="mt-3.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
+              <p className="kpi-label mt-3.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:text-slate-500">
                 {kpi.label}
               </p>
-              <p className="mt-1 font-display text-[29px] font-extrabold leading-none tracking-[-0.03em] text-slate-950 dark:text-white">
+              <p className="kpi-value mt-1 font-display text-[29px] font-extrabold leading-none tracking-[-0.03em] text-slate-950 dark:text-white">
                 <CountUp value={kpi.value} />
               </p>
-              <p className="mt-1.5 truncate text-[10.5px] font-medium text-slate-400 dark:text-slate-500">{kpi.sub}</p>
+              <p className="kpi-sub mt-1.5 truncate text-[10.5px] font-medium text-slate-400 dark:text-slate-500">{kpi.sub}</p>
 
               {/* Honest, date-derived weekly movement — only on cards with real data. */}
               {kpi.trend && (
@@ -660,7 +702,7 @@ export function DashboardClient({
                 </div>
               )}
 
-              <div className="mt-3.5 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
+              <div className="kpi-meter mt-3.5 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-white/5">
                 <div
                   className="meter-fill h-full rounded-full transition-all duration-700"
                   style={{ width: `${Math.max(3, Math.min(100, kpi.share))}%`, background: kpi.accent }}
@@ -696,7 +738,7 @@ export function DashboardClient({
               ))}
             </div>
           </div>
-          <div className="h-[286px] px-3 pb-4 pt-5">
+          <div className="dash-chart dash-chart-lg h-[286px] px-3 pb-4 pt-5">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={bureauData}
@@ -739,7 +781,7 @@ export function DashboardClient({
               <h2 className="panel-title">Status mix</h2>
             </div>
           </div>
-          <div className="relative h-[196px] px-4 pt-3">
+          <div className="dash-chart dash-chart-pie relative h-[196px] px-4 pt-3">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -815,7 +857,7 @@ export function DashboardClient({
             </div>
             <span className="badge border-rose-200 bg-rose-50 text-rose-600">SLA watch</span>
           </div>
-          <div className="h-[224px] px-3 pb-3 pt-4">
+          <div className="dash-chart dash-chart-md h-[224px] px-3 pb-3 pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={ageingData} margin={{ top: 6, right: 8, left: -24, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="4 4" stroke="rgba(148,163,184,0.28)" vertical={false} />
@@ -841,7 +883,7 @@ export function DashboardClient({
               {disposalRate}% closed
             </span>
           </div>
-          <div className="h-[224px] px-3 pb-3 pt-4">
+          <div className="dash-chart dash-chart-md h-[224px] px-3 pb-3 pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={metrics.monthlyTrends} margin={{ top: 6, right: 10, left: -24, bottom: 0 }}>
                 <defs>
@@ -882,7 +924,7 @@ export function DashboardClient({
               Directory →
             </Link>
           </div>
-          <div className="h-[224px] px-2 pb-3 pt-4">
+          <div className="dash-chart dash-chart-md h-[224px] px-2 pb-3 pt-4">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 layout="vertical"

@@ -22,10 +22,7 @@ export function OperationsWire({ items }: { items: WireItem[] }) {
       />
 
       <div className="relative z-10 flex shrink-0 items-center gap-2.5 border-r border-white/10 bg-ink-950 px-3.5 py-3 sm:px-4">
-        <span className="relative flex h-1.5 w-1.5 shrink-0">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-        </span>
+        <span className="live-dot text-emerald-400" aria-hidden="true" />
         <Radio className="hidden h-3.5 w-3.5 text-saffron-400 sm:block" />
         <span className="hidden text-[10.5px] font-semibold uppercase tracking-[0.15em] text-slate-300 sm:inline">
           Command brief

@@ -493,7 +493,7 @@ export default async function ReportsPage() {
               <a
                 href="/api/reports/csv"
                 download="aicte_complaints.csv"
-                className="group flex items-center gap-2.5 rounded-xl border border-slate-200 p-2.5 transition-colors hover:border-emerald-300 hover:bg-emerald-50/40"
+                className="shine group flex items-center gap-2.5 rounded-xl border border-slate-200 p-2.5 transition-colors hover:border-emerald-300 hover:bg-emerald-50/40"
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-600">
                   <FileSpreadsheet className="h-3.5 w-3.5" />
@@ -512,7 +512,7 @@ export default async function ReportsPage() {
               <a
                 href="/api/reports/pdf"
                 download="aicte_executive_report.pdf"
-                className="group flex items-center gap-2.5 rounded-xl border border-slate-200 p-2.5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+                className="shine group flex items-center gap-2.5 rounded-xl border border-slate-200 p-2.5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-brand-200 bg-brand-50 text-brand-600">
                   <FileText className="h-3.5 w-3.5" />
@@ -531,7 +531,7 @@ export default async function ReportsPage() {
               <a
                 href="/api/reports/weekly"
                 download="aicte_weekly_digest.pdf"
-                className="group flex items-center gap-2.5 rounded-xl border border-slate-200 p-2.5 transition-colors hover:border-fuchsia-300 hover:bg-fuchsia-50/40"
+                className="shine group flex items-center gap-2.5 rounded-xl border border-slate-200 p-2.5 transition-colors hover:border-fuchsia-300 hover:bg-fuchsia-50/40"
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-fuchsia-200 bg-fuchsia-50 text-fuchsia-600">
                   <CalendarClock className="h-3.5 w-3.5" />

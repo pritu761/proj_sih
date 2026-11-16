@@ -34,6 +34,7 @@ import {
 import { getWatcherDigestAction } from "@/actions/digest-actions";
 import { StatusPill } from "@/components/ui/badges";
 import { TextReveal } from "@/components/ui/text-reveal";
+import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { Reveal } from "@/components/ui/reveal";
 import { formatDate, formatDateTime, cn } from "@/lib/utils";
@@ -243,6 +244,7 @@ function TrackClientContent() {
 
   return (
     <div className="print-page flex min-h-screen flex-col bg-gradient-to-b from-ink-950 via-ink-900 to-ink-950 text-white">
+      <ScrollProgress />
       {/* Sticky frosted header */}
       <header className="no-print sticky top-0 z-40 border-b border-white/10 bg-ink-950/55 backdrop-blur-2xl backdrop-saturate-150">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-5">

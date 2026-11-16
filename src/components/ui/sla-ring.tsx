@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 export function SlaRing({
@@ -63,7 +64,14 @@ export function SlaRing({
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={offset}
-          style={{ transition: "stroke-dashoffset 900ms cubic-bezier(0.22,1,0.36,1)" }}
+          className="ring-sweep"
+          style={
+            {
+              "--ring-from": c,
+              "--ring-target": offset,
+              transition: "stroke-dashoffset 900ms cubic-bezier(0.22,1,0.36,1)",
+            } as CSSProperties
+          }
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">

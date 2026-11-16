@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { TextReveal } from "@/components/ui/text-reveal";
+import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { CountUp } from "@/components/ui/count-up";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { BackgroundBeams } from "@/components/ui/background-beams";
@@ -167,7 +168,7 @@ function Tile({
 }) {
   return (
     <Reveal delay={delay} className={span}>
-      <div className="group panel relative h-full overflow-hidden rounded-[22px] p-6 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_28px_70px_-30px_rgba(6,10,20,0.35)] sm:p-7">
+      <div className="shine group panel relative h-full overflow-hidden rounded-[22px] p-6 transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_28px_70px_-30px_rgba(6,10,20,0.35)] sm:p-7">
         <div
           className={cn(
             "pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl transition-opacity duration-700 opacity-40 group-hover:opacity-80",
@@ -221,6 +222,7 @@ function LandingContent() {
 
   return (
     <div className="relative">
+      <ScrollProgress />
       <LandingNav scrolled={scrolled} />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
@@ -515,7 +517,7 @@ function LandingContent() {
           <div className="mt-10 space-y-3">
             {t.faq.items.map((f, i) => (
               <Reveal key={f.q} delay={i * 55}>
-                <details className="panel group rounded-2xl px-5 py-4 transition-colors duration-300 open:border-brand-200 dark:open:border-brand-400/30">
+                <details className="faq-item panel group rounded-2xl px-5 py-4 transition-colors duration-300 open:border-brand-200 dark:open:border-brand-400/30">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[13px] font-bold text-slate-900 dark:text-white [&::-webkit-details-marker]:hidden">
                     {f.q}
                     <ChevronDown className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-300 group-open:rotate-180" />
