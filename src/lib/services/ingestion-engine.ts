@@ -1,4 +1,4 @@
-import { SLA_CONFIGS } from "@/lib/demo-data";
+import { getEffectiveSlaConfig, getEffectiveSlaConfigs } from "./sla-engine";
 
 export type IngestionChannel =
   | "CPGRAMS"
@@ -212,8 +212,8 @@ export function routeComplaint(input: {
   }
 
   const sla =
-    SLA_CONFIGS.find((s) => s.category === input.category) ??
-    SLA_CONFIGS[SLA_CONFIGS.length - 1];
+    getEffectiveSlaConfig(input.category) ??
+    getEffectiveSlaConfigs()[getEffectiveSlaConfigs().length - 1];
 
   return {
     bureau,

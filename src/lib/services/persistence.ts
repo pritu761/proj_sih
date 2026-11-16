@@ -73,6 +73,13 @@ export interface StoreState {
   lastAutoEscalation?: string;
   /** Merge-suggestion pair keys an officer already reviewed ("not duplicates"). */
   dismissedMergeSuggestions?: string[];
+  /** Administrator-managed statutory SLA schedule overrides, keyed by category.
+   * Optional so snapshots written before this field existed revive safely; the
+   * engine falls back to the seeded SLA_CONFIGS when it is absent. */
+  slaConfigOverrides?: Record<
+    string,
+    { timeline_days: number; warning_threshold_percent: number }
+  >;
   /** UTC day (YYYY-MM-DD) each cron notification sweep last ran for. Old
    * snapshots simply omit these; the first run then creates its daily batch. */
   lastSlaNotificationDay?: string;

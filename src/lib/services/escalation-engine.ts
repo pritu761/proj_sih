@@ -1,5 +1,5 @@
 import type { SeedCase } from "@/lib/mock-data-generator";
-import { SLA_CONFIGS } from "@/lib/demo-data";
+import { getEffectiveSlaConfig } from "./sla-engine";
 import { logAuditEvent } from "./audit";
 import { markStoreDirty, type StoreState } from "./persistence";
 
@@ -58,9 +58,7 @@ export function buildEscalationMemo(input: {
 }): string {
   const { caseItem, institutionName, breachDays, asOf } = input;
   const timeline =
-    SLA_CONFIGS.find(
-      (s) => s.category.toLowerCase() === caseItem.category.toLowerCase()
-    )?.timeline_days ?? 30;
+    getEffectiveSlaConfig(caseItem.category)?.timeline_days ?? 30;
   const bureauLabel =
     BUREAU_LABELS[caseItem.assigned_bureau] ?? caseItem.assigned_bureau;
 

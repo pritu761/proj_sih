@@ -39,6 +39,7 @@ import {
   ThumbsDown,
   EyeOff,
   Star,
+  FileDown,
 } from "lucide-react";
 import { formatDate, formatDateTime } from "@/lib/utils";
 import {
@@ -819,6 +820,31 @@ export function CaseDetailClient({
                 {caseItem.description}
               </p>
             </div>
+          </div>
+
+          {/* Courtroom-ready per-case evidence pack. Sits with the case
+              exhibits next to the citizen-feedback panel; uses the internal id
+              because registry numbers contain slashes. */}
+          <div className="panel flex items-center justify-between gap-3 px-5 py-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-[11.5px] font-bold text-slate-800">
+                <FileDown className="h-3.5 w-3.5 text-brand-600" />
+                Courtroom evidence pack
+              </p>
+              <p className="mt-0.5 text-[10.5px] text-slate-500">
+                A4 PDF with registry identity, SLA position, timeline, links,
+                overlap alerts and audit attestation.
+              </p>
+            </div>
+            <a
+              href={`/api/cases/${caseItem.id}/evidence-pack`}
+              download
+              className="btn btn-primary btn-sm shrink-0"
+              title="Download a courtroom-ready A4 evidence pack for this case"
+            >
+              <FileDown className="h-3.5 w-3.5" />
+              Download evidence pack
+            </a>
           </div>
 
           {/* Citizen feedback — the complainant's own rating of the redressal,

@@ -2,7 +2,14 @@ import { generateSeedData, SeedCase, SeedComment, SeedDocument, SeedInstitution,
 import { ALL_KNOWN_USERS, DEMO_PASSWORD_HASHES, SLA_CONFIGS } from "@/lib/demo-data";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/prisma";
-import { calculateCaseSla, computeAgeingBuckets } from "./sla-engine";
+import {
+  calculateCaseSla,
+  computeAgeingBuckets,
+  getEffectiveSlaConfig,
+  getEffectiveSlaConfigs,
+  setSlaConfigOverrides,
+  type SlaStatusResult,
+} from "./sla-engine";
 import { buildRiskRadar, buildCaseInsight } from "./risk-engine";
 import {
   overlapDetector,
@@ -10,6 +17,7 @@ import {
   type OverlapCandidate,
 } from "./overlap-detector";
 import { logAuditEvent, inMemoryAuditLogs } from "./audit";
+import { buildAuditChain } from "./audit-chain";
 import { analyzeComplainants, ComplainantProfile, ComplainantCaseInput, RECURRENCE_META } from "./complainant-engine";
 import {
   hydrateFromSnapshot,
@@ -30,6 +38,55 @@ import {
   type PrecedentStats,
 } from "./analytics";
 import { SessionUser, assertCanActOnCase, canCoordinateOverlap, canViewCase, canActOnCase } from "@/lib/rbac";
+
+/** Discriminated result of the evidence-pack data assembly. */
+export type CaseEvidencePackResult =
+  | { status: "ok"; data: CaseEvidencePack }
+  | { status: "not_found" }
+  | { status: "forbidden" };
+
+/** Fully assembled, presentation-neutral data for a per-case evidence pack. */
+export interface CaseEvidencePack {
+  registryNumber: string;
+  internalId: string;
+  institutionName: string;
+  institutionAicteId: string | null;
+  /** Region/bureau are kept so the route can re-check canViewCase explicitly. */
+  institutionRegion?: string;
+  assignedBureau: string;
+  category: string;
+  status: string;
+  priority: string;
+  receivedDate: string;
+  sla: SlaStatusResult;
+  description: string;
+  timeline: { at: string; actor: string; type: string; remarks: string }[];
+  linkedCases: {
+    registryNumber: string;
+    category: string;
+    linkType?: string;
+  }[];
+  overlapAlerts: {
+    caseIds: string[];
+    status: string;
+    confidence: string;
+    detectedAt: string;
+    bureaus: string[];
+    reasons: string[];
+  }[];
+  audit: {
+    head: string;
+    count: number;
+    valid: boolean;
+    algorithm: string;
+    builtAt: string;
+  } | null;
+  feedback: {
+    rating: number;
+    comment: string | null;
+    at: string | null;
+  } | null;
+}
 
 export interface CaseFilterOptions {
   q?: string;
@@ -121,11 +178,18 @@ function seedUsers(): StoreUser[] {
 
 function getInMemoryStore() {
   const store: StoreState = (globalRepo.inMemoryData ??= buildSeedStore());
+  // The engine reads overrides through a globalThis registry. Seed stores have
+  // none; revived snapshots may. Push them on every store touch so a layer
+  // that has never seen this store still calculates with the live schedule.
+  setSlaConfigOverrides(store.slaConfigOverrides);
   if (!globalRepo.snapshotWired) {
     globalRepo.snapshotWired = true;
     // One-shot hydration + write-behind persistence (no-op without a DB).
     void hydrateFromSnapshot(store, inMemoryAuditLogs)
       .then(() => {
+        // A revived snapshot can carry admin overrides — publish them to the
+        // engine before intake/escalation recompute any SLA positions.
+        setSlaConfigOverrides(store.slaConfigOverrides);
         // Daily synthetic intake runs strictly after hydration so the revived
         // snapshot (including its `lastDailyIntake` marker and prior arrivals)
         // is never clobbered by revival. Best-effort: any failure leaves the
@@ -1227,9 +1291,8 @@ export class ComplaintRepository {
     const caseIdCode = `AICTE/${bureauCode}/2026/${String(maxSequence + 1).padStart(5, "0")}`;
 
     const slaConfig =
-      SLA_CONFIGS.find(
-        (c) => c.category.toLowerCase() === data.category.toLowerCase()
-      ) ?? SLA_CONFIGS[SLA_CONFIGS.length - 1];
+      getEffectiveSlaConfig(data.category) ??
+      SLA_CONFIGS[SLA_CONFIGS.length - 1];
 
     const newCase: SeedCase = {
       id: `case_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
@@ -3102,6 +3165,226 @@ export class ComplaintRepository {
       avgFeedback,
       satisfactionRate,
       ratingMix,
+    };
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Statutory SLA schedule (Admin console)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  public getSlaSchedule() {
+    const store = getInMemoryStore();
+    const overrides = store.slaConfigOverrides ?? {};
+    return getEffectiveSlaConfigs().map((config) => {
+      const base = SLA_CONFIGS.find((c) => c.category === config.category)!;
+      return {
+        category: config.category,
+        timeline_days: config.timeline_days,
+        warning_threshold_percent: config.warning_threshold_percent,
+        default_timeline_days: base.timeline_days,
+        default_warning_threshold_percent: base.warning_threshold_percent,
+        isOverridden: Boolean(overrides[config.category]),
+      };
+    });
+  }
+
+  /** Saves one category override. The in-memory value is authoritative. */
+  public updateSlaConfig(
+    category: string,
+    timelineDays: number,
+    warningThresholdPercent: number,
+    actor: SessionUser
+  ) {
+    if (actor?.role !== "ADMIN") {
+      throw new Error("Only the system administrator can change the statutory SLA schedule.");
+    }
+    const matched = getEffectiveSlaConfig(category);
+    if (!matched) throw new Error("Unknown grievance category.");
+
+    const timeline = Math.round(Number(timelineDays));
+    const threshold = Math.round(Number(warningThresholdPercent));
+    if (!Number.isFinite(timeline) || timeline < 1 || timeline > 3650) {
+      throw new Error("Timeline must be between 1 and 3650 days.");
+    }
+    if (!Number.isFinite(threshold) || threshold < 1 || threshold > 100) {
+      throw new Error("Warning threshold must be between 1 and 100 percent.");
+    }
+
+    const store = getInMemoryStore();
+    const overrides = (store.slaConfigOverrides ??= {});
+    const before = {
+      timeline_days: matched.timeline_days,
+      warning_threshold_percent: matched.warning_threshold_percent,
+    };
+    overrides[matched.category] = {
+      timeline_days: timeline,
+      warning_threshold_percent: threshold,
+    };
+    setSlaConfigOverrides(overrides);
+    markStoreDirty();
+
+    void logAuditEvent({
+      user: actor.email,
+      action: "SLA_CONFIG_UPDATED",
+      entity: "SLA_CONFIG",
+      entity_id: matched.category,
+      before,
+      after: overrides[matched.category],
+    });
+
+    // Best-effort mirror into the Prisma table. The JSONB snapshot remains the
+    // source of truth; an unreachable DB must never break the admin console.
+    void prisma.slaConfig
+      .upsert({
+        where: { category: matched.category },
+        update: { timeline_days: timeline, warning_threshold_percent: threshold },
+        create: {
+          category: matched.category,
+          timeline_days: timeline,
+          warning_threshold_percent: threshold,
+        },
+      })
+      .catch((err: unknown) =>
+        console.debug(`[sla-config] Prisma mirror skipped: ${String(err)}`)
+      );
+
+    return this.getSlaSchedule().find((row) => row.category === matched.category)!;
+  }
+
+  /** Removes one override (or all when no category is given), restoring defaults. */
+  public resetSlaConfig(actor: SessionUser, category?: string) {
+    if (actor?.role !== "ADMIN") {
+      throw new Error("Only the system administrator can change the statutory SLA schedule.");
+    }
+    const store = getInMemoryStore();
+    const overrides = (store.slaConfigOverrides ??= {});
+    const categories = category
+      ? [getEffectiveSlaConfig(category)?.category].filter(
+          (c): c is string => Boolean(c)
+        )
+      : SLA_CONFIGS.map((c) => c.category);
+    if (category && categories.length === 0) {
+      throw new Error("Unknown grievance category.");
+    }
+    for (const key of categories) delete overrides[key];
+    setSlaConfigOverrides(overrides);
+    markStoreDirty();
+
+    void logAuditEvent({
+      user: actor.email,
+      action: "SLA_CONFIG_RESET",
+      entity: "SLA_CONFIG",
+      entity_id: category ?? "ALL",
+      before: null,
+      after: { categories },
+    });
+
+    void prisma.slaConfig
+      .deleteMany({ where: { category: { in: categories } } })
+      .catch((err: unknown) =>
+        console.debug(`[sla-config] Prisma mirror skip: ${String(err)}`)
+      );
+
+    return this.getSlaSchedule();
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Per-case courtroom evidence pack
+  // ───────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Assembles everything an officer needs for a courtroom-ready case file.
+   * Reuses the canonical case view, overlap-alert projection and tamper-evident
+   * audit chain rather than inventing a new schema. Returns a discriminated
+   * result so the route can distinguish "not found" from "forbidden".
+   */
+  public async getCaseEvidencePack(
+    caseId: string,
+    user?: SessionUser
+  ): Promise<CaseEvidencePackResult> {
+    const store = getInMemoryStore();
+    const c = store.cases.find(
+      (item) => item.id === caseId || item.case_id === caseId
+    );
+    if (!c) return { status: "not_found" };
+
+    const inst = store.institutions.find((i) => i.id === c.institution_id);
+    if (!canViewCase(user, { ...c, institution: inst })) {
+      return { status: "forbidden" };
+    }
+
+    const view = await this.getCaseById(c.id, user);
+    const sla =
+      view?.caseItem?.sla ??
+      calculateCaseSla(c.category, c.date_received, c.status);
+
+    const alerts = (await this.getOverlapAlerts(user)).filter((a) =>
+      (a.case_ids ?? []).includes(c.case_id)
+    );
+    const chain = buildAuditChain(await this.getAuditLogs());
+
+    const timeline = [...(c.actions ?? [])]
+      .map((a) => ({
+        at: new Date(a.timestamp).toISOString(),
+        actor: a.actor_user,
+        type: a.action_type,
+        remarks: a.remarks,
+      }))
+      .sort((a, b) => a.at.localeCompare(b.at));
+
+    const linkedCases = (view?.linkedCases ?? []).map((linked: any) => ({
+      registryNumber: linked.case_id as string,
+      category: linked.category as string,
+      linkType: (linked.linkType as string | undefined) ?? undefined,
+    }));
+
+    const overlapAlerts = alerts.map((a: any) => ({
+      caseIds: (a.case_ids ?? []) as string[],
+      status: String(a.status ?? ""),
+      confidence: String(a.confidence ?? ""),
+      detectedAt: a.detected_at ? new Date(a.detected_at).toISOString() : "",
+      bureaus: (a.bureaus_involved ?? []) as string[],
+      reasons: ((a.match_reasons ?? []) as { description?: string }[])
+        .map((r) => r.description ?? "")
+        .filter(Boolean),
+    }));
+
+    const feedback =
+      typeof c.feedback_rating === "number"
+        ? {
+            rating: c.feedback_rating,
+            comment: c.feedback_comment ?? null,
+            at: c.feedback_at ? new Date(c.feedback_at).toISOString() : null,
+          }
+        : null;
+
+    return {
+      status: "ok",
+      data: {
+        registryNumber: c.case_id,
+        internalId: c.id,
+        institutionName: inst?.name ?? "Unknown institution",
+        institutionAicteId: inst?.aicte_permanent_id ?? null,
+        institutionRegion: inst?.region,
+        assignedBureau: c.assigned_bureau,
+        category: c.category,
+        status: c.status,
+        priority: c.priority,
+        receivedDate: new Date(c.date_received).toISOString(),
+        sla,
+        description: c.description,
+        timeline,
+        linkedCases,
+        overlapAlerts,
+        audit: {
+          head: chain.head,
+          count: chain.count,
+          valid: chain.valid,
+          algorithm: chain.algorithm,
+          builtAt: chain.builtAt,
+        },
+        feedback,
+      },
     };
   }
 

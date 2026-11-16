@@ -1,5 +1,92 @@
 import { SLA_CONFIGS } from "@/lib/demo-data";
 
+export interface SlaConfigOverride {
+  timeline_days: number;
+  warning_threshold_percent: number;
+}
+
+export interface EffectiveSlaConfig extends SlaConfigOverride {
+  category: string;
+}
+
+interface SlaOverrideRegistry {
+  overrides: Record<string, SlaConfigOverride>;
+}
+
+/**
+ * Administrable statutory schedule.
+ *
+ * Next.js bundles shared server modules once per layer (page renders, route
+ * handlers, server actions), so a plain module-level override object would
+ * leave some layers holding a different copy. The registry is anchored on
+ * globalThis — the same technique used by the store, audit ledger and Prisma
+ * client — so every call site of `calculateCaseSla` reads one authoritative
+ * set of overrides. The in-memory store persists these overrides in the JSONB
+ * snapshot; the Prisma `SlaConfig` table is only a best-effort mirror.
+ */
+const globalSla = globalThis as unknown as {
+  __sentinelSlaOverrides?: SlaOverrideRegistry;
+};
+const slaRegistry: SlaOverrideRegistry = (globalSla.__sentinelSlaOverrides ??= {
+  overrides: {},
+});
+
+/** Replaces the live override set (called by the repository on store hydration/save). */
+export function setSlaConfigOverrides(
+  overrides?: Record<string, SlaConfigOverride> | null
+): void {
+  const next: Record<string, SlaConfigOverride> = {};
+  for (const [category, value] of Object.entries(overrides ?? {})) {
+    if (!value) continue;
+    const timeline = Math.round(Number(value.timeline_days));
+    const threshold = Math.round(Number(value.warning_threshold_percent));
+    if (
+      !Number.isFinite(timeline) ||
+      timeline < 1 ||
+      timeline > 3650 ||
+      !Number.isFinite(threshold) ||
+      threshold < 1 ||
+      threshold > 100
+    ) {
+      continue;
+    }
+    next[category] = {
+      timeline_days: timeline,
+      warning_threshold_percent: threshold,
+    };
+  }
+  slaRegistry.overrides = next;
+}
+
+export function clearSlaConfigOverrides(): void {
+  slaRegistry.overrides = {};
+}
+
+export function getSlaConfigOverrides(): Record<string, SlaConfigOverride> {
+  return { ...slaRegistry.overrides };
+}
+
+/** Baseline schedule with any administrator overrides merged in by category. */
+export function getEffectiveSlaConfigs(): EffectiveSlaConfig[] {
+  return SLA_CONFIGS.map((base) => {
+    const override = slaRegistry.overrides[base.category];
+    return {
+      category: base.category,
+      timeline_days: override?.timeline_days ?? base.timeline_days,
+      warning_threshold_percent:
+        override?.warning_threshold_percent ?? base.warning_threshold_percent,
+    };
+  });
+}
+
+export function getEffectiveSlaConfig(
+  category: string
+): EffectiveSlaConfig | undefined {
+  return getEffectiveSlaConfigs().find(
+    (c) => c.category.toLowerCase() === category.toLowerCase()
+  );
+}
+
 export interface SlaStatusResult {
   timelineDays: number;
   elapsedDays: number;
@@ -27,9 +114,11 @@ export function calculateCaseSla(
   currentStatus: string,
   referenceDate: Date = new Date()
 ): SlaStatusResult {
-  const slaConfig = SLA_CONFIGS.find(
-    (c) => c.category.toLowerCase() === category.toLowerCase()
-  ) || { category, timeline_days: 30, warning_threshold_percent: 80 };
+  const slaConfig = getEffectiveSlaConfig(category) || {
+    category,
+    timeline_days: 30,
+    warning_threshold_percent: 80,
+  };
 
   const received = new Date(dateReceived);
   const diffMs = referenceDate.getTime() - received.getTime();

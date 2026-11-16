@@ -1,6 +1,5 @@
 import type { SeedCase, SeedInstitution } from "@/lib/mock-data-generator";
-import { SLA_CONFIGS } from "@/lib/demo-data";
-import { calculateCaseSla } from "./sla-engine";
+import { calculateCaseSla, getEffectiveSlaConfigs } from "./sla-engine";
 
 /**
  * Deterministic analytics — backlog forecast, region×category breach heatmap
@@ -139,7 +138,7 @@ export function computeBreachHeatmap(
   cases: SeedCase[],
   institutions: SeedInstitution[]
 ): BreachHeatmap {
-  const categories = SLA_CONFIGS.map((s) => s.category);
+  const categories = getEffectiveSlaConfigs().map((s) => s.category);
   const regionOf = new Map(institutions.map((i) => [i.id, i.region]));
   const regions = CANONICAL_REGIONS.filter((r) =>
     institutions.some((i) => i.region === r)
@@ -222,8 +221,9 @@ function classifyOutcome(disposalRemarks: string): string {
 
 function timelineDaysFor(category: string): number {
   return (
-    SLA_CONFIGS.find((s) => s.category.toLowerCase() === category.toLowerCase())
-      ?.timeline_days ?? 30
+    getEffectiveSlaConfigs().find(
+      (s) => s.category.toLowerCase() === category.toLowerCase()
+    )?.timeline_days ?? 30
   );
 }
 

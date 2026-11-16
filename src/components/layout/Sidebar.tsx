@@ -23,6 +23,7 @@ import {
   UsersRound,
   Landmark,
   Siren,
+  Clock3,
 } from "lucide-react";
 import { SessionUser } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
@@ -111,6 +112,12 @@ export function Sidebar({
                 href: "/users",
                 icon: UsersRound,
                 active: pathname.startsWith("/users"),
+              },
+              {
+                name: "SLA Schedule",
+                href: "/sla-schedule",
+                icon: Clock3,
+                active: pathname.startsWith("/sla-schedule"),
               },
             ]
           : []),
